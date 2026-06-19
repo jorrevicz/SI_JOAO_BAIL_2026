@@ -30,10 +30,9 @@ SI_JOAO_BAIL_2026/
 │   └── src/
 │       ├── db/           # migrations SQL (node-pg-migrate), tipos (kanel) e seed
 │       ├── lib/          # cliente postgres.js compartilhado
-│       ├── modules/      # módulos por subdomínio (routes → controllers → services → repositories)
-│       └── shared/       # erros, middlewares, validação, transação
 ├── Frontend/             # SPA (React + Vite + styled-components) — ainda não inicializado
 │   └── src/
+        ├── /services     # clientes HTTP (axios); um arquivo por domínio de API
 ├── docs/                 # base de conhecimento (especificação arquitetural)
 ├── CLAUDE.md             # guia para o Claude Code ao trabalhar no projeto
 └── README.md             # este arquivo
