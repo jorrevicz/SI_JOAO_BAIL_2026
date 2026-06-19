@@ -65,9 +65,8 @@ Ativação comum: **clicar no item de menu** correspondente.
 ### Gerenciar Produtos
 - **Ator:** Usuário · **RF:** RF09
 - **RN002:** não excluir produto relacionado a compras, fornecedores ou notas fiscais.
-- **RN003:** deve permitir vinculação de **NCM/SH e categorias**.
-- **Pós-condição:** cadastrar, consultar, editar, remover produtos, NCM/SH e
-  fornecedores vinculados.
+- **RN003:** deve permitir vinculação de **categorias e fornecedores** ao produto.
+- **Pós-condição:** cadastrar, consultar, editar, remover produtos e fornecedores/categorias vinculados.
 
 ### Gerenciar Transportadoras
 - **Ator:** Usuário · **RF:** RF10
