@@ -41,7 +41,7 @@ O atributo `Users.perfil` define o papel do usuário. Atores previstos
 
 | Ameaça | Mitigação recomendada |
 |--------|----------------------|
-| **SQL Injection** | Acesso a dados exclusivamente via **Prisma** (queries parametrizadas); nunca concatenar SQL. |
+| **SQL Injection** | Acesso a dados via **postgres.js** com *tagged template literals* (valores sempre parametrizados); identificadores dinâmicos só por whitelist com `sql()`; nunca concatenar SQL. |
 | **XSS** | Escapar/validar saída no React; sanitizar entradas. |
 | **CSRF** | Tokens anti-CSRF e/ou política de cookies `SameSite`; CORS restrito à origem do frontend. |
 
