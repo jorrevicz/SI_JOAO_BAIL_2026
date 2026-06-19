@@ -2,13 +2,13 @@
 
 ## Contexto de negócio
 
-O cliente é uma **empresa pequena (bazar de roupas)** que atualmente **não possui
+O cliente é uma **empresa pequena de informática** que atualmente **não possui
 sistema**. As operações são feitas de forma manual/informal, e o objetivo é
 informatizar o negócio com uma aplicação web própria.
 
 ## Objetivo
 
-Implementar um sistema de gestão para o bazar cobrindo três operações centrais:
+Implementar um sistema de gestão para a empresa cobrindo três operações centrais:
 
 1. **Cadastro** — manter os dados de base (geografia, parceiros, produtos, etc.).
 2. **Compra** — registrar compras de fornecedores e a entrada de mercadoria.
