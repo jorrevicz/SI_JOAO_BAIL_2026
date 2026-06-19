@@ -1,4 +1,4 @@
-# Base de Conhecimento — Sistema E-commerce (Bazar de Roupas)
+# Base de Conhecimento — Sistema de Gestão (Empresa de Informática)
 
 Esta pasta contém a **especificação arquitetural** do sistema, separada por escopo.
 Cada documento aborda um aspecto específico e referencia os demais sempre que há
@@ -16,20 +16,23 @@ Racional e detalhes em [Stack Tecnológica](/docs/03-stack-tecnologica.md).
 | Camada | Tecnologias |
 |--------|-------------|
 | **Linguagem** | TypeScript |
-| **Backend** | Node.js · Express · **Prisma** (ORM) + Local Prisma Postgres |
+| **Backend** | Node.js · Express · **postgres.js** (driver SQL, sem ORM) · node-pg-migrate · kanel |
 | **Banco de dados** | PostgreSQL (modelado em formas normais) |
-| **Frontend** | React · Vite · TailwindCSS · Context API (estado) · React Router |
+| **Frontend** | React · Vite · styled-components · TanStack Table · Context API (estado) · React Router |
 | **Testes** | Vitest |
 | **Paradigma** | Programação Orientada a Objetos · API REST · transações atômicas |
 
 ## Estrutura do projeto
 
 ```
-e-commerce/
+SI_JOAO_BAIL_2026/
 ├── Backend/              # API REST (Node + Express + TypeScript) — desenvolvida primeiro
-│   ├── DB/               # schema Prisma, migrations e scripts de seed
-│   └── src/              # routes → controllers → services (domínio) → repositories (Prisma)
-├── Frontend/             # SPA (React + Vite + TailwindCSS)
+│   └── src/
+│       ├── db/           # migrations SQL (node-pg-migrate), tipos (kanel) e seed
+│       ├── lib/          # cliente postgres.js compartilhado
+│       ├── modules/      # módulos por subdomínio (routes → controllers → services → repositories)
+│       └── shared/       # erros, middlewares, validação, transação
+├── Frontend/             # SPA (React + Vite + styled-components) — ainda não inicializado
 │   └── src/
 ├── docs/                 # base de conhecimento (especificação arquitetural)
 ├── CLAUDE.md             # guia para o Claude Code ao trabalhar no projeto
@@ -55,6 +58,8 @@ e-commerce/
 | 08 | [Segurança e Autenticação](/docs/08-seguranca-e-autenticacao.md) | Autenticação, perfis, auditoria e proteções |
 | 09 | [Roadmap de Implementação](/docs/09-roadmap.md) | Prioridades, fases e ordem de entrega dos CRUDs |
 | 10 | [Glossário](/docs/10-glossario.md) | Termos de domínio e fiscais (NCM/SH, CFOP, ICMS, etc.) |
+| 11 | [Backlog](/docs/11-backlog.md) | Épicos e tasks por fase (EP-00 a EP-13+) |
+| 12 | [Princípios de Engenharia](/docs/12-principios-de-engenharia.md) | O que adotar e dispensar por categoria |
 
 ## Como navegar
 
