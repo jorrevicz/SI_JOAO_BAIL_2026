@@ -20,7 +20,7 @@ referem-se ao [Modelo de Domínio](05-modelo-de-dominio.md) e os requisitos ao
    backend, aplicar o ciclo Red → Green → Refactor antes de avançar para o próximo
    método. Detalhes em [CLAUDE.md](../CLAUDE.md#princípios-obrigatórios).
 
-## Fase 0 — Fundação ✓ concluída (EP-00 a EP-03)
+## Fase 0 — Fundação (EP-00 a EP-03)
 
 - [ ] Estrutura de diretórios (`/Backend/src/db`, `/Backend/src`, `/Frontend/src`) —
       ver [Arquitetura](02-arquitetura.md#estrutura-de-diretórios-raiz-do-projeto).
