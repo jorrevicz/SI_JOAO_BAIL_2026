@@ -9,7 +9,7 @@ entender os atributos do [Modelo de Domínio](05-modelo-de-dominio.md) e
 
 | Termo | Significado |
 |-------|-------------|
-| **Bazar** | O cliente do sistema: pequena loja de roupas. Ver [Visão Geral](01-visao-geral.md). |
+| **Empresa** | O cliente do sistema: pequena empresa de informática com operações informais. Ver [Visão Geral](01-visao-geral.md). |
 | **Cadastro** | Manutenção dos dados de base (CRUD). |
 | **Compra** | Entrada de mercadoria comprada de um fornecedor ([módulo Compras](05-modelo-de-dominio.md#6-compras)). |
 | **Venda** | Saída de mercadoria para um cliente (fluxo a detalhar). |
@@ -51,7 +51,13 @@ entender os atributos do [Modelo de Domínio](05-modelo-de-dominio.md) e
 | **Soft delete (`isActive`)** | Exclusão lógica: marca o registro inativo em vez de apagá-lo. Ver [Segurança](08-seguranca-e-autenticacao.md#auditoria). |
 | **Forma normal (1FN/2FN/3FN)** | Regras de normalização relacional. Ver [Modelo de Dados](06-modelo-de-dados.md#princípios-de-modelagem). |
 | **Tabela associativa** | Tabela que materializa uma relação N:N. Ver [Modelo de Dados](06-modelo-de-dados.md#relacionamentos-nn-resumo). |
-| **ORM** | Object-Relational Mapping — aqui, o **Prisma**. |
+| **postgres.js** | Driver/cliente PostgreSQL para Node.js usado no acesso a dados (sem ORM). *Tagged template literals* parametrizam os valores, protegendo contra SQL Injection. Ver [Stack](03-stack-tecnologica.md). |
+| **node-pg-migrate** | Ferramenta de *migrations* SQL versionadas; fonte de verdade do schema do banco. Ver [Stack](03-stack-tecnologica.md). |
+| **kanel** | Gerador de tipos TypeScript a partir do schema do PostgreSQL (introspecção); repõe a tipagem sem ORM. Ver [Stack](03-stack-tecnologica.md). |
+| **Migration** | Script SQL versionado que cria/altera o schema do banco de forma incremental e reversível (`up`/`down`). |
+| **ACID** | Atomicidade, Consistência, Isolamento, Durabilidade — propriedades de transações; garantidas via `sql.begin` (RNF06). |
+| **Transação / `sql.begin`** | Bloco de operações executadas atomicamente (tudo ou nada); falha causa *rollback*. Ver [Arquitetura](02-arquitetura.md#princípios). |
+| **ORM / Query Builder** | Camadas de abstração sobre SQL. **Não usados** neste projeto: o acesso a dados é por SQL direto via postgres.js. |
 
 ## Documentos relacionados
 
