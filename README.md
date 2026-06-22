@@ -1,5 +1,5 @@
 # SI_JOAO_BAIL_2026
-Sistema web api para gerenciamento de operações como: cadastro, compra e venda. Possui o escopo definida para uma empresa pequena com a finalidade de ofertar estes serviços digitalmente ( e-commerce ). 
+Sistema web api para gerenciamento de operações como: cadastro, compra e venda. Possui o escopo definido para uma empresa pequena com a finalidade de ofertar tais serviços digitalmente ( e-commerce ). 
 
 Esta pasta contém a **especificação arquitetural** do sistema, separada por escopo.
 Cada documento aborda um aspecto específico e referencia os demais sempre que há
