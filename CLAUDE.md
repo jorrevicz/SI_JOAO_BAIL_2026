@@ -7,10 +7,16 @@ Guia para o Claude Code ao trabalhar neste repositório. Leia antes de gerar ou 
 Sistema de gestão (ERP enxuto) para uma **empresa de informática pequena** com
 operações informais — sem sistema prévio. Operações centrais: **cadastro, compra e venda**. Web API REST + SPA.
 
-
-> **Estado atual:** apenas a base de conhecimento em [`docs/`](docs/README.md) existe.
-> Ainda **não há código** — `Backend/` e `Frontend/` serão criados conforme o
-> [Roadmap](docs/09-roadmap.md). Ao começar a implementar, siga a estrutura abaixo.
+> **Estado atual (Fase 0 concluída — EP-00 a EP-03 completos):**
+> Schema revisado e migrado: NCM_SH removido, convenções de nomes unificadas (`cod*`, sufixos
+> `Forn`/`Cl`/`Transp`), tamanhos `VarChar(n)` aplicados em todos os campos String,
+> dados sem máscara (dígitos puros). Seed idempotente (27 estados, 36 cidades,
+> 6 categorias, 5 produtos, 2 fornecedores, 1 condição de pag, 2 clientes, 1 veículo, 1 transportadora).
+> Infraestrutura EP-03 completa: `AppError`, `errorHandler`, `withTransaction`, `authMiddleware` (stub),
+> `validate` (factory de middleware Zod — `src/shared/validation/validate.ts`).
+>
+> EP-13 (Transição Prisma → postgres.js + node-pg-migrate + kanel) **concluída**.
+> **Próximo passo: EP-04 — Cadastros geográficos** (Países, Estados, Cidades).
 
 ## Fonte de verdade: leia `docs/` primeiro
 

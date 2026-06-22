@@ -20,19 +20,19 @@ referem-se ao [Modelo de Domínio](05-modelo-de-dominio.md) e os requisitos ao
    backend, aplicar o ciclo Red → Green → Refactor antes de avançar para o próximo
    método. Detalhes em [CLAUDE.md](../CLAUDE.md#princípios-obrigatórios).
 
-## Fase 0 — Fundação (EP-00 a EP-03)
+## Fase 0 — Fundação ✓ concluída (EP-00 a EP-03)
 
-- [ ] Estrutura de diretórios (`/Backend/src/db`, `/Backend/src`, `/Frontend/src`) —
+- [x] Estrutura de diretórios (`/Backend/src/db`, `/Backend/src`, `/Frontend/src`) —
       ver [Arquitetura](02-arquitetura.md#estrutura-de-diretórios-raiz-do-projeto).
-- [ ] Configurar acesso ao **PostgreSQL local** ([Stack](03-stack-tecnologica.md)).
-- [ ] Modelar o schema do banco em formas normais
+- [x] Configurar acesso ao **PostgreSQL local** ([Stack](03-stack-tecnologica.md)).
+- [x] Modelar o schema do banco em formas normais
       ([Modelo de Dados](06-modelo-de-dados.md)).
-- [ ] Scripts de **seed** para os cadastros básicos.
-- [ ] Padronizar nomes (corrigir grafias do diagrama — ver
+- [x] Scripts de **seed** para os cadastros básicos.
+- [x] Padronizar nomes (corrigir grafias do diagrama — ver
       [nota de grafia](05-modelo-de-dominio.md#convenções-de-atributos-comuns)).
-- [ ] Arquitetura base do backend: camadas, erros, transação, auth stub, validação Zod.
+- [x] Arquitetura base do backend: camadas, erros, transação, auth stub, validação Zod.
 
-> **EP-13:** a camada de dados migrou de Prisma para **postgres.js +
+> **EP-13 concluído:** a camada de dados migrou de Prisma para **postgres.js +
 > node-pg-migrate + kanel** (sem ORM). Detalhes em
 > [EP-13 do Backlog](11-backlog.md#ep-13--transição-da-camada-de-dados-prisma--postgresjs).
 

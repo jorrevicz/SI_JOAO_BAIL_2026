@@ -1,0 +1,5 @@
+{
+  "migrations-dir": "./src/db/migrations",
+  "databaseUrlVar": "DATABASE_URL",
+  "ignorePattern": "^\\..+"
+}

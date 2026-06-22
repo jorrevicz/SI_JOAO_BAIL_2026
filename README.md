@@ -1,5 +1,4 @@
 # SI_JOAO_BAIL_2026
-Sistema web api para gerenciamento de operações como: cadastro, compra e venda. Possui o escopo definido para uma empresa pequena com a finalidade de ofertar tais serviços digitalmente ( e-commerce ). 
 
 Esta pasta contém a **especificação arquitetural** do sistema, separada por escopo.
 Cada documento aborda um aspecto específico e referencia os demais sempre que há
@@ -39,9 +38,9 @@ SI_JOAO_BAIL_2026/
 └── README.md             # este arquivo
 ```
 
-> **Estado atual:** apenas `docs/` e `CLAUDE.md` existem. `Backend/` e `Frontend/`
-> serão criados conforme o [Roadmap](/docs/09-roadmap.md) e o
-> [Backlog](/docs/11-backlog.md) — desenvolvimento **backend-first**.
+> **Estado atual:** Fase 0 e EP-13 concluídos. Backend com infraestrutura completa (postgres.js,
+> migrations, seed, `AppError`, `errorHandler`, `withTransaction`, `authMiddleware`, `validate`).
+> Frontend ainda não inicializado. Próximo passo: EP-04 — CRUDs geográficos.
 > Estrutura e camadas detalhadas em [Arquitetura](/docs/02-arquitetura.md).
 
 ## Índice

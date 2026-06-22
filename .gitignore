@@ -1,2 +1,32 @@
-./docs/11-backlog.md
-.vscode
+# Dependências
+node_modules/
+**/node_modules/
+
+# Build
+dist/
+build/
+**/dist/
+**/build/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Dados locais do PostgreSQL (data dir do Homebrew etc.)
+**/pgdata/
+**/pg_data/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

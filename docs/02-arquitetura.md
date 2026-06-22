@@ -47,6 +47,7 @@ Ferramentas e versões em [Stack Tecnológica](03-stack-tecnologica.md).
       /types           → tipos das tabelas gerados pelo kanel (introspecção)
     /modules           → um subdiretório por subdomínio de negócio
       /health          → health check (health.routes.ts + health.controller.ts)
+      /paises          → (EP-04, a criar)
       ...
     /shared            → utilitários transversais a todos os módulos
       /errors          → AppError (exceção de domínio com status HTTP)
@@ -58,16 +59,20 @@ Ferramentas e versões em [Stack Tecnológica](03-stack-tecnologica.md).
     app.ts             → instância Express (rotas e middlewares)
     server.ts          → bootstrap (escuta na porta; encerra `sql` no shutdown)
   kanel.config.cjs          → configuração do kanel (geração de tipos)
-  database.config.json      → configuração do node-pg-migrate (migrations
+  database.config.json      → configuração do node-pg-migrate (migrations)
+  package.json         → scripts de migrate/seed/types:gen; node-pg-migrate lê DATABASE_URL do .env
 /Frontend
   /src                 → código-fonte da SPA React
     /assets            → arquivos estáticos (imagens, fontes, ícones)
     /components        → componentes reutilizáveis (cada um com index.tsx + style.js)
+      /button          → exemplo: botão base (index.tsx, style.js)
     /hooks             → hooks React customizados compartilhados entre páginas
     /pages             → páginas por rota (cada uma com index.tsx + style.js)
+      /home            → placeholder inicial (index.tsx, style.js)
     /services          → clientes HTTP (axios); um arquivo por domínio de API
       api.tsx          → instância axios configurada com a URL base
     /styles            → estilos globais
+      globalStyles.js  → createGlobalStyle (reset e variáveis CSS globais)
     /themes            → tokens de design (cores, tipografia, espaçamentos)
     /utils             → funções utilitárias puras (formatação, validação, etc.)
     main.tsx           → ponto de entrada React (monta a árvore e injeta globalStyles)
