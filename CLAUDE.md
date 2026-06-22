@@ -181,3 +181,8 @@ npm test               # Vitest
 - Rode o type-check (`npm run typecheck`).
 - Se mudou entidades, esquema ou regras, **atualize os `docs/` correspondentes**.
 - Não commite nem faça push sem o usuário pedir.
+
+## Commits e descrições de MR
+
+- Mensagens de commit e descrições de MR/PR devem ser sempre em **português (pt_BR)**.
+- Siga o padrão Conventional Commits em português: `tipo(escopo): descrição` — ex.: `feat(localização): adicionar CRUD de Países`.
