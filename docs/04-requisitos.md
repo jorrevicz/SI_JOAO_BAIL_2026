@@ -18,7 +18,7 @@ Cada item abaixo é um módulo "Manter/Gerenciar" (CRUD + operações específic
 | RF06 | Manter cadastro de **Parcelas** | [Financeiro](05-modelo-de-dominio.md#5-financeiro) |
 | RF07 | Manter cadastro de **Fornecedores** | [Parceiros](05-modelo-de-dominio.md#2-parceiros-de-negócio) |
 | RF08 | Manter cadastro de **Clientes** | [Parceiros](05-modelo-de-dominio.md#2-parceiros-de-negócio) |
-| RF09 | Manter cadastro de **Produtos** (inclui NCM/SH e categorias) | [Produtos](05-modelo-de-dominio.md#3-produtos-e-catálogo) |
+| RF09 | Manter cadastro de **Produtos** (inclui categorias; NCM/SH fora de escopo) | [Produtos](05-modelo-de-dominio.md#3-produtos-e-catálogo) |
 | RF10 | Manter cadastro de **Transportadoras** (inclui veículos) | [Parceiros](05-modelo-de-dominio.md#2-parceiros-de-negócio) / [Logística](05-modelo-de-dominio.md#4-logística-e-veículos) |
 | RF11 | Manter **Contas a Pagar** | [Financeiro](05-modelo-de-dominio.md#5-financeiro) |
 | RF12 | Manter **Contas a Receber** | [Financeiro](05-modelo-de-dominio.md#5-financeiro) |
@@ -30,7 +30,7 @@ Cada item abaixo é um módulo "Manter/Gerenciar" (CRUD + operações específic
 
 | RNF | Requisito | Onde é tratado |
 |-----|-----------|----------------|
-| RNF01 | Todas as telas devem ser **responsivas** (desktop e mobile). | [Stack](03-stack-tecnologica.md) (TailwindCSS) |
+| RNF01 | Todas as telas devem ser **responsivas** (desktop e mobile). | [Stack](03-stack-tecnologica.md) (styled-components) |
 | RNF02 | Tempo de resposta das consultas **≤ 2 segundos**. | [Arquitetura](02-arquitetura.md) |
 | RNF03 | **Autenticação obrigatória** em todos os módulos, exceto login/cadastro. | [Segurança](08-seguranca-e-autenticacao.md) |
 | RNF04 | **Logs de auditoria** para toda inserção, alteração e exclusão. | [Segurança](08-seguranca-e-autenticacao.md) |

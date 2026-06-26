@@ -27,7 +27,6 @@ entender os atributos do [Modelo de Domínio](05-modelo-de-dominio.md) e
 | **NF-e** | **Nota Fiscal Eletrônica** — documento fiscal digital de circulação de mercadoria. |
 | **Chave de Acesso (`chaveAcessoNfe`)** | Código de 44 dígitos que identifica unicamente uma NF-e. |
 | **Natureza da Operação (`naturezaOp`)** | Descrição da finalidade da operação (venda, compra, devolução, etc.). |
-| **NCM/SH** | **Nomenclatura Comum do Mercosul / Sistema Harmonizado** — código de classificação fiscal da mercadoria. Ver [NCM_SH](05-modelo-de-dominio.md#ncm_sh-classificação-fiscal-de-mercadoria--ver-glossário). |
 | **CFOP** (`cfoPfodNfe` / `prodCfopNfe`) | **Código Fiscal de Operações e Prestações** — classifica a natureza fiscal da operação. |
 | **CSOSN** (`csosnProdNfe` / `prodCsosnNfe`) | **Código de Situação da Operação no Simples Nacional** — situação tributária para empresas do Simples. |
 | **ICMS** | **Imposto sobre Circulação de Mercadorias e Serviços** — imposto estadual. |

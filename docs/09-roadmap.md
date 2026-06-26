@@ -36,25 +36,36 @@ referem-se ao [Modelo de Domínio](05-modelo-de-dominio.md) e os requisitos ao
 > node-pg-migrate + kanel** (sem ORM). Detalhes em
 > [EP-13 do Backlog](11-backlog.md#ep-13--transição-da-camada-de-dados-prisma--postgresjs).
 
-## Fase 1 — Cadastros básicos (lote de 3)
+## Fase 1 — Cadastros básicos (lote de 3) ✓ concluída
 
-Pré-requisito de todo o resto (geografia). Implementar **consultas primeiro**.
+Pré-requisito de todo o resto (geografia). Implementadas **consultas primeiro**, depois C/U/D.
 
-1. **Países** (RF01)
-2. **Estados** (RF02)
-3. **Cidades** (RF03)
+1. [x] **Países** (RF01) — backend + telas.
+2. [x] **Estados** (RF02) — backend + telas.
+3. [x] **Cidades** (RF03) — backend + telas.
 
-> **Bootstrap do frontend** (em paralelo com o backend desta fase): Vite + React + TS +
-> styled-components + React Router + camada de API (EP-11).
-> **Frontend desta fase** (após backend completo e testado): telas de Países, Estados e Cidades.
+> **Backend (EP-04) concluído:** CRUDs em 4 camadas
+> (`schema → controller → service → repository → routes`) com testes de service, repository
+> (rollback) e rota (`supertest`). Inclui a migration de índices únicos `Paises(ddi)` e
+> `Estados(codPais, uf)` — ver [EP-04 do Backlog](11-backlog.md#ep-04--cadastros-geográficos-lote-1).
+> **Frontend concluído:** bootstrap do SPA (EP-11 — Vite + React + TS + styled-components +
+> React Router + camada axios) e telas de Países, Estados e Cidades (TanStack Table, navegação
+> hierárquica por query params, formulários em modal).
+>
+> **Validação de formulários (backend-driven):** o Backend é a única fonte de verdade de
+> validação; a resposta 400 devolve `erros: { campo: mensagem }` e o Frontend mapeia por campo,
+> sem duplicar schema nem adicionar Zod — ver
+> [decisão de validação](ref/validacao-frontend-backend-driven.md).
+>
+> **▶ Próximo passo:** Fase 2 — Catálogo e parceiros (EP-05: Categorias, Produtos).
 
 ## Fase 2 — Catálogo e parceiros (lotes de 3)
 
-- Lote 2A: **Categorias**, **NCM/SH**, **Produtos** (RF09) — inclui vínculos NCM/SH e categoria.
+- Lote 2A: **Categorias**, **Produtos** (RF09) — inclui vínculos categoria.
 - Lote 2B: **Fornecedores** (RF07), **Clientes** (RF08), **Transportadoras** (RF10).
 - **Veículos** (RF04) entra junto das transportadoras (dependência logística).
 
-> **Frontend desta fase** (após cada lote de backend pronto): telas de Categorias/NCM/Produtos,
+> **Frontend desta fase** (após cada lote de backend pronto): telas de Categorias/Produtos,
 > depois telas de Fornecedores/Clientes/Transportadoras/Veículos.
 
 ## Fase 3 — Financeiro (lote de 3)
@@ -85,7 +96,7 @@ Pré-requisito de todo o resto (geografia). Implementar **consultas primeiro**.
 
 ```
 Países → Estados → Cidades → { Fornecedores, Clientes, Transportadoras, Veículos }
-NCM/SH + Categorias → Produtos
+Categorias → Produtos
 Cond. Pagamento → Parcelas → { Contas a Pagar, Contas a Receber }
 Fornecedores + Produtos + Cond. Pagamento + Transportadoras → Compras → NF-e
 ```

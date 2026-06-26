@@ -34,7 +34,8 @@ tipos das linhas são gerados pelo **kanel** a cada mudança de schema.
 | Tabelas de dados | **TanStack Table** |
 | Gerência de estado | **Context API** (React) |
 | Roteamento | **React Router** |
-| Cliente HTTP | **axios** |
+| Cliente HTTP | **axios** (classe `ApiError` carrega `erros` por campo) |
+| Validação de formulários | **backend-driven** — sem Zod no Frontend; erros por campo vindos da resposta 400 |
 
 ## Testes
 
@@ -65,10 +66,19 @@ primeiras candidatas a cobertura de testes, por serem implementadas primeiro
 - **PostgreSQL local:** banco local (PostgreSQL 16) para acelerar o desenvolvimento
   backend-first sem depender de infraestrutura externa.
 - **Zod v4 para validação:** integra com TypeScript nativamente; o middleware
-  `validate(schema)` retorna 400 com mensagem em PT quando o payload falha — os
+  `validate(schema)` retorna 400 quando o payload falha, com a `mensagem` agregada em PT **e um
+  mapa `erros: { campo: mensagem }`** (derivado de `issue.path`) para feedback por campo. Os
   schemas Zod por recurso são criados junto com cada CRUD (EP-04+), com os tamanhos de
   campo espelhando as colunas definidas nas migrations SQL. `z.infer` fornece os tipos
   dos DTOs de entrada.
+- **Validação de formulários (backend-driven):** decisão confirmada com o usuário — o **Backend
+  (Zod) é a única fonte de verdade** de validação; o Frontend **não duplica schema nem adiciona
+  Zod**. A resposta 400 traz `erros: { campo: mensagem }`; a camada axios expõe `ApiError` com esse
+  mapa, e cada formulário renderiza a mensagem sob o input correspondente (`ErroCampo`), reservando
+  a faixa global `Alerta` para erros sem campo (409 duplicado/FK, 500, rede). Evita *drift* entre
+  os dois pacotes npm e respeita RNF02. Alternativas descartadas (monorepo/workspace com pacote de
+  schemas, copiar schemas para o Frontend, `z.toJSONSchema()` + Ajv) e detalhes de implementação em
+  [Validação de formulários (backend-driven)](ref/validacao-frontend-backend-driven.md).
 - **styled-components:** cada componente encapsula seus próprios
   estilos no mesmo arquivo `style.js`/`style.ts`, eliminando colisões de classe e
   permitindo isolar visualmente cada peça sem depender de utilitários globais.

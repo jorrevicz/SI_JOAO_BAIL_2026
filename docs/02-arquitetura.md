@@ -47,13 +47,15 @@ Ferramentas e versões em [Stack Tecnológica](03-stack-tecnologica.md).
       /types           → tipos das tabelas gerados pelo kanel (introspecção)
     /modules           → um subdiretório por subdomínio de negócio
       /health          → health check (health.routes.ts + health.controller.ts)
-      /paises          → (EP-04, a criar)
+      /paises          → CRUD de Países (schema, controller, service, repository, routes)
+      /estados         → CRUD de Estados (mesmo padrão de 5 arquivos)
+      /cidades         → CRUD de Cidades (mesmo padrão de 5 arquivos)
       ...
     /shared            → utilitários transversais a todos os módulos
       /errors          → AppError (exceção de domínio com status HTTP)
       /middleware      → authMiddleware (stub) e errorHandler (central)
       /transaction     → withTransaction (wrapper de sql.begin)
-      /validation      → validate (factory de middleware Zod)
+      /validation      → validate (middleware Zod; 400 com erros por campo)
     /types             → augmentações de tipos Express (codUser em Request)
     /__tests__         → testes Vitest (infraestrutura + integração de repositórios)
     app.ts             → instância Express (rotas e middlewares)
@@ -64,17 +66,27 @@ Ferramentas e versões em [Stack Tecnológica](03-stack-tecnologica.md).
 /Frontend
   /src                 → código-fonte da SPA React
     /assets            → arquivos estáticos (imagens, fontes, ícones)
-    /components        → componentes reutilizáveis (cada um com index.tsx + style.js)
-      /button          → exemplo: botão base (index.tsx, style.js)
+    /components        → componentes reutilizáveis (cada um com index.tsx e/ou style.ts)
+      /layout          → shell de navegação responsivo (sidebar + conteúdo)
+      /pagina          → blocos de página (Toolbar, busca, Alerta, Breadcrumb, tooltip)
+      /tabela          → estilos da tabela de dados (TanStack Table) e paginação
+      /modal           → modal de formulário (ModalCard, Campo, ErroCampo, ações)
+      /botao           → botão base (variantes primário/secundário/perigo)
+      /botaoConsultar  → botão que navega para o filho passando contexto por query params
     /hooks             → hooks React customizados compartilhados entre páginas
-    /pages             → páginas por rota (cada uma com index.tsx + style.js)
-      /home            → placeholder inicial (index.tsx, style.js)
+      tabela.ts        → useTabelaOrdenada (estado de ordenação do TanStack Table)
+    /pages             → páginas por rota (cada uma com index.tsx + *Form.tsx + style.ts)
+      /home            → placeholder inicial
+      /paises          → lista + PaisForm (CRUD em modal)
+      /estados         → lista + EstadoForm (filtra por país via query param)
+      /cidades         → lista + CidadeForm (filtra por estado via query param)
     /services          → clientes HTTP (axios); um arquivo por domínio de API
-      api.tsx          → instância axios configurada com a URL base
+      api.tsx          → instância axios + classe ApiError (mensagem + erros por campo)
+      paises.ts        → serviço de Países (estados.ts e cidades.ts no mesmo padrão)
     /styles            → estilos globais
-      globalStyles.js  → createGlobalStyle (reset e variáveis CSS globais)
+      globalStyles.ts  → createGlobalStyle (reset e variáveis CSS globais)
     /themes            → tokens de design (cores, tipografia, espaçamentos)
-    /utils             → funções utilitárias puras (formatação, validação, etc.)
+    /utils             → funções utilitárias puras (queryParams, formatters, etc.)
     main.tsx           → ponto de entrada React (monta a árvore e injeta globalStyles)
 /docs                  → esta base de conhecimento
 ```
@@ -133,6 +145,28 @@ DELETE /api/paises/:id      → remover
 A coluna **consultas primeiro** do [Roadmap](09-roadmap.md) significa implementar os
 `GET` de cada recurso antes dos demais verbos.
 
+## Validação de entrada e erros por campo (RNF05, RNF07)
+
+A validação de payload é feita **no Backend**, pelo middleware `validate(schema)`
+(`src/shared/validation/validate.ts`) com os schemas Zod de cada módulo (`*.schema.ts`).
+Quando o `safeParse` falha, a resposta **400** carrega tanto a `mensagem` agregada quanto um
+**mapa de erros por campo**, derivado de `issue.path` do Zod:
+
+```jsonc
+// 400 — falha de validação
+{ "mensagem": "...", "erros": { "pais": "...", "sigla": "..." } }
+```
+
+Os demais erros (conflito/dependentes via `errorHandler` — `23505` → 409, `23503` → 409, ou
+500) respondem **apenas com `mensagem`**, sem o mapa `erros`.
+
+Esse contrato é o que sustenta a **validação backend-driven** do Frontend: como os nomes dos
+campos no schema Zod, no payload e no estado dos formulários coincidem, o Frontend mapeia
+`erros[campo]` direto para cada input — **sem duplicar schema nem adicionar Zod no Frontend**.
+A camada axios expõe a classe `ApiError` (que carrega `erros`), e cada formulário renderiza a
+mensagem sob o campo correspondente. Detalhes e alternativas descartadas em
+[Validação de formulários (backend-driven)](ref/validacao-frontend-backend-driven.md).
+
 ## Estratégia de testes (TDD)
 
 Todo *service* de backend é desenvolvido com **Test-Driven Development**:
@@ -148,7 +182,7 @@ Regras:
 - Escreva o teste **antes** do código de produção; ele deve falhar na primeira execução.
 - Testes de *service* **não** acessam banco — mockam o repositório.
 - Testes de rota cobrem os verbos implementados (GET, POST, PUT, DELETE) e os casos
-  de erro (404, 422, 409).
+  de erro (400 validação, 404 não encontrado, 409 conflito/dependentes).
 - Nenhum *service* novo ou modificado é considerado concluído sem cobertura de testes.
 
 ## Documentos relacionados

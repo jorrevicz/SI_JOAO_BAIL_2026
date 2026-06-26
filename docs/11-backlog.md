@@ -8,6 +8,8 @@ Passo-a-passo de desenvolvimento do sistema, organizado em **épicos** (`EP-NN`)
 
 - Execute os épicos **em ordem**: EP-00 → EP-03, depois **EP-13** (transição da camada de
   dados), e então EP-04 → EP-09. EP-12 é contínuo/transversal; EP-10/EP-11 conforme suas notas.
+  **Concluídos até aqui:** EP-00→EP-03, EP-13, EP-11 (bootstrap do frontend) e EP-04 (backend
+  e telas geográficas). **Foco atual:** EP-05 (Catálogo).
 - Dentro de um CRUD, siga sempre **consultas (Read) primeiro**, depois Create/Update/Delete.
 - Marque `[x]` ao concluir. Uma task só está "pronta" quando seus **critérios de aceite**
   passam (inclui testes Vitest quando aplicável).
@@ -88,7 +90,7 @@ Toda escrita registra auditoria (`codUser`, `dtCriacao`/`dtEdicao`) — ver
   - **Dependências:** T-010
 
 - [x] **T-012 — Modelar subdomínios geográfico, parceiros e catálogo**
-  - `Paises`, `Estados`, `Cidades`, `Fornecedores`, `Clientes`, `Transportadoras`, `Veiculos`, `Produtos`, `Categorias`, `NCM_SH`.
+  - `Paises`, `Estados`, `Cidades`, `Fornecedores`, `Clientes`, `Transportadoras`, `Veiculos`, `Produtos`, `Categorias` (a tabela `NCM_SH`, inicialmente modelada, foi **removida** — classificação fiscal fora de escopo).
   - Associativas N:N **puras** (sem colunas redundantes): `ProdutoFornecedor`, `ProdutoCategoria` — ver [pendências de normalização](06-modelo-de-dados.md#princípios-de-modelagem).
   - **Aceite:** relações conferem com [Modelo de Dados](06-modelo-de-dados.md#tabelas-e-chaves); 3FN respeitada.
   - **Dependências:** T-011
@@ -125,7 +127,7 @@ Toda escrita registra auditoria (`codUser`, `dtCriacao`/`dtEdicao`) — ver
   - **Dependências:** T-020
 
 - [x] **T-022 — Seed de catálogo e parceiros (amostra)**
-  - Categorias, NCM/SH, alguns Produtos; 1–2 Fornecedores, Clientes, Transportadoras, Veículos.
+  - Categorias, alguns Produtos; 1–2 Fornecedores, Clientes, Transportadoras, Veículos.
   - **Aceite:** dados de amostra suficientes para testar os CRUDs das Fases 1–2.
   - **Dependências:** T-021
 
@@ -168,16 +170,16 @@ Toda escrita registra auditoria (`codUser`, `dtCriacao`/`dtEdicao`) — ver
 
 ---
 
-## EP-13 — Transição da camada de dados (Prisma → postgres.js)
-**Fase:** 0 · **▶ PRÓXIMO PASSO** · **Docs:** [Stack](03-stack-tecnologica.md), [Arquitetura](02-arquitetura.md#acesso-a-dados-postgresjs), [Segurança](08-seguranca-e-autenticacao.md)
+## EP-13 — Transição da camada de dados (Prisma → postgres.js) ✓ concluído
+**Fase:** 0 · **Docs:** [Stack](03-stack-tecnologica.md), [Arquitetura](02-arquitetura.md#acesso-a-dados-postgresjs), [Segurança](08-seguranca-e-autenticacao.md)
 **Objetivo:** substituir o Prisma por **postgres.js** (acesso a dados), **node-pg-migrate**
 (migrations SQL) e **kanel** (tipos), preservando ACID (RNF06), proteção contra SQLi (RNF05),
 soft-delete, auditoria e paginação por cursor.
 
-> **Executar agora, antes do EP-04** — todos os CRUDs (EP-04+) seguirão o
+> **Executado antes do EP-04** — todos os CRUDs (EP-04+) seguem o
 > [padrão de repository com postgres.js](02-arquitetura.md#acesso-a-dados-postgresjs).
-> Numerado como EP-13 (concebido após o EP-12), mas é o próximo épico na ordem de execução.
-> O momento é ideal: nenhum CRUD foi construído ainda — só o módulo `health`.
+> Numerado como EP-13 (concebido após o EP-12), mas foi o épico executado logo após a Fase 0,
+> quando ainda não havia nenhum CRUD construído — só o módulo `health`.
 
 - [X] **T-130 — Dependências e scripts**
   - Adicionar `postgres`, `node-pg-migrate`; `kanel` (+ `kanel-zod`) como devDependencies.
@@ -238,48 +240,56 @@ soft-delete, auditoria e paginação por cursor.
 
 ---
 
-## EP-04 — Cadastros geográficos (Lote 1)
+## EP-04 — Cadastros geográficos (Lote 1) ✓ concluído
 **Fase:** 1 · **Docs:** [Casos de Uso](07-casos-de-uso.md#gerenciar-países), [Domínio](05-modelo-de-dominio.md#1-localização-geografia)
 **Objetivo:** primeiros CRUDs, pré-requisito de todos os demais. Entidades: **Países, Estados, Cidades**.
 
-> Aplicar o [Padrão de CRUD](#padrão-de-crud-referência-para-ep-04-a-ep-09) a cada entidade.
+> Aplicado o [Padrão de CRUD](#padrão-de-crud-referência-para-ep-04-a-ep-09) a cada entidade.
+> Backend (T-040–T-049) e telas (T-113) concluídos. A validação de formulários segue o contrato
+> **backend-driven** (resposta 400 com `erros: { campo: mensagem }`) — ver
+> [decisão de validação](ref/validacao-frontend-backend-driven.md).
 
-- [ ] **T-040 — Países: consultas (Read)** — listar + obter por id; `GET /api/paises[/:id]`; testes.
+- [X] **T-040 — Países: consultas (Read)** — listar + obter por id; `GET /api/paises[/:id]`; testes.
   - **Aceite:** lista e item retornam 200; tempo de resposta < 2s (RNF02). **Dep:** EP-03, EP-13, T-021
-- [ ] **T-041 — Países: Create/Update** — `POST`/`PUT` com validação. **Aceite:** cria/edita país válido; 400 em payload inválido. **Dep:** T-040
-- [ ] **T-042 — Países: Delete (RN002)** — soft delete; **bloquear** se houver Estados vinculados. **Aceite:** excluir país com estado retorna erro PT; sem dependentes inativa. **Dep:** T-041
-- [ ] **T-043 — Estados: consultas** — `GET /api/estados[/:id]`, filtro por país; testes. **Dep:** T-040
-- [ ] **T-044 — Estados: Create/Update** — valida FK país. **Dep:** T-043
-- [ ] **T-045 — Estados: Delete (RN002)** — bloquear se houver Cidades/Fornecedores vinculados. **Dep:** T-044
-- [ ] **T-046 — Cidades: consultas** — `GET /api/cidades[/:id]`, filtro por estado; testes. **Dep:** T-043
-- [ ] **T-047 — Cidades: Create/Update** — valida FK estado. **Dep:** T-046
-- [ ] **T-048 — Cidades: Delete (RN002)** — bloquear se houver Clientes/Fornecedores/Transportadoras vinculados. **Dep:** T-047
+- [X] **T-041 — Países: Create/Update** — `POST`/`PUT` com validação. **Aceite:** cria/edita país válido; 400 em payload inválido. **Dep:** T-040
+- [X] **T-042 — Países: Delete (RN002)** — soft delete; **bloquear** se houver Estados vinculados. **Aceite:** excluir país com estado retorna erro PT; sem dependentes inativa. **Dep:** T-041
+- [X] **T-043 — Estados: consultas** — `GET /api/estados[/:id]`, filtro por país; testes. **Dep:** T-040
+- [X] **T-044 — Estados: Create/Update** — valida FK país. **Dep:** T-043
+- [X] **T-045 — Estados: Delete (RN002)** — bloquear se houver Cidades/Fornecedores vinculados. **Dep:** T-044
+- [X] **T-046 — Cidades: consultas** — `GET /api/cidades[/:id]`, filtro por estado; testes. **Dep:** T-043
+- [X] **T-047 — Cidades: Create/Update** — valida FK estado. **Dep:** T-046
+- [X] **T-048 — Cidades: Delete (RN002)** — bloquear se houver Clientes/Fornecedores/Transportadoras vinculados. **Dep:** T-047
+- [x] **T-049 — Índices únicos geográficos** — migration `unique-ddi-uf`: `Paises(ddi)` único e
+  `Estados(codPais, uf)` único; `errorHandler` mapeia `23505` → 409 PT ("DDI já cadastrado",
+  "UF já cadastrada para este país"). **Aceite:** DDI/UF duplicados retornam 409 com mensagem por campo. **Dep:** T-040, T-043
 
-### Frontend — executar após T-048 completo
+### Frontend — concluído após T-049
 
-- [ ] **T-113 — Telas geográficas** — listar e gerenciar Países, Estados e Cidades (listar primeiro, depois formulários de C/U/D). **Dep:** T-048, EP-11 (T-112)
+- [x] **T-113 — Telas geográficas** — listar e gerenciar Países, Estados e Cidades (listagem
+  TanStack Table, navegação hierárquica por query params, formulários em modal; validação
+  backend-driven por campo). **Dep:** T-049, EP-11 (T-112)
 
 ---
 
 ## EP-05 — Catálogo de produtos (Lote 2A)
 **Fase:** 2 · **Docs:** [Casos de Uso](07-casos-de-uso.md#gerenciar-produtos), [Domínio](05-modelo-de-dominio.md#3-produtos-e-catálogo)
-**Objetivo:** Entidades: **Categorias, NCM/SH, Produtos** (RN003: vincular NCM/SH e categorias).
+**Objetivo:** Entidades: **Categorias, Produtos** (RN003: vincular categorias e fornecedores ao produto).
+
+> A entidade **NCM/SH foi descartada** (classificação fiscal/tributária fora de escopo); Produtos
+> não têm `codNcmSH`. Ver [Modelo de Dados](06-modelo-de-dados.md#princípios-de-modelagem).
 
 - [ ] **T-050 — Categorias: consultas** — `GET /api/categorias[/:id]`; testes. **Dep:** EP-03, T-022
 - [ ] **T-051 — Categorias: Create/Update.** **Dep:** T-050
 - [ ] **T-052 — Categorias: Delete (RN002)** — bloquear se vinculada a produtos. **Dep:** T-051
-- [ ] **T-053 — NCM/SH: consultas** — `GET /api/ncm-sh[/:id]`; testes. **Dep:** EP-03, T-022
-- [ ] **T-054 — NCM/SH: Create/Update.** **Dep:** T-053
-- [ ] **T-055 — NCM/SH: Delete (RN002)** — bloquear se vinculado a produtos. **Dep:** T-054
-- [ ] **T-056 — Produtos: consultas** — `GET /api/produtos[/:id]`; incluir categoria/NCM; filtros; testes.
-  - **Aceite:** retorna produto com categoria e NCM resolvidos. **Dep:** T-050, T-053
-- [ ] **T-057 — Produtos: Create/Update (RN003)** — vincular `codCategoria` e `codNcmSH`; vínculo Produto↔Fornecedor (`ProdutoFornecedor`).
-  - **Aceite:** cria produto com categoria/NCM; vincula fornecedor. **Dep:** T-056
+- [ ] **T-056 — Produtos: consultas** — `GET /api/produtos[/:id]`; incluir categoria; filtros; testes.
+  - **Aceite:** retorna produto com categoria resolvida. **Dep:** T-050
+- [ ] **T-057 — Produtos: Create/Update (RN003)** — vincular `codCategoria`; vínculo Produto↔Fornecedor (`ProdutoFornecedor`).
+  - **Aceite:** cria produto com categoria; vincula fornecedor. **Dep:** T-056
 - [ ] **T-058 — Produtos: Delete (RN002)** — bloquear se em compras/fornecedores/notas. **Dep:** T-057
 
 ### Frontend — executar após T-058 completo
 
-- [ ] **T-114A — Telas de catálogo** — listar e gerenciar Categorias, NCM/SH e Produtos; incluir vínculos de categoria e NCM. **Dep:** T-058, EP-11 (T-112)
+- [ ] **T-114A — Telas de catálogo** — listar e gerenciar Categorias e Produtos; incluir vínculos de categoria. **Dep:** T-058, EP-11 (T-112)
 
 ---
 
@@ -365,14 +375,14 @@ soft-delete, auditoria e paginação por cursor.
 
 ---
 
-## EP-11 — Bootstrap do frontend
-**Fase:** 1 (executar em paralelo com o backend de EP-04) · **Docs:** [Stack](03-stack-tecnologica.md), [Arquitetura](02-arquitetura.md)
+## EP-11 — Bootstrap do frontend ✓ concluído
+**Fase:** 1 (executado em paralelo com o backend de EP-04) · **Docs:** [Stack](03-stack-tecnologica.md), [Arquitetura](02-arquitetura.md)
 **Objetivo:** infraestrutura do SPA pronta antes das primeiras telas (frontend de EP-04).
 As telas de cada módulo são construídas dentro do epic de backend correspondente, logo após o backend estar completo e testado.
 
-- [ ] **T-110 — Bootstrap do frontend** — Vite + React + TS + TailwindCSS; React Router; estrutura `/Frontend/src`. **Dep:** —
-- [ ] **T-111 — Camada de API e estado** — cliente HTTP; **Context API** para estado global; tratamento de erro PT. **Dep:** T-110
-- [ ] **T-112 — Layout responsivo (RNF01)** — shell de navegação por menu (um item por módulo); responsivo desktop/mobile. **Dep:** T-110
+- [x] **T-110 — Bootstrap do frontend** — Vite + React + TS + **styled-components**; React Router; estrutura `/Frontend/src`. **Dep:** —
+- [x] **T-111 — Camada de API e estado** — cliente axios (`services/api.tsx`) com classe `ApiError` (mensagem + `erros` por campo, em PT); **Context API** para estado global. **Dep:** T-110
+- [x] **T-112 — Layout responsivo (RNF01)** — shell de navegação (`components/layout`) por menu (um item por módulo); responsivo desktop/mobile. **Dep:** T-110
 
 ---
 

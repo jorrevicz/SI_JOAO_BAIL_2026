@@ -22,8 +22,9 @@ Implementar um sistema de gestão para a empresa cobrindo três operações cent
 
 Embora o negócio seja simples, o modelo documentado (ver
 [Modelo de Domínio](05-modelo-de-dominio.md)) é o de um **ERP enxuto** com módulos
-fiscais brasileiros (Nota Fiscal Eletrônica, NCM/SH, ICMS, IPI, CFOP, CSOSN). Esse
-alcance vem do diagrama de classes original. A estratégia de entrega
+fiscais brasileiros (Nota Fiscal Eletrônica, ICMS, IPI, CFOP, CSOSN). Esse
+alcance vem do diagrama de classes original. A classificação fiscal **NCM/SH foi
+descartada** do escopo (a parte tributária de classificação de mercadoria não será implementada). A estratégia de entrega
 (ver [Roadmap](09-roadmap.md)) é **pragmática**: construir primeiro os cadastros
 básicos e as consultas, deixando os módulos fiscais e transacionais para depois.
 
