@@ -5,26 +5,31 @@ class TestRollBack extends Error
 {
     constructor()
     {
-        super('testRollBack');
+        super ( 'testRollBack' );
     }
 }
 
-export default async function withTestTransaction<T> 
+export default async function withTestTransaction < T > 
 (
-    callback: (transaction: postgres.TransactionSql) => Promise<T>,
-): Promise<T>
+    callback: ( transaction: postgres.TransactionSql ) => Promise < T >,
+
+): Promise < T >
 {
     let result!: T;
     try 
     {
-        await sql.begin(async (transaction) => {
-            result = await callback(transaction);
+        await sql.begin ( async ( transaction ) => {
+            
+            result = await callback ( transaction );
             throw new TestRollBack()
         });
     }
-    catch (err)
+    catch ( err )
     {
-        if (!(err instanceof TestRollBack)) throw  err;
+        if ( ! ( err instanceof TestRollBack ) )
+        {
+            throw  err;
+        } 
     }
     
     return result;

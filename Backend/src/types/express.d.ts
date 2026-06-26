@@ -1,9 +1,12 @@
-declare global {
-  namespace Express {
-    interface Request {
+declare global
+{
+  namespace Express
+  {
+    interface Request
+    {
       codUser?: number;
     }
   }
 }
 
-export {};
+export default {};

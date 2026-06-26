@@ -4,6 +4,6 @@ import { HealthController } from './health.controller';
 const router = Router();
 const controller = new HealthController();
 
-router.get('/', (req, res) => controller.check(req, res));
+router.get ( '/', ( req, res ) => controller.check ( req, res ) );
 
 export default router;
