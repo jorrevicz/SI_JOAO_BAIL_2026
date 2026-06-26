@@ -7,16 +7,25 @@ Guia para o Claude Code ao trabalhar neste repositório. Leia antes de gerar ou 
 Sistema de gestão (ERP enxuto) para uma **empresa de informática pequena** com
 operações informais — sem sistema prévio. Operações centrais: **cadastro, compra e venda**. Web API REST + SPA.
 
-> **Estado atual (Fase 0 concluída — EP-00 a EP-03 completos):**
-> Schema revisado e migrado: NCM_SH removido, convenções de nomes unificadas (`cod*`, sufixos
-> `Forn`/`Cl`/`Transp`), tamanhos `VarChar(n)` aplicados em todos os campos String,
-> dados sem máscara (dígitos puros). Seed idempotente (27 estados, 36 cidades,
-> 6 categorias, 5 produtos, 2 fornecedores, 1 condição de pag, 2 clientes, 1 veículo, 1 transportadora).
-> Infraestrutura EP-03 completa: `AppError`, `errorHandler`, `withTransaction`, `authMiddleware` (stub),
-> `validate` (factory de middleware Zod — `src/shared/validation/validate.ts`).
+> **Estado atual (Fase 1 concluída):**
+> Fase 0 (EP-00 a EP-03) e EP-13 (Prisma → postgres.js + node-pg-migrate + kanel) concluídos:
+> schema migrado em formas normais, seed idempotente e infraestrutura base (`AppError`,
+> `errorHandler`, `withTransaction`, `authMiddleware` stub, `validate`).
 >
-> EP-13 (Transição Prisma → postgres.js + node-pg-migrate + kanel) **concluída**.
-> **Próximo passo: EP-04 — Cadastros geográficos** (Países, Estados, Cidades).
+> **EP-04 — Cadastros geográficos (Países, Estados, Cidades) concluído:** CRUDs no backend em
+> 4 camadas (`schema → controller → service → repository → routes`), com testes de service,
+> repository (rollback) e rota (`supertest`); migration de índices únicos `Paises(ddi)` e
+> `Estados(codPais, uf)` (`23505` → 409 PT). **Frontend bootstrapado (EP-11)** — Vite + React +
+> TS + styled-components + React Router + axios — e **telas geográficas (T-113)** entregues
+> (TanStack Table, navegação hierárquica por query params, formulários em modal).
+>
+> **Validação de formulários backend-driven:** o Backend (Zod) é a única fonte de verdade; a
+> resposta 400 traz `erros: { campo: mensagem }` e o Frontend mapeia por campo via `ApiError`
+> (sem duplicar schema/Zod no Frontend) — ver
+> [docs/ref/validacao-frontend-backend-driven.md](docs/ref/validacao-frontend-backend-driven.md).
+>
+> **Próximo passo: EP-05 — Catálogo** (Categorias, Produtos). NCM/SH foi **descartada**
+> (classificação fiscal/tributária fora de escopo).
 
 ## Fonte de verdade: leia `docs/` primeiro
 
@@ -24,11 +33,12 @@ A especificação arquitetural está em [`docs/`](docs/README.md), separada por 
 **Antes de implementar qualquer módulo, consulte os documentos relevantes:**
 
 - Entidades, atributos e operações → [docs/05-modelo-de-dominio.md](docs/05-modelo-de-dominio.md)
+- Estilo arquitetural, padrão da API, estratégia de testes, regras → [docs/02-arquitetura.md](docs/02-arquitetura.md)
 - Tabelas, PK/FK, normalização → [docs/06-modelo-de-dados.md](docs/06-modelo-de-dados.md)
 - O que cada módulo faz e suas regras → [docs/07-casos-de-uso.md](docs/07-casos-de-uso.md)
 - Requisitos (RF/RNF) → [docs/04-requisitos.md](docs/04-requisitos.md)
 - Ordem de construção → [docs/09-roadmap.md](docs/09-roadmap.md)
-- Termos fiscais (NCM/SH, CFOP, ICMS…) → [docs/10-glossario.md](docs/10-glossario.md)
+- Termos fiscais (CFOP, ICMS, IPI…) → [docs/10-glossario.md](docs/10-glossario.md)
 - Princípios de engenharia complementares (o que adotar/dispensar) → [docs/12-principios-de-engenharia.md](docs/12-principios-de-engenharia.md)
 
 Se uma alteração contradisser os `docs/`, **atualize os `docs/` junto** — eles devem
@@ -53,22 +63,45 @@ AG Grid nem react-table diretamente — é TanStack Table). Detalhes e racional 
 
 ```
 /Backend
-  /src         → API: routes → controllers → services (domínio) → repositories (postgres.js)
-    /lib       → instância compartilhada do cliente postgres.js (`sql`)
-    /db        → camada de banco de dados
-      /migrations → migrations SQL versionadas (node-pg-migrate)
-      /types    → interfaces TS geradas pelo kanel (não editar à mão)
-      seed.ts   → script de seed idempotente
+  /DB                  → migrations SQL, seed
+    /migrations        → migrations SQL versionadas (node-pg-migrate)
+    seed.ts            → dados iniciais (idempotente, INSERT ... ON CONFLICT)
+  /src                 → código-fonte da API
+    /lib               → instância compartilhada do cliente postgres.js (`sql`)
+    /db                → arquivos relacionados ao postgresql
+      /migrations      → migrations feitas com postgre.js
+      /types           → tipos das tabelas gerados pelo kanel (introspecção)
+    /modules           → um subdiretório por subdomínio de negócio
+      /health          → health check (health.routes.ts + health.controller.ts)
+      /paises          → (EP-04, a criar)
+      ...
+    /shared            → utilitários transversais a todos os módulos
+      /errors          → AppError (exceção de domínio com status HTTP)
+      /middleware      → authMiddleware (stub) e errorHandler (central)
+      /transaction     → withTransaction (wrapper de sql.begin)
+      /validation      → validate (factory de middleware Zod)
+    /types             → augmentações de tipos Express (codUser em Request)
+    /__tests__         → testes Vitest (infraestrutura + integração de repositórios)
+    app.ts             → instância Express (rotas e middlewares)
+    server.ts          → bootstrap (escuta na porta; encerra `sql` no shutdown)
+  kanel.config.cjs          → configuração do kanel (geração de tipos)
+  database.config.json      → configuração do node-pg-migrate (migrations)
+  package.json         → scripts de migrate/seed/types:gen; node-pg-migrate lê DATABASE_URL do .env
 /Frontend
-  /src         → SPA React
-    /assets    → arquivos estáticos
-    /components → componentes reutilizáveis (index.tsx + style.js por componente)
-    /hooks     → hooks customizados compartilhados
-    /pages     → páginas por rota (index.tsx + style.js por página)
-    /services  → clientes axios (um por domínio de API)
-    /styles    → globalStyles.js (createGlobalStyle)
-    /themes    → tokens de design (cores, tipografia, espaçamentos)
-    /utils     → funções utilitárias puras
+  /src                 → código-fonte da SPA React
+    /assets            → arquivos estáticos (imagens, fontes, ícones)
+    /components        → componentes reutilizáveis (cada um com index.tsx + style.js)
+      /button          → exemplo: botão base (index.tsx, style.js)
+    /hooks             → hooks React customizados compartilhados entre páginas
+    /pages             → páginas por rota (cada uma com index.tsx + style.js)
+      /home            → placeholder inicial (index.tsx, style.js)
+    /services          → clientes HTTP (axios); um arquivo por domínio de API
+      api.tsx          → instância axios configurada com a URL base
+    /styles            → estilos globais
+      globalStyles.js  → createGlobalStyle (reset e variáveis CSS globais)
+    /themes            → tokens de design (cores, tipografia, espaçamentos)
+    /utils             → funções utilitárias puras (formatação, validação, máscaras, etc.)
+    main.tsx           → ponto de entrada React (monta a árvore e injeta globalStyles)
 /docs          → base de conhecimento (NÃO é código; manter sincronizado)
 ```
 
@@ -138,6 +171,46 @@ grafia a corrigir na implementação** — use a forma correta:
 
 Identificadores de código (variáveis, funções, classes, métodos, rotas) são escritos em
 **inglês**. Mensagens de UI/erro, campos do banco de dados, comentários e documentação permanecem em português.
+
+### Nomes descritivos — proibido abreviar
+
+Nunca use nomes de uma letra ou abreviações crípticas que dificultem a leitura. Dê a cada
+variável, parâmetro e função um nome explícito que revele sua intenção (backend **e**
+frontend). Exemplos do padrão adotado:
+
+| Não use      | Use                  | Contexto                                   |
+|--------------|----------------------|--------------------------------------------|
+| `col`        | `columnHelper`       | helper de colunas do TanStack Table        |
+| `hg`         | `headerGroup`        | grupo de cabeçalho ao iterar a tabela      |
+| `h`          | `header`             | cabeçalho ao iterar                        |
+| `r`          | `row`                | linha ao iterar                            |
+| `c`          | `cell`               | célula ao iterar                           |
+| `i`          | `info`               | contexto da célula (`cell: ( info ) =>`)   |
+| `e`          | `evento`             | evento de DOM/React (`onChange`, `submit`) |
+| `e` / `err`  | `err`                | erro capturado em `catch` (igual ao `errorHandler`) |
+| `d`          | `dados`              | corpo enviado em chamadas de service       |
+| `r`          | `resposta`           | resposta HTTP (`.then ( ( resposta ) => resposta.data )`) |
+| `fmtData`    | `formatarData`       | função utilitária de formatação            |
+
+Exceções consagradas e já estabelecidas no código: `req`, `res`, `next` (Express), `sql`
+(cliente postgres.js), `id`, `repo`, `data` (camada de dados). Não invente novas abreviações
+fora dessas.
+
+### Indentação e espaçamento
+
+A referência de formatação é
+[Backend/src/shared/middleware/errorHandler.ts](Backend/src/shared/middleware/errorHandler.ts).
+Aplique o mesmo estilo em todo o código novo (backend e frontend):
+
+1. **Chaves no estilo Allman** — a chave de abertura de `if`/`else`/`try`/`catch`/`finally`,
+   funções e métodos fica em **linha própria**, alinhada à palavra-chave. Não use a forma K&R
+   (`if (x) {`) nem condições de uma linha sem chaves (`if (x) return;`).
+2. **Espaço dentro de parênteses e colchetes** — `funcao ( arg )`, `if ( condicao )`,
+   `vetor[ indice ]`, `objeto[ chave ]`.
+3. **Espaço dentro de chaves de objetos** — `{ campo: valor }`, e listas/objetos com vários
+   itens podem ser quebrados em uma linha por item para melhor visualização.
+4. Alinhe blocos relacionados de atribuições/propriedades quando isso ajudar a leitura
+   (ver o `CONSTRAINT_CAMPO` no `errorHandler`).
 
 ## Camada de dados — postgres.js + node-pg-migrate + kanel
 
