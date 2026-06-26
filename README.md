@@ -26,21 +26,31 @@ Racional e detalhes em [Stack Tecnológica](/docs/03-stack-tecnologica.md).
 
 ```
 SI_JOAO_BAIL_2026/
-├── Backend/              # API REST (Node + Express + TypeScript) — desenvolvida primeiro
+├── Backend/              # API REST (Node + Express + TypeScript)
 │   └── src/
 │       ├── db/           # migrations SQL (node-pg-migrate), tipos (kanel) e seed
 │       ├── lib/          # cliente postgres.js compartilhado
-├── Frontend/             # SPA (React + Vite + styled-components) — ainda não inicializado
+│       ├── modules/      # um subdiretório por subdomínio (health, paises, estados, cidades…)
+│       └── shared/       # AppError, errorHandler, authMiddleware, withTransaction, validate
+├── Frontend/             # SPA (React + Vite + styled-components)
 │   └── src/
-        ├── /services     # clientes HTTP (axios); um arquivo por domínio de API
+│       ├── components/   # componentes reutilizáveis (Botao, Layout, Modal, Tabela…)
+│       ├── hooks/        # hooks React customizados
+│       ├── pages/        # páginas por rota (paises, estados, cidades, home)
+│       ├── services/     # clientes HTTP axios por domínio de API
+│       ├── themes/       # tokens de design (cores, tipografia, espaçamentos)
+│       └── utils/        # funções utilitárias puras
 ├── docs/                 # base de conhecimento (especificação arquitetural)
 ├── CLAUDE.md             # guia para o Claude Code ao trabalhar no projeto
 └── README.md             # este arquivo
 ```
 
-> **Estado atual:** Fase 0 e EP-13 concluídos. Backend com infraestrutura completa (postgres.js,
-> migrations, seed, `AppError`, `errorHandler`, `withTransaction`, `authMiddleware`, `validate`).
-> Frontend ainda não inicializado. Próximo passo: EP-04 — CRUDs geográficos.
+> **Estado atual:** EP-13 (Prisma → postgres.js + node-pg-migrate + kanel), EP-04 (CRUDs
+> geográficos de Países, Estados e Cidades no backend), EP-11 (bootstrap do frontend) e
+> T-113 (telas geográficas) **concluídos**.
+> Backend com 56 testes passando (service, repository e rotas). Frontend com navegação
+> hierárquica, formulários em modal e validação backend-driven.
+> **Próximo passo: EP-05 — Catálogo (Categorias e Produtos).**
 > Estrutura e camadas detalhadas em [Arquitetura](/docs/02-arquitetura.md).
 
 ## Índice
@@ -66,7 +76,7 @@ SI_JOAO_BAIL_2026/
 - **[Arquitetura](/docs/02-arquitetura.md)** + **[Stack](/docs/03-stack-tecnologica.md)** descrevem o *como* técnico.
 - **[Modelo de Domínio](/docs/05-modelo-de-dominio.md)** e **[Modelo de Dados](/docs/06-modelo-de-dados.md)**
   são a referência central para implementação — todos os outros documentos apontam para eles.
-- **[Roadmap](/docs/09-roadmap.md)** define a ordem prática de construção, e o
+- **[Roadmap](/docs/09-roadmap.md)** define a ordem prática de construção.
 
 ## Convenções
 
