@@ -2,7 +2,8 @@ import { Container, Form } from './style'
 import ButtonExample from '../../components/button'
 //import api from '../../services/api.tsx' para puchar dados do backend
 
-function Home() {
+function Home() 
+{
   return (
     <Container>
       <Form>

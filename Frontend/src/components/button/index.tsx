@@ -1,9 +1,10 @@
 import { ButtonExampleStyle } from './style'
 
-function ButtonExample() {
+function ButtonExample() 
+{
   return (
     <div>
-      <ButtonExampleStyle>ButtonExample</ButtonExampleStyle>
+      <ButtonExampleStyle> ButtonExample </ButtonExampleStyle>
     </div>
   )
 }
