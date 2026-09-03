@@ -86,7 +86,7 @@ describe ( 'CidadesService', () => {
 
         await expect
         (
-            service.UpdateCidade ( 1, { codEstado: 99, cidade: 'X' }, 1 )
+            service.UpdateCidade ( 1, { codEstado: 99, cidade: 'X', isActive: true }, 1 )
         ).rejects.toMatchObject ( { status: 400 } );
     });
 
@@ -97,7 +97,7 @@ describe ( 'CidadesService', () => {
 
         await expect
         (
-            service.UpdateCidade ( 99, { codEstado: 1, cidade: 'Campinas' }, 1 )
+            service.UpdateCidade ( 99, { codEstado: 1, cidade: 'Campinas', isActive: true }, 1 )
         ).rejects.toMatchObject ( { status: 404 } );
     });
 

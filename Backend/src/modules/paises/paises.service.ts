@@ -45,7 +45,7 @@ export class PaisesService
     (
         id: number,
         data: UpdatePaisInput,
-        codUser:number
+        codUser: number
     )
     {
         const atualizado = await this.repo.Update ( id, data, codUser );

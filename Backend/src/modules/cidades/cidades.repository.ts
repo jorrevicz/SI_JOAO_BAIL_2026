@@ -45,7 +45,7 @@ export class CidadesRepository
 
     async Create
     (
-        d: CreateCidadeInput,
+        cidade: CreateCidadeInput,
         codUser: number,
         transaction?: postgres.TransactionSql
     ): Promise < Cidades >
@@ -61,9 +61,9 @@ export class CidadesRepository
             )
             VALUES
             (
-                ${ d.codEstado },
-                ${ d.cidade },
-                ${ d.ddd ?? null },
+                ${ cidade.codEstado },
+                ${ cidade.cidade },
+                ${ cidade.ddd ?? null },
                 ${ codUser }
             )
             RETURNING *
@@ -75,7 +75,7 @@ export class CidadesRepository
     async Update
     (
         id: number,
-        d: UpdateCidadeInput,
+        cidade: UpdateCidadeInput,
         codUser: number,
         transaction?: postgres.TransactionSql
     ): Promise < Cidades | null >
@@ -83,11 +83,11 @@ export class CidadesRepository
         const client = transaction ?? sql;
         const [ row ] = await client < Cidades[] >`
             UPDATE "Cidades"
-            SET    "codEstado" = ${ d.codEstado },
-                   "cidade"   = ${ d.cidade },
-                   "ddd"      = ${ d.ddd ?? null },
-                   "codUser"  = ${ codUser },
-                   "dtEdicao" = CURRENT_TIMESTAMP
+            SET    "codEstado" = ${ cidade.codEstado },
+                   "cidade"    = ${ cidade.cidade },
+                   "ddd"       = ${ cidade.ddd ?? null },
+                   "codUser"   = ${ codUser },
+                   "dtEdicao"  = CURRENT_TIMESTAMP
             WHERE  "codCidade" = ${ id }
             AND    "isActive"  = true
             RETURNING *
@@ -105,19 +105,15 @@ export class CidadesRepository
     {
         const client = transaction ?? sql;
         const [ row ] = await client < { codCidade: number }[] >`
-            DELETE FROM "Cidades"
-            WHERE "codCidade" = ${ id }
-            AND "isActive" = true
+            UPDATE "Cidades"
+            SET    "isActive"  = false,
+                   "codUser"   = ${ codUser },
+                   "dtEdicao"  = CURRENT_TIMESTAMP
+            WHERE  "codCidade" = ${ id }
+            AND    "isActive"  = true
             RETURNING "codCidade"
         `;
-        // UPDATE "Cidades"
-            // SET    "isActive"  = false,
-            //        "codUser"   = ${ codUser },
-            //        "dtEdicao"  = CURRENT_TIMESTAMP
-            // WHERE  "codCidade" = ${ id }
-            // AND    "isActive"  = true
-            // RETURNING "codCidade"
-
+        
         return row ?? null;
     }
 

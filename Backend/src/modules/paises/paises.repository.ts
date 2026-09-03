@@ -44,14 +44,14 @@ export class PaisesRepository
 
     async Create
     (
-        data: CreatePaisInput,
+        pais: CreatePaisInput,
         codUser: number,
         transaction?: postgres.TransactionSql
 
     ): Promise < Paises > 
     {
         const client = transaction ?? sql;
-        const [ row ] = await client< Paises[] >`
+        const [ row ] = await client < Paises[] >`
             INSERT INTO "Paises"
             (
                 "pais",
@@ -62,10 +62,10 @@ export class PaisesRepository
             )
             VALUES
             (
-                ${ data.pais },
-                ${ data.sigla },
-                ${ data.ddi ?? null } ,
-                ${ data.moeda ?? null },
+                ${ pais.pais },
+                ${ pais.sigla },
+                ${ pais.ddi ?? null } ,
+                ${ pais.moeda ?? null },
                 ${ codUser }
             )
             RETURNING *
@@ -77,7 +77,7 @@ export class PaisesRepository
     async Update
     (
         id: number,
-        data: UpdatePaisInput,
+        pais: UpdatePaisInput,
         codUser: number,
         transaction?: postgres.TransactionSql
 
@@ -86,12 +86,13 @@ export class PaisesRepository
         const client = transaction ?? sql;
         const [ row ] = await client < Paises[] >`
             UPDATE "Paises"
-            SET "pais"      = ${ data.pais },
-                "sigla"     = ${ data.sigla },
-                "ddi"       = ${ data.ddi ?? null },
-                "moeda"     = ${ data.moeda ?? null },
-                "codUser"   = ${ codUser},
-                "dtEdicao"  = CURRENT_TIMESTAMP
+            SET "pais"      = ${ pais.pais },
+                "sigla"     = ${ pais.sigla },
+                "ddi"       = ${ pais.ddi ?? null },
+                "moeda"     = ${ pais.moeda ?? null },
+                "codUser"   = ${ codUser },
+                "dtEdicao"  = CURRENT_TIMESTAMP,
+                "isActive"  = ${ pais.isActive }
             WHERE "codPais" = ${ id }
             AND "isActive"  = true
             RETURNING *

@@ -24,17 +24,22 @@ export const createEstadoSchema = z.object
         estado: z
             .string()
             .trim()
-            .min 
-            ( 
-                1, 
-                'Informe o nome do estado.' 
+            .min
+            (
+                1,
+                'Informe o nome do estado.'
             )
             .max ( 22 )
             .regex ( /^[^\d]+$/, 'O nome do estado não pode conter números.' ),
     }
 );
 
-export const updateEstadoSchema = createEstadoSchema;
+export const updateEstadoSchema = createEstadoSchema.extend
+(
+    {
+        isActive: z.boolean()
+    }
+);
 
 export type CreateEstadoInput = z.infer < typeof createEstadoSchema >;
 export type UpdateEstadoInput = z.infer < typeof updateEstadoSchema >;

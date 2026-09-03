@@ -49,7 +49,7 @@ export class EstadosRepository
 
     async Create
     (
-        d: CreateEstadoInput, 
+        estado: CreateEstadoInput, 
         codUser: number, 
         transaction?: postgres.TransactionSql
     ): Promise < Estados > 
@@ -65,9 +65,9 @@ export class EstadosRepository
         )
         VALUES 
         (
-            ${ d.codPais }, 
-            ${ d.uf }, 
-            ${ d.estado }, 
+            ${ estado.codPais }, 
+            ${ estado.uf }, 
+            ${ estado.estado }, 
             ${ codUser }
         )
         RETURNING *
@@ -79,7 +79,7 @@ export class EstadosRepository
     async Update
     (
         id: number, 
-        d: UpdateEstadoInput, 
+        estado: UpdateEstadoInput, 
         codUser: number, 
         transaction?: postgres.TransactionSql
     ): Promise < Estados | null > 
@@ -87,11 +87,12 @@ export class EstadosRepository
         const client = transaction ?? sql;
         const [ row ] = await client < Estados[] >`
         UPDATE "Estados"
-        SET    "codPais"   = ${ d.codPais }, 
-                "uf"       = ${ d.uf }, 
-                "estado"   = ${ d.estado },
+        SET    "codPais"   = ${ estado.codPais }, 
+                "uf"       = ${ estado.uf }, 
+                "estado"   = ${ estado.estado },
                 "codUser"  = ${ codUser }, 
-                "dtEdicao" = CURRENT_TIMESTAMP
+                "dtEdicao" = CURRENT_TIMESTAMP,
+                "isActive"  = ${ estado.isActive }
         WHERE  "codEstado" = ${ id } 
         AND    "isActive"  = true
         RETURNING *

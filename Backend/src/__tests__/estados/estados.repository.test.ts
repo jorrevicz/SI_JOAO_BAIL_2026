@@ -1,6 +1,7 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import sql from '../../lib/db';
 import withTestTransaction from '../helpers/db-helper';
+import { criarPaisDeTeste } from '../helpers/fixtures';
 import { EstadosRepository } from '../../modules/estados/estados.repository';
 
 const repo = new EstadosRepository();
@@ -13,12 +14,14 @@ describe ( 'EstadosRepository (rollback)', () => {
 
         await withTestTransaction ( async ( transaction ) => {
 
+            const codPais = await criarPaisDeTeste ( transaction );
+
             const novo = await repo.Create
             (
-                { 
-                    codPais: 1, 
-                    uf: 'ZZ', 
-                    estado: 'Estado Teste' 
+                {
+                    codPais,
+                    uf: 'ZZ',
+                    estado: 'Estado Teste'
                 },
                 1,
                 transaction
@@ -36,12 +39,14 @@ describe ( 'EstadosRepository (rollback)', () => {
 
         await withTestTransaction ( async ( transaction ) => {
 
+            const codPais = await criarPaisDeTeste ( transaction );
+
             const novo = await repo.Create
             (
-                { 
-                    codPais: 1, 
-                    uf: 'YY', 
-                    estado: 'Tmp Estado' 
+                {
+                    codPais,
+                    uf: 'YY',
+                    estado: 'Tmp Estado'
                 },
                 1,
                 transaction
@@ -59,18 +64,20 @@ describe ( 'EstadosRepository (rollback)', () => {
 
         await withTestTransaction ( async ( transaction ) => {
 
-            await repo.Create 
-            ( 
-                { 
-                    codPais: 1, 
-                    uf: 'W1', 
-                    estado: 'Filtro Teste' 
-                }, 1, transaction 
+            const codPais = await criarPaisDeTeste ( transaction );
+
+            await repo.Create
+            (
+                {
+                    codPais,
+                    uf: 'W1',
+                    estado: 'Filtro Teste'
+                }, 1, transaction
             );
 
-            const lista = await repo.List ( 50, 0, 1, transaction );
+            const lista = await repo.List ( 50, 0, codPais, transaction );
 
-            expect ( lista.every ( ( e ) => e.codPais === 1 ) ).toBe ( true );
+            expect ( lista.every ( ( e ) => e.codPais === codPais ) ).toBe ( true );
         });
     });
 });

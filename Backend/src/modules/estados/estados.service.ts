@@ -28,7 +28,7 @@ export class EstadosService
     const estado = await this.repo.FindById ( id );
     if ( !estado )
     { 
-        throw new AppError( 'Estado não encontrado.', 404 ); 
+        throw new AppError ( 'Estado não encontrado.', 404 );
     }
 
     return estado;

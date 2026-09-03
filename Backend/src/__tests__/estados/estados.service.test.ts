@@ -86,7 +86,7 @@ describe ( 'EstadosService', () => {
 
         await expect
         (
-            service.UpdateEstado ( 1, { codPais: 99, uf: 'XX', estado: 'X' }, 1 )
+            service.UpdateEstado ( 1, { codPais: 99, uf: 'XX', estado: 'X', isActive: true }, 1 )
         ).rejects.toMatchObject ( { status: 400 } );
     });
 
@@ -97,7 +97,7 @@ describe ( 'EstadosService', () => {
 
         await expect
         (
-            service.UpdateEstado ( 99, { codPais: 1, uf: 'SP', estado: 'São Paulo' }, 1 )
+            service.UpdateEstado ( 99, { codPais: 1, uf: 'SP', estado: 'São Paulo', isActive: true }, 1 )
         ).rejects.toMatchObject ( { status: 404 } );
     });
 
