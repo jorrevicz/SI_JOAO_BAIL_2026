@@ -9,6 +9,14 @@ import HomePage from './pages/home'
 import { PaisesPage }     from './pages/paises';
 import { EstadosPage }    from './pages/estados';
 import { CidadesPage }    from './pages/cidades';
+import CategoriasPage      from './pages/categorias';
+import ProdutosPage        from './pages/produtos';
+import VeiculosPage        from './pages/veiculos';
+import FornecedoresPage    from './pages/fornecedores';
+import ClientesPage        from './pages/clientes';
+import TransportadorasPage    from './pages/transportadoras';
+import CondicoesPagamentoPage from './pages/condicoesPagamento-Parcela';
+import { FormasPagamentoPage }    from './pages/formasPagamento';
 
 ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
   <React.StrictMode>
@@ -18,9 +26,17 @@ ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
         <Layout>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/paises" element={<PaisesPage />} />
-            <Route path="/estados" element={<EstadosPage />} />
-            <Route path="/cidades" element={<CidadesPage />} />
+            <Route path="/paises"      element={<PaisesPage />} />
+            <Route path="/estados"     element={<EstadosPage />} />
+            <Route path="/cidades"     element={<CidadesPage />} />
+            <Route path="/categorias"      element={<CategoriasPage />} />
+            <Route path="/produtos"        element={<ProdutosPage />} />
+            <Route path="/veiculos"        element={<VeiculosPage />} />
+            <Route path="/fornecedores"    element={<FornecedoresPage />} />
+            <Route path="/clientes"        element={<ClientesPage />} />
+            <Route path="/transportadoras"     element={<TransportadorasPage />} />
+            <Route path="/condicoes-pagamento" element={<CondicoesPagamentoPage />} />
+            <Route path="/formas-pagamento"    element={<FormasPagamentoPage />} />
           </Routes>
         </Layout>
       </BrowserRouter>

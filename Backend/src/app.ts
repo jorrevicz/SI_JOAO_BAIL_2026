@@ -4,9 +4,18 @@ import cors from 'cors';
 import { AuthMiddleware } from './shared/middleware/authMiddleware';
 import { ErrorHandler } from './shared/middleware/errorHandler';
 import { AppError } from './shared/errors/AppError';
-import PaisesRoutes from './modules/paises/paises.routes';
-import EstadosRoutes from './modules/estados/estados.routes';
-import CidadesRoutes from './modules/cidades/cidades.routes';
+import PaisesRoutes     from './modules/paises/paises.routes';
+import EstadosRoutes    from './modules/estados/estados.routes';
+import CidadesRoutes    from './modules/cidades/cidades.routes';
+import CategoriasRoutes      from './modules/categorias/categorias.routes';
+import ProdutosRoutes        from './modules/produtos/produtos.routes';
+import VeiculosRoutes        from './modules/veiculos/veiculos.routes';
+import FornecedoresRoutes    from './modules/fornecedores/fornecedores.routes';
+import ClientesRoutes        from './modules/clientes/clientes.routes';
+import TransportadorasRoutes from './modules/transportadoras/transportadoras.routes';
+import CondicoesPagamentoRoutes from './modules/condicoes-pagamento/condicoesPagamento.routes';
+import FormasPagamentoRoutes    from './modules/formas-pagamento/formasPagamento.routes';
+import ParcelasRoutes           from './modules/parcelas/parcelas.routes';
 
 const app = express();
 
@@ -25,9 +34,18 @@ app.use ( '/health', healthRoutes );
 app.use ( AuthMiddleware );
 
 // Módulos protegidos (adicionar aqui conforme implementados nos EP-04+)
-app.use ( '/api/paises',  PaisesRoutes  );
-app.use ( '/api/estados', EstadosRoutes );
-app.use ( '/api/cidades', CidadesRoutes );
+app.use ( '/api/paises',      PaisesRoutes     );
+app.use ( '/api/estados',     EstadosRoutes    );
+app.use ( '/api/cidades',     CidadesRoutes    );
+app.use ( '/api/categorias',     CategoriasRoutes      );
+app.use ( '/api/produtos',       ProdutosRoutes        );
+app.use ( '/api/veiculos',       VeiculosRoutes        );
+app.use ( '/api/fornecedores',   FornecedoresRoutes    );
+app.use ( '/api/clientes',       ClientesRoutes        );
+app.use ( '/api/transportadoras',    TransportadorasRoutes );
+app.use ( '/api/condicoes-pagamento', CondicoesPagamentoRoutes );
+app.use ( '/api/formas-pagamento',    FormasPagamentoRoutes    );
+app.use ( '/api/parcelas',            ParcelasRoutes           );
 
 // 404 para rotas não mapeadas
 app.use 
