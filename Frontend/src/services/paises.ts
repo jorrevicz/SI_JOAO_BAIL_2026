@@ -15,10 +15,11 @@ export interface Pais
 
 export interface CreatePaisInput
 {
-  pais: string;
-  sigla: string;
-  ddi?: string;
-  moeda?: string;
+  pais:     string;
+  sigla:    string;
+  ddi?:     string;
+  moeda?:   string;
+  isActive: boolean;
 }
 
 export type UpdatePaisInput = CreatePaisInput;

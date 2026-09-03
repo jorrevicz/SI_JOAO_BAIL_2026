@@ -17,6 +17,7 @@ export interface CreateEstadoInput
   codPais: number;
   uf: string;
   estado: string;
+  isActive: boolean;
 }
 
 export type UpdateEstadoInput = CreateEstadoInput;

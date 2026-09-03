@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { ApiError } from '../../services/api';
 import { estadosService, type Estado, type CreateEstadoInput } from '../../services/estados';
-import { Alerta, ModalOverlay, ModalCard, FormGroup, Campo, AcoesBotoes, Botao, ErroCampo } from './style';
+import { type Pais } from '../../services/paises';
+import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
+import { CaixaSelecao } from '../../components/caixaSelecao';
+import { PaisConsulta } from '../paises/PaisConsulta';
+
 
 interface Props
 {
@@ -10,15 +14,19 @@ interface Props
   onCancelar: () => void;
 }
 
-export default function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
+export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
 {
-  const [ form, setForm ] = useState < CreateEstadoInput > ({
+  const [ form, setForm ] = useState < CreateEstadoInput > ( {
     codPais: inicial.codPais ?? 0,
     uf:      inicial.uf      ?? '',
     estado:  inicial.estado  ?? '',
-  });
+    isActive: inicial.isActive ?? true,
+  } );
+  const [ nomePaisSelecionado, setNomePaisSelecionado ] = useState ( '' );
+  const [ consultandoPais, setConsultando ] = useState ( false );
+
   const [ erro, setErro ] = useState ( '' );
-  const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ({});
+  const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
   const [ salvando, setSalvando ] = useState ( false );
 
   const editando = !!inicial.codEstado;
@@ -59,48 +67,83 @@ export default function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
     }
   };
 
+  const handleSelecionarPais = ( pais: Pais ) =>
+  {
+    setForm ( { ...form, codPais: pais.codPais } );
+    setNomePaisSelecionado ( pais.pais );
+    setConsultando ( false );
+  };
+
   return (
-    <ModalOverlay onClick={ onCancelar }>
-      <ModalCard onClick={ ( evento ) => evento.stopPropagation() }>
-        <h3>{ editando ? 'Editar estado' : 'Novo estado' }</h3>
-        { erro && <Alerta role="alert">{ erro }</Alerta> }
-        <form onSubmit={ submit }>
-          <FormGroup>
-            <Campo>
-              <label htmlFor="uf">UF *</label>
-              <input
-                id="uf"
-                value={ form.uf }
-                onChange={ ( evento ) => setForm ( { ...form, uf: evento.target.value.toUpperCase() } ) }
-                maxLength={ 2 }
-                required
-                autoFocus
-                placeholder="SP"
-              />
-              { errosCampo.uf && <ErroCampo>{ errosCampo.uf }</ErroCampo> }
-            </Campo>
-            <Campo>
-              <label htmlFor="estado">Nome do estado *</label>
-              <input
-                id="estado"
-                value={ form.estado }
-                onChange={ ( evento ) => setForm ( { ...form, estado: evento.target.value } ) }
-                maxLength={ 22 }
-                required
-              />
-              { errosCampo.estado && <ErroCampo>{ errosCampo.estado }</ErroCampo> }
-            </Campo>
-          </FormGroup>
-          <AcoesBotoes>
-            <Botao type="button" $variante="secundario" onClick={ onCancelar }>
-              Cancelar
-            </Botao>
-            <Botao type="submit" disabled={ salvando }>
-              { salvando ? 'Salvando…' : 'Salvar' }
-            </Botao>
-          </AcoesBotoes>
-        </form>
-      </ModalCard>
-    </ModalOverlay>
+    <>
+      <FormModal
+        titulo={ editando ? 'Editar estado' : 'Novo estado' }
+        erro={ erro }
+        onFechar={ onCancelar }
+        onSubmit={ submit }
+      >
+        <FormSecao>
+          <FormCampo label="País" obrigatorio colunas={ 4 } erro={ errosCampo.codPais }>
+            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
+              <Botao
+                type="button"
+                $variante="secundario"
+                onClick={ () => setConsultando ( true ) }
+              >
+                Consultar
+              </Botao>
+              { nomePaisSelecionado && (
+                <span style={ { fontSize: '0.875rem' } }>{ nomePaisSelecionado }</span>
+              )}
+            </div>
+          </FormCampo>
+
+          <FormCampo label="Nome do estado" obrigatorio colunas={ 4 } htmlFor="estado" erro={ errosCampo.estado }>
+            <input
+              id="estado"
+              value={ form.estado }
+              onChange={ ( evento ) => setForm ( { ...form, estado: evento.target.value.toLocaleUpperCase() } ) }
+              maxLength={ 22 }
+              required
+            />
+          </FormCampo>
+
+          <FormCampo label="UF" obrigatorio colunas={ 2 } htmlFor="uf" erro={ errosCampo.uf }>
+            <input
+              id="uf"
+              value={ form.uf }
+              onChange={ ( evento ) => setForm ( { ...form, uf: evento.target.value.toUpperCase() } ) }
+              maxLength={ 2 }
+              required
+              autoFocus
+              placeholder="SP"
+            />
+          </FormCampo>
+
+          <FormCampo label='Status' colunas={ 2 }>
+            <CaixaSelecao
+              value={ form.isActive }
+              onChange={ ( evento ) => setForm ( { ...form, isActive: evento } ) }
+            />
+          </FormCampo>
+        </FormSecao>
+
+        <FormAcoes>
+          <Botao type="button" $variante="secundario" onClick={ onCancelar }>
+            Cancelar
+          </Botao>
+          <Botao type="submit" disabled={ salvando }>
+            { salvando ? 'Salvando…' : 'Salvar' }
+          </Botao>
+        </FormAcoes>
+      </FormModal>
+
+      { consultandoPais && (
+        <PaisConsulta
+          onSelecionar={ handleSelecionarPais }
+          onCancelar={ () => setConsultando ( false ) }
+        />
+      )}
+    </>
   );
 }

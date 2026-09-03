@@ -6,9 +6,9 @@ import { MainGlobalStyles } from './styles/globalStyles';
 import { theme } from './themes';
 import Layout from './components/layout';
 import HomePage from './pages/home'
-import PaisesPage from './pages/paises';
-import EstadosPage from './pages/estados';
-import CidadesPage from './pages/cidades';
+import { PaisesPage }     from './pages/paises';
+import { EstadosPage }    from './pages/estados';
+import { CidadesPage }    from './pages/cidades';
 
 ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
   <React.StrictMode>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ApiError } from '../../services/api';
 import { paisesService, type Pais, type CreatePaisInput } from '../../services/paises';
-import { Alerta, ModalOverlay, ModalCard, FormGroup, Campo, AcoesBotoes, Botao, ErroCampo } from './style';
+import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
+import { CaixaSelecao } from '../../components/caixaSelecao';
 
 interface Props
 {
@@ -12,14 +13,15 @@ interface Props
 
 export default function PaisForm ( { inicial, onSalvo, onCancelar }: Props )
 {
-  const [ form, setForm ] = useState < CreatePaisInput > ({
-    pais:  inicial.pais  ?? '',
-    sigla: inicial.sigla ?? '',
-    ddi:   inicial.ddi   ?? '',
-    moeda: inicial.moeda ?? '',
-  });
+  const [ form, setForm ] = useState < CreatePaisInput > ( {
+    pais:     inicial.pais      ?? '',
+    sigla:    inicial.sigla     ?? '',
+    ddi:      inicial.ddi       ?? '',
+    moeda:    inicial.moeda     ?? '',
+    isActive: inicial.isActive  ?? true,
+  } );
   const [ erro, setErro ] = useState ( '' );
-  const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ({});
+  const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
   const [ salvando, setSalvando ] = useState ( false );
 
   const editando = !!inicial.codPais;
@@ -61,68 +63,71 @@ export default function PaisForm ( { inicial, onSalvo, onCancelar }: Props )
   };
 
   return (
-    <ModalOverlay onClick={ onCancelar }>
-      <ModalCard onClick={ ( evento ) => evento.stopPropagation() }>
-        <h3>{ editando ? 'Editar país' : 'Novo país' }</h3>
-        { erro && <Alerta role="alert">{ erro }</Alerta> }
-        <form onSubmit={ submit }>
-          <FormGroup>
-            <Campo>
-              <label htmlFor="pais">País *</label>
-              <input
-                id="pais"
-                value={ form.pais }
-                onChange={ ( evento ) => setForm ( { ...form, pais: evento.target.value } ) }
-                maxLength={ 6 }
-                required
-                autoFocus
-              />
-              { errosCampo.pais && <ErroCampo>{ errosCampo.pais }</ErroCampo> }
-            </Campo>
-            <Campo>
-              <label htmlFor="sigla">Sigla *</label>
-              <input
-                id="sigla"
-                value={ form.sigla }
-                onChange={ ( evento ) => setForm ( { ...form, sigla: evento.target.value.toUpperCase() } ) }
-                maxLength={ 3 }
-                required
-              />
-              { errosCampo.sigla && <ErroCampo>{ errosCampo.sigla }</ErroCampo> }
-            </Campo>
-            <Campo>
-              <label htmlFor="ddi">DDI</label>
-              <input
-                id="ddi"
-                value={ form.ddi ?? '' }
-                onChange={ ( evento ) => setForm ( { ...form, ddi: evento.target.value || undefined } ) }
-                maxLength={ 4 }
-                placeholder="+55"
-              />
-              { errosCampo.ddi && <ErroCampo>{ errosCampo.ddi }</ErroCampo> }
-            </Campo>
-            <Campo>
-              <label htmlFor="moeda">Moeda</label>
-              <input
-                id="moeda"
-                value={ form.moeda ?? '' }
-                onChange={ ( evento ) => setForm ( { ...form, moeda: evento.target.value.toUpperCase() || undefined } ) }
-                maxLength={ 3 }
-                placeholder="BRL"
-              />
-              { errosCampo.moeda && <ErroCampo>{ errosCampo.moeda }</ErroCampo> }
-            </Campo>
-          </FormGroup>
-          <AcoesBotoes>
-            <Botao type="button" $variante="secundario" onClick={ onCancelar }>
-              Cancelar
-            </Botao>
-            <Botao type="submit" disabled={ salvando }>
-              { salvando ? 'Salvando…' : 'Salvar' }
-            </Botao>
-          </AcoesBotoes>
-        </form>
-      </ModalCard>
-    </ModalOverlay>
+    <FormModal
+      titulo={ editando ? 'Editar país' : 'Novo país' }
+      erro={ erro }
+      onFechar={ onCancelar }
+      onSubmit={ submit }
+    >
+      <FormSecao>
+        <FormCampo label="País" obrigatorio colunas={ 4 } htmlFor="pais" erro={ errosCampo.pais }>
+          <input
+            id="pais"
+            value={ form.pais }
+            onChange={ ( evento ) => setForm ( { ...form, pais: evento.target.value.toLocaleUpperCase() } ) }
+            maxLength={ 6 }
+            required
+            autoFocus
+          />
+        </FormCampo>
+
+        <FormCampo label="Sigla" obrigatorio colunas={ 2 } htmlFor="sigla" erro={ errosCampo.sigla }>
+          <input
+            id="sigla"
+            value={ form.sigla }
+            onChange={ ( evento ) => setForm ( { ...form, sigla: evento.target.value.toUpperCase() } ) }
+            maxLength={ 3 }
+            required
+          />
+        </FormCampo>
+
+        <FormCampo label="DDI" colunas={ 2 } htmlFor="ddi" erro={ errosCampo.ddi }>
+          <input
+            id="ddi"
+            type='string'
+            value={ form.ddi ?? '' }
+            onChange={ ( evento ) => setForm ( { ...form, ddi: evento.target.value || undefined } ) }
+            maxLength={ 4 }
+            placeholder="+55"
+          />
+        </FormCampo>
+
+        <FormCampo label="Moeda" colunas={ 2 } htmlFor="moeda" erro={ errosCampo.moeda }>
+          <input
+            id="moeda"
+            value={ form.moeda ?? '' }
+            onChange={ ( evento ) => setForm ( { ...form, moeda: evento.target.value.toUpperCase() || undefined } ) }
+            maxLength={ 3 }
+            placeholder="BRL"
+          />
+        </FormCampo>
+
+        <FormCampo label='Status' colunas={ 1 }>
+          <CaixaSelecao
+            value={ form.isActive }
+            onChange={ ( evento ) => setForm ( { ...form, isActive: evento } ) }
+          />
+        </FormCampo>
+      </FormSecao>
+
+      <FormAcoes>
+        <Botao type="button" $variante="secundario" onClick={ onCancelar }>
+          Cancelar
+        </Botao>
+        <Botao type="submit" disabled={ salvando }>
+          { salvando ? 'Salvando…' : 'Salvar' }
+        </Botao>
+      </FormAcoes>
+    </FormModal>
   );
 }

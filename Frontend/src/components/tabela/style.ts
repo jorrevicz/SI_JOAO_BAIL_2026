@@ -81,3 +81,11 @@ export const PaginacaoInfo = styled.span`
   color: ${({ theme }) => theme.cores.textoSecundario};
   white-space: nowrap;
 `;
+
+export const InfoBlock = styled.span`
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
