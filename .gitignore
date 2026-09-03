@@ -8,6 +8,14 @@ build/
 **/dist/
 **/build/
 
+!docs/relatorio/build/
+docs/relatorio/build/*
+!docs/relatorio/build/.gitkeep
+!docs/relatorio/build/main.pdf
+
+# Claude Plans
+docs/ref/
+
 # Variáveis de ambiente
 .env
 .env.*
