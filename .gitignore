@@ -8,10 +8,8 @@ build/
 **/dist/
 **/build/
 
-!docs/relatorio/build/
-docs/relatorio/build/*
-!docs/relatorio/build/.gitkeep
-!docs/relatorio/build/main.pdf
+docs/ref
+docs/relatorio
 
 # Claude Plans
 docs/ref/

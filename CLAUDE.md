@@ -254,6 +254,98 @@ npm run dev            # Vite dev server
 npm test               # Vitest
 ```
 
+## Relatório LaTeX (`docs/relatorio/`)
+
+O relatório acadêmico do sistema é escrito em LaTeX e compilado com **latexmk**
+(config em `docs/relatorio/latexmkrc`, saída em `docs/relatorio/build/`).
+
+### Estrutura
+
+```
+docs/relatorio/
+  main.tex                    → documento raiz; encadeia as seções via \input{sections/NN-...}
+  sections/                   → uma seção por arquivo (01-introducao, 03-der-diagrama-classes,
+                                 07-diagramas-sequencia, ...); a ordem no PDF é dada pela ordem
+                                 dos \input em main.tex, não pelo número no nome do arquivo
+  diagramas/
+    casos-uso/*.puml          → fontes PlantUML dos diagramas de caso de uso (um por módulo)
+    sequencia/*.mmd           → fontes Mermaid (sequenceDiagram) dos diagramas de sequência
+    classes/NN-dominio.mmd    → fontes Mermaid (classDiagram) do diagrama de classes/DER,
+                                 particionadas por subdomínio (localizacao, parceiros-negocio,
+                                 produtos-catalogo, logistica-veiculos, financeiro, compras,
+                                 fiscal, acesso-usuarios, recursos-humanos, catalogo-extensoes,
+                                 atendimento-os, vendas); cada arquivo traz as classes do próprio
+                                 subdomínio e, quando há relacionamento cruzado, uma classe-stub
+                                 (só o nome, sem atributos) da entidade externa referenciada,
+                                 indicando entre parênteses o subdomínio de origem
+  diagrama-classes-kaneko.mmd → fonte Mermaid (classDiagram) do diagrama de classes/DER
+                                 completo (todos os subdomínios num arquivo só); mantida como
+                                 referência única do modelo completo, mas não é renderizada
+                                 diretamente no relatório — as partições em diagramas/classes/
+                                 são a fonte usada nas figuras (ver princípio abaixo). Ao alterar
+                                 entidades/relacionamentos, atualize os dois: o arquivo completo
+                                 e a(s) partição(ões) correspondente(s)
+  img/                        → PNGs já renderizados, referenciados via \includegraphics
+                                 (uc-*.png ← .puml de casos-uso; seq-*.png ← .mmd de sequência;
+                                 diagrama-classes-<dominio>.png ← diagramas/classes/*.mmd;
+                                 proto-*.png ← protótipos de tela, sem fonte de diagrama)
+  modelo/                     → PDFs de referência/gabarito fornecidos para o trabalho (não fazem
+                                 parte do relatório final, não são gerados nem editados por nós)
+  build/                      → saída do latexmk (só main.pdf deve ir para o commit — ver abaixo)
+```
+
+### Ferramentas de diagrama
+
+- **PlantUML** — diagramas de caso de uso (`diagramas/casos-uso/*.puml`, sintaxe
+  `@startuml ... actor / rectangle / usecase ... @enduml`). Renderize num editor/CLI PlantUML
+  e salve o PNG em `img/uc-<modulo>.png`.
+- **Mermaid** — diagrama de classes/DER (`classDiagram`) e diagramas de sequência
+  (`sequenceDiagram`). Duas formas de renderizar:
+  - **Mermaid Live Editor** (colar o `.mmd`, exportar PNG) — sem dependências locais.
+  - **mermaid-cli**, sem instalar globalmente:
+    `npx -y @mermaid-js/mermaid-cli -i diagramas/sequencia/<nome>.mmd -o img/seq-<nome>.png -s 3 -b white`
+    (rodar a partir de `docs/relatorio/`; `-s 3` dá resolução alta, `-b white` evita fundo
+    transparente no PDF). Evite `<br/>` dentro de `Note` em `sequenceDiagram` — o parser do
+    mermaid-cli quebra nisso; use texto corrido.
+- Não existe passo de build automático que renderize `.puml`/`.mmd` para PNG — a fonte fica
+  versionada, mas o PNG é gerado manualmente e commitado junto.
+- Diagramas de classe/DER com muitas entidades (30+) não cabem legíveis num único diagrama
+  Mermaid com layout automático — por isso o diagrama de classes é particionado por subdomínio em
+  `diagramas/classes/*.mmd` (ver estrutura acima), em vez de forçar tudo numa imagem só. Ao
+  renderizar cada partição, para subdomínios com poucas classes e muitos atributos (diagrama
+  cresce mais em altura que em largura) adicione `direction LR` logo após `classDiagram` no
+  `.mmd` — deixa o layout mais largo que alto e evita estourar a altura da página no LaTeX.
+
+### Referências usadas para redigir o relatório
+
+- **`docs/relatorio/modelo/`** — dois PDFs-gabarito (`documentação-do-sistema.pdf`,
+  `modelo documentação pratica.pdf`) que servem de referência de estrutura/formato exigidos
+  pela disciplina/avaliador. São só consulta — nunca editados nem gerados por nós.
+- **`docs/` (raiz do projeto)** — fonte de verdade sobre o domínio, arquitetura e regras de
+  negócio (ver seção "Fonte de verdade: leia `docs/` primeiro" acima); qualquer conteúdo do
+  relatório sobre entidades/fluxos/regras deve ser consistente com esses arquivos.
+- **`Backend/src/`** — para diagramas de sequência, a fonte da verdade são os arquivos reais
+  de cada módulo (`*.routes.ts`, `*.controller.ts`, `*.service.ts`, `*.repository.ts`,
+  `*.schema.ts`) e o código transversal em `shared/` (`validate.ts`, `errorHandler.ts`,
+  `withTransaction.ts`). Diagramas devem retratar o **estado final pretendido** da
+  arquitetura (ex.: autenticação JWT/sessão real), não andaimes temporários de teste/dev
+  (ex.: o stub atual do `AuthMiddleware` que fixa `codUser = 1`).
+
+### O que sobe no commit
+
+- **Somente `docs/relatorio/build/main.pdf`** entra no commit como artefato de build — nunca
+  os demais gerados pelo latexmk (`.aux`, `.log`, `.fls`, `.out`, `.synctex.gz`, `.toc`).
+  O `.gitignore` já reflete isso: a regra genérica `**/build/` ignora a pasta inteira, com
+  exceções pontuais liberando `docs/relatorio/build/.gitkeep` e
+  `docs/relatorio/build/main.pdf`. Ao adicionar uma exceção nova em `.gitignore`, confira com
+  `git check-ignore -v <arquivo>` que o resultado é o esperado (regras de negação `!padrão`
+  só funcionam se o diretório-pai não estiver bloqueado por uma regra anterior sem exceção).
+- **Sempre gere o PDF antes de commitar** (`cd docs/relatorio && latexmk`) — nunca commitar um
+  `main.pdf` desatualizado em relação às fontes (`.tex`, `.puml`, `.mmd`) que estão sendo
+  versionadas junto.
+- Fontes (`.tex`, `.puml`, `.mmd`) e os PNGs renderizados em `img/` são versionados
+  normalmente — são a entrada e a saída intermediária do relatório, não lixo de build.
+
 ## Ao concluir uma tarefa
 
 - Confirme que todos os testes passam (`npm test` em `/Backend`).
