@@ -4,8 +4,11 @@ Guia para o Claude Code ao trabalhar neste repositório. Leia antes de gerar ou 
 
 ## O que é este projeto
 
-Sistema de gestão (ERP enxuto) para uma **empresa de informática pequena** com
-operações informais — sem sistema prévio. Operações centrais: **cadastro, compra e venda**. Web API REST + SPA.
+Sistema de gestão (ERP enxuto) para a **Kaneko Informática** — empresa de
+assistência técnica e revenda de produtos de informática, sem sistema prévio.
+Operação central: **Ordem de Serviço (OS)** — ciclo completo de recebimento,
+diagnóstico, reparo e entrega de equipamentos. Módulos de suporte: cadastro,
+compra e financeiro. Web API REST + SPA.
 
 > **Estado atual (Fase 1 concluída):**
 > Fase 0 (EP-00 a EP-03) e EP-13 (Prisma → postgres.js + node-pg-migrate + kanel) concluídos:
@@ -24,8 +27,33 @@ operações informais — sem sistema prévio. Operações centrais: **cadastro,
 > (sem duplicar schema/Zod no Frontend) — ver
 > [docs/ref/validacao-frontend-backend-driven.md](docs/ref/validacao-frontend-backend-driven.md).
 >
-> **Próximo passo: EP-05 — Catálogo** (Categorias, Produtos). NCM/SH foi **descartada**
-> (classificação fiscal/tributária fora de escopo).
+> **EP-05 — Catálogo (Lote 2A) concluído:** Categorias e Produtos com CRUDs em 4 camadas,
+> testes (service, repository com rollback, routes supertest) e telas frontend (tabela com
+> navegação hierárquica Categorias → Produtos por query param, formulário em modal com
+> seleção de categoria). NCM/SH foi **descartada** (classificação fiscal/tributária fora de escopo).
+>
+> **Lote 2B concluído:** Veículos, Fornecedores, Clientes e Transportadoras com CRUDs em
+> 4 camadas, testes TDD (service unitário, repository rollback, routes supertest), soft delete,
+> HasDependents multi-tabela e telas frontend (tabela + modal, selects de Cidades/Estados/Veículos
+> carregados via API).
+>
+> **Lote 3 (Fase 3) concluído:** Condições de Pagamento, Formas de Pagamento e Parcelas com
+> CRUDs em 4 camadas, testes TDD e telas frontend. Parcelas gerenciadas de forma embutida e
+> atômica dentro do formulário de condição (reconciliação no `UpdateCondicao` via `WithTransaction`).
+> **Regras de negócio do parcelamento** implementadas no Zod (`superRefine`): ao menos 1 parcela
+> por condição (RN003), dias estritamente crescentes/distintos (RN004), à vista = 1 dia / 0 não
+> permitido (RN005), soma dos percentuais = 100% (RN006). Frontend exibe total ao vivo e bloqueia
+> "Salvar" enquanto o total ≠ 100% ou não há parcelas.
+>
+> **Regras de imutabilidade na edição (RN004/RN007/RN008):** `estoque` e `custoMedioProd` de
+> Produtos, os custos de Condição de Pagamento (`juroCondPag`, `multaCondPag`, `descontoCondPag`)
+> e o `prazoCompensacao` de Forma de Pagamento são definidos no cadastro e **não podem ser
+> editados** — backend omite esses campos do schema de update; frontend exibe os campos travados
+> (`disabled`/`readOnly`) na edição. Ver
+> [docs/ref/campos-imutaveis-e-cadastro-vs-edicao.md](docs/ref/campos-imutaveis-e-cadastro-vs-edicao.md).
+>
+> **Próximo passo: Fase 3B — Contas a Pagar (RF11) e Contas a Receber (RF12), seguido
+> da Fase OS — Ordem de Serviço (RF16), módulo central da Kaneko Informática.**
 
 ## Fonte de verdade: leia `docs/` primeiro
 

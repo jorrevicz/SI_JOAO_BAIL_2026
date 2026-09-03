@@ -63,7 +63,7 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 ### Produtos e Catálogo
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Produtos` | `codProd` | `codCategoria` → `Categorias` | `saldoProd` Decimal(10,3), `custoMedioProd` Decimal(10,2) |
+| `Produtos` | `codProd` | `codCategoria` → `Categorias` | `estoque` INTEGER (def. 0), `saldoProd` Decimal(10,3), `custoMedioProd` Decimal(10,2) |
 | `Categorias` | `codCategoria` | — | `categoria` VarChar(40) |
 | `ProdutoCategoria` | (`codProduto`, `codCategoria`) | → `Produtos`, → `Categorias` | associativa N:N — FK puras |
 | `ProdutoFornecedor` | (`codProd`, `codForn`) | → `Produtos`, → `Fornecedores` | associativa N:N — FK puras |

@@ -102,8 +102,7 @@ Cada usuário/processo recebe só a permissão necessária.
 
 ### 15. CQS + Princípio do Menor Espanto (POLA)
 
-Uma operação ou **altera** estado ou **consulta** dado — não ambos; e nomes/comportamentos
-correspondem ao que se espera deles.
+Uma operação ou **altera** estado ou **consulta** dado — não ambos; e nomes/comportamentos correspondem ao que se espera deles.
 
 - **Como se aplica aqui:** formalizar a convenção já seguida informalmente nos services
   (`consultarX()` lê, `adicionarX()`/`editarX()`/`removerX()` mutam) e em rotas REST previsíveis.

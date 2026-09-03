@@ -1,12 +1,13 @@
-# SI_JOAO_BAIL_2026
+# Sistema de Gestão — Kaneko Informática
+
+Sistema de gestão (ERP enxuto) desenvolvido para a **Kaneko Informática**, empresa
+de assistência técnica e revenda de produtos de informática. O foco central é a
+**Ordem de Serviço (OS)** — controle do ciclo de vida de equipamentos recebidos para
+reparo — integrada aos módulos de cadastro, compra, financeiro e NF-e.
 
 Esta pasta contém a **especificação arquitetural** do sistema, separada por escopo.
 Cada documento aborda um aspecto específico e referencia os demais sempre que há
 interdependência. Use este índice como ponto de partida.
-
-> Fontes desta base: o **Diagrama de Classes** (`Sistema de Compras - Diagrama de
-> Classes.png`) e a **Documentação do Sistema** (`documentação-do-sistema.pdf`),
-> ambos localizados nas referências junto com os documentos, somados às definições de projeto acordadas.
 
 ## Stack tecnológica
 
@@ -45,12 +46,12 @@ SI_JOAO_BAIL_2026/
 └── README.md             # este arquivo
 ```
 
-> **Estado atual:** EP-13 (Prisma → postgres.js + node-pg-migrate + kanel), EP-04 (CRUDs
-> geográficos de Países, Estados e Cidades no backend), EP-11 (bootstrap do frontend) e
-> T-113 (telas geográficas) **concluídos**.
-> Backend com 56 testes passando (service, repository e rotas). Frontend com navegação
-> hierárquica, formulários em modal e validação backend-driven.
-> **Próximo passo: EP-05 — Catálogo (Categorias e Produtos).**
+> **Estado atual:** Fases 0, 1, 2 e 3 concluídas — infraestrutura, cadastros geográficos,
+> catálogo (Categorias, Produtos), parceiros (Fornecedores, Clientes, Transportadoras,
+> Veículos) e financeiro (Condições de Pagamento, Formas de Pagamento, Parcelas) com
+> backend em 4 camadas e telas frontend entregues.
+> **Próximo passo: Fase 3B — Contas a Pagar e Contas a Receber, seguido da Fase OS —
+> Ordem de Serviço (módulo central da Kaneko Informática).**
 > Estrutura e camadas detalhadas em [Arquitetura](/docs/02-arquitetura.md).
 
 ## Índice

@@ -78,8 +78,9 @@ Núcleo de mercadorias da empresa (equipamentos, periféricos, acessórios e cor
 removida do escopo do MVP — ver [Modelo de Dados](06-modelo-de-dados.md#princípios-de-modelagem).
 
 ### Produtos
-- **Atributos:** `codProd`, `codCategoria`, `produto`, `undProduto`, `pesoBruto`, `pesoLiq`, `saldoProd`, `custoMedioProd`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `codProd`, `codCategoria`, `produto`, `undProduto`, `estoque`, `pesoBruto`, `pesoLiq`, `saldoProd`, `custoMedioProd`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Operações:** `consultarProdutos()`, `adicionarProduto()`, `editarProduto()`, `removerProduto()`, `consultarFornecedores()`, `consultarCategorias()`
+- **Imutáveis na edição:** `estoque` e `custoMedioProd` são definidos no cadastro (custo inicial); após a criação só são alterados por **compras** (movimentação de estoque / custo médio ponderado) — nunca por edição direta.
 
 ### Categorias
 - **Atributos:** `codCategoria`, `categoria`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
@@ -116,6 +117,11 @@ Condições/formas de pagamento, parcelamento e contas. Estrutura compartilhada 
 ### CondicaoDePagamento
 - **Atributos:** `codCondDePag`, `descricao`, `juroCondPag`, `multaCondPag`, `descontoCondPag`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Operações:** `consultarCondicaoPagamento()`, `adicionarCondicaoPagamento()`, `editarCondicaoPagamento()`, `consultarParcelas()`, `removerCondicaoPagamento()`
+- **Invariantes do plano de parcelamento** (validadas no backend, Zod):
+  - Toda condição deve ter **≥ 1 parcela** (RN003).
+  - Os `numDias` das parcelas devem ser **estritamente crescentes** — sem dias repetidos (RN004).
+  - **À vista = 1 dia** — `numDias` mínimo é 1; 0 não é permitido (RN005).
+  - A soma dos `percentual` de todas as parcelas deve ser exatamente **100%** (RN006).
 
 ### FormaDePagamento
 - **Atributos:** `codFormaDePag`, `formaDePag`, `prazoCompensacao`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
@@ -123,7 +129,7 @@ Condições/formas de pagamento, parcelamento e contas. Estrutura compartilhada 
 
 ### Parcelas
 - **Atributos:** `codParcela`, `codCondDePag`, `codFormaDePag`, `percentual`, `numDias`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
-- **Relacionamento:** liga **Condição** e **Forma** de pagamento.
+- **Relacionamento:** liga **Condição** e **Forma** de pagamento; gerenciadas **dentro** do formulário de condição (persistência atômica via `WithTransaction`).
 - **Operações:** `consultarParcelas()`, `adicionarParcelas()`, `removerParcelas()`, `editarParcelas()`
 
 ### ContasAPagar

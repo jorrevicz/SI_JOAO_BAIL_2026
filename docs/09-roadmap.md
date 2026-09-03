@@ -61,20 +61,78 @@ Pré-requisito de todo o resto (geografia). Implementadas **consultas primeiro**
 
 ## Fase 2 — Catálogo e parceiros (lotes de 3)
 
-- Lote 2A: **Categorias**, **Produtos** (RF09) — inclui vínculos categoria.
-- Lote 2B: **Fornecedores** (RF07), **Clientes** (RF08), **Transportadoras** (RF10).
-- **Veículos** (RF04) entra junto das transportadoras (dependência logística).
+- [x] Lote 2A: **Categorias**, **Produtos** (RF09) — CRUDs backend + telas frontend.
+- [x] Lote 2B: **Fornecedores** (RF07), **Clientes** (RF08), **Transportadoras** (RF10), **Veículos** (RF04).
 
-> **Frontend desta fase** (após cada lote de backend pronto): telas de Categorias/Produtos,
-> depois telas de Fornecedores/Clientes/Transportadoras/Veículos.
+> **Lote 2A concluído:** backend em 4 camadas com testes TDD (service unitário, repository
+> em rollback, routes supertest) e frontend com navegação hierárquica Categorias → Produtos
+> por query params, formulário em modal com seleção de categoria.
+>
+> **Lote 2B concluído:** backend (Veículos, Fornecedores, Clientes, Transportadoras) em 4
+> camadas com testes TDD; soft delete e HasDependents para cada entidade; frontend com
+> telas de listagem e formulário modal, selects de Cidades/Estados/Veículos carregados via
+> API; menu lateral atualizado.
+>
+> **▶ Próximo passo:** Fase 3 — Condições de Pagamento, Formas de Pagamento, Parcelas.
 
-## Fase 3 — Financeiro (lote de 3)
+## Fase 3 — Financeiro (lote de 3) ✓ concluída
 
-- **Condições de Pagamento** (RF05), **Parcelas** (RF06), **Formas de Pagamento**.
-- Em seguida: **Contas a Pagar** (RF11) e **Contas a Receber** (RF12).
+- [x] **Condições de Pagamento** (RF05), **Formas de Pagamento**, **Parcelas** (RF06).
 
-> **Frontend desta fase** (após backend pronto): telas de Condição/Forma de Pagamento,
-> Parcelas, Contas a Pagar e Contas a Receber.
+> **Backend concluído:** CRUDs em 4 camadas com testes TDD (service unitário, repository
+> rollback, routes supertest); soft delete e HasDependents para cada entidade; hierarquia
+> CondicaoDePagamento → Parcelas (com validação de CondicaoPagamento e FormaDePagamento no service).
+>
+> **Frontend concluído:** telas de Condições de Pagamento (com botão "Parcelas" para navegação
+> hierárquica), Formas de Pagamento e Parcelas (filtradas por condição via query param
+> `codCondDePag`, breadcrumb e select de FormasDePagamento no formulário); menu lateral com
+> seção Financeiro. Seed atualizado com 3 condições, 4 formas e 6 parcelas.
+>
+> **▶ Próximo passo:** Fase 3B — Contas a Pagar (RF11) e Contas a Receber (RF12).
+
+## Fase 3B — Contas a Pagar e Contas a Receber
+
+- **Contas a Pagar** (RF11) — referencia Fornecedores, Parcelas, NF-e.
+- **Contas a Receber** (RF12) — referencia Clientes, FormaDePagamento, NF-e.
+
+## Fase OS — Ordem de Serviço ⭐ módulo central da Kaneko Informática
+
+A **Ordem de Serviço** é o coração operacional da Kaneko Informática e deve ser
+implementada logo após a Fase 3B, antes dos fluxos transacionais complexos.
+
+Ciclo de vida de uma OS:
+
+```
+Abertura → Diagnóstico → Execução (serviços + peças) → Aprovação do cliente
+         → Encerramento (cobrança) → Entrega do equipamento
+```
+
+Campos principais (a detalhar no modelo de domínio):
+
+- **Equipamento:** tipo, marca, modelo, número de série, defeito relatado, senha.
+- **Cliente** responsável (referencia `Clientes`).
+- **Técnico** responsável (referencia `Users`).
+- **Status:** Aberta | Em Diagnóstico | Aguardando Aprovação | Em Execução |
+  Aguardando Peça | Pronta | Entregue | Cancelada.
+- **Serviços executados:** descrição e valor por linha de serviço.
+- **Peças utilizadas:** referencia `Produtos` + quantidade + valor unitário.
+- **Valor total** da OS (serviços + peças).
+- **Condição de Pagamento** (referencia `CondicaoDePagamento`).
+- **Prazo de entrega previsto** e data real de entrega.
+- **Garantia** (dias corridos a partir da entrega).
+- **Observações internas** e **laudo técnico**.
+
+Dependências:
+
+```
+Clientes + Produtos + CondicaoDePagamento + Users → OrdemDeServico
+OrdemDeServico → ContasAReceber (ao encerrar)
+```
+
+- [ ] **Backend:** migration + model + schema Zod + service (TDD) + repository +
+      controller + routes.
+- [ ] **Frontend:** listagem com filtro por status, formulário em modal (abertura),
+      tela de detalhes com linha de serviços/peças e avanço de status.
 
 ## Fase 4 — Transacional
 

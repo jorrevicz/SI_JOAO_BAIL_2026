@@ -1,8 +1,13 @@
 # 04 — Requisitos
 
-Fonte: `documentação-do-sistema.pdf`. Os requisitos funcionais correspondem aos
-módulos do [Modelo de Domínio](05-modelo-de-dominio.md); os casos de uso e regras de
-negócio detalhados estão em [Casos de Uso](07-casos-de-uso.md).
+Fonte: `documentação-do-sistema.pdf` + definições do projeto. Os requisitos funcionais
+correspondem aos módulos do [Modelo de Domínio](05-modelo-de-dominio.md); os casos de
+uso e regras de negócio detalhados estão em [Casos de Uso](07-casos-de-uso.md).
+
+O sistema é desenvolvido para a **Kaneko Informática** — empresa de assistência
+técnica e revenda de informática. O módulo de **Ordem de Serviço (RF16)** é o
+coração operacional do negócio e tem prioridade de implementação depois dos
+módulos financeiros.
 
 ## Requisitos funcionais
 
@@ -25,6 +30,7 @@ Cada item abaixo é um módulo "Manter/Gerenciar" (CRUD + operações específic
 | RF13 | Realizar e Gerenciar **Compras** | [Compras](05-modelo-de-dominio.md#6-compras) |
 | RF14 | Gerenciar **Nota Fiscal Eletrônica** | [Fiscal](05-modelo-de-dominio.md#7-fiscal-nf-e) |
 | RF15 | **Gerenciamento de Usuários e Cadastro** | [Acesso](05-modelo-de-dominio.md#8-acesso-e-usuários) |
+| **RF16** | **Gerenciar Ordens de Serviço (OS)** — abertura, diagnóstico, execução, encerramento e entrega de equipamentos | [Serviços](05-modelo-de-dominio.md) |
 
 ## Requisitos não funcionais
 

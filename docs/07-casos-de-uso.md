@@ -43,11 +43,23 @@ Ativação comum: **clicar no item de menu** correspondente.
 ### Gerenciar Condições de Pagamento
 - **Ator:** Usuário · **RF:** RF05
 - **RN002:** não excluir condição relacionada a parcelas ou compras.
-- **Pós-condição:** cadastrar, consultar, editar e remover condições de pagamento.
+- **RN003 — Parcela obrigatória:** toda condição deve ter ao menos uma parcela; condição sem parcelas é rejeitada (400).
+- **RN004 — Ordenação de dias:** os `numDias` das parcelas devem ser estritamente crescentes (sem dias repetidos).
+- **RN005 — À vista:** `numDias` mínimo é 1 (0 não permitido); parcela com 1 dia é exibida como "À vista".
+- **RN006 — Percentual total:** a soma dos percentuais de todas as parcelas deve ser exatamente 100%; condição não pode ser salva se o total divergir.
+- **RN007 — Custos imutáveis:** `juroCondPag`, `multaCondPag` e `descontoCondPag` são definidos no cadastro e **não podem ser alterados** na edição. O backend rejeita qualquer valor enviado no `PUT` (campos omitidos do schema de update).
+- **Pós-condição:** cadastrar, consultar, editar e remover condições de pagamento; parcelas gerenciadas de forma embutida e atômica junto à condição.
+
+### Gerenciar Formas de Pagamento
+- **Ator:** Usuário · **RF:** RF05 (complementar)
+- **RN002:** não excluir forma de pagamento relacionada a parcelas ou contas.
+- **RN008 — Prazo imutável na edição:** `prazoCompensacao` é definido no cadastro e **não pode ser alterado** na edição. O backend omite esse campo do schema de update.
+- **Pós-condição:** cadastrar, consultar, editar e remover formas de pagamento.
 
 ### Gerenciar Parcelas
 - **Ator:** Usuário · **RF:** RF06
 - **RN002:** não excluir parcela relacionada a condições de pagamento ou contas.
+- Parcelas são gerenciadas **dentro** do formulário de Condição de Pagamento (RN003–RN006 aplicadas no conjunto); o endpoint standalone `/api/parcelas` permanece para consultas e ajustes avulsos.
 - **Pós-condição:** cadastrar, consultar, editar e **cancelar** parcelas.
 
 ### Gerenciar Fornecedores
@@ -66,6 +78,7 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **Ator:** Usuário · **RF:** RF09
 - **RN002:** não excluir produto relacionado a compras, fornecedores ou notas fiscais.
 - **RN003:** deve permitir vinculação de **categorias e fornecedores** ao produto.
+- **RN004 — Estoque e custo imutáveis na edição:** `estoque` e `custoMedioProd` são informados no cadastro (valor inicial) e **não podem ser alterados** por edição direta. Após a criação, somente **compras** alteram esses valores (movimentação de estoque / custo médio ponderado). O backend omite esses campos do schema de update.
 - **Pós-condição:** cadastrar, consultar, editar, remover produtos e fornecedores/categorias vinculados.
 
 ### Gerenciar Transportadoras
