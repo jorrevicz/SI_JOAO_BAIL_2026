@@ -35,6 +35,8 @@ export default interface Fornecedores {
   codUser: number | null;
 
   isActive: boolean;
+
+  tipoPessoa: string | null;
 }
 
 /** Represents the initializer for the table public.Fornecedores */
@@ -69,6 +71,8 @@ export interface FornecedoresInitializer {
 
   /** Default value: true */
   isActive?: boolean;
+
+  tipoPessoa?: string | null;
 }
 
 /** Represents the mutator for the table public.Fornecedores */
@@ -100,4 +104,6 @@ export interface FornecedoresMutator {
   codUser?: number | null;
 
   isActive?: boolean;
+
+  tipoPessoa?: string | null;
 }

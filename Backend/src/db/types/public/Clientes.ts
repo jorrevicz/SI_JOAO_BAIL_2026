@@ -32,6 +32,8 @@ export default interface Clientes {
   codUser: number | null;
 
   isActive: boolean;
+
+  tipoPessoa: string | null;
 }
 
 /** Represents the initializer for the table public.Clientes */
@@ -62,6 +64,8 @@ export interface ClientesInitializer {
 
   /** Default value: true */
   isActive?: boolean;
+
+  tipoPessoa?: string | null;
 }
 
 /** Represents the mutator for the table public.Clientes */
@@ -89,4 +93,6 @@ export interface ClientesMutator {
   codUser?: number | null;
 
   isActive?: boolean;
+
+  tipoPessoa?: string | null;
 }

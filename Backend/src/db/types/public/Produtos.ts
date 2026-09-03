@@ -31,6 +31,8 @@ export default interface Produtos {
   codUser: number | null;
 
   isActive: boolean;
+
+  estoque: number;
 }
 
 /** Represents the initializer for the table public.Produtos */
@@ -63,6 +65,9 @@ export interface ProdutosInitializer {
 
   /** Default value: true */
   isActive?: boolean;
+
+  /** Default value: 0 */
+  estoque?: number;
 }
 
 /** Represents the mutator for the table public.Produtos */
@@ -90,4 +95,6 @@ export interface ProdutosMutator {
   codUser?: number | null;
 
   isActive?: boolean;
+
+  estoque?: number;
 }
