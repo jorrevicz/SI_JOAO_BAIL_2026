@@ -9,6 +9,12 @@ export const createFornecedorSchema = z.object
             } )
             .int()
             .positive(),
+        codCondDePag: z
+            .number ( {
+                message: 'A condição de pagamento é obrigatória.'
+            } )
+            .int()
+            .positive(),
         fornecedor: z
             .string ( {
                 message: 'O nome do fornecedor é obrigatório.'

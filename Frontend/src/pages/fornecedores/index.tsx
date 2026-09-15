@@ -84,10 +84,11 @@ export default function FornecedoresPage ()
       'tipoPessoa',
       { header: 'Tipo Pessoa', cell: ( info ) => info.getValue() === 'FISICA' ? 'Física' : info.getValue() === 'JURIDICA' ? 'Jurídica' : '—' }
     ),
-    columnHelper.accessor ( 
-      'codCidade', 
-      { header: 'Código Cidade' } 
+    columnHelper.accessor (
+      'codCidade',
+      { header: 'Código Cidade' }
     ),
+    columnHelper.accessor ( 'codCondDePag', { header: () => <>Código<br/>Condição de Pagamento</> } ),
     columnHelper.accessor ( 'enderecoForn', { header: 'Endereço',
       cell: ( info ) => (
         <InfoBlock>

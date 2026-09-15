@@ -303,6 +303,25 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
     throw new Error ( 'Cidades de referência não encontradas — rode seedGeografico primeiro.' );
   }
 
+  // Condição de pagamento — precisa existir antes dos Fornecedores (FK obrigatória)
+  let codCondDePag: number;
+  const existCond = await sql`
+    SELECT "codCondDePag" FROM "CondicaoDePagamento" WHERE "descricao" = 'À VISTA' LIMIT 1
+  `;
+  if ( existCond.length > 0 )
+  {
+    codCondDePag = existCond [ 0 ].codCondDePag;
+  }
+  else
+  {
+    const [ inserted ] = await sql`
+      INSERT INTO "CondicaoDePagamento" ( "descricao" )
+      VALUES ( 'À VISTA' )
+      RETURNING "codCondDePag"
+    `;
+    codCondDePag = inserted.codCondDePag;
+  }
+
   // Fornecedores — dados sem máscara (CPF/CNPJ, CEP, fone em dígitos puros)
   let forn1Cod: number;
   const existForn1 = await sql`
@@ -317,6 +336,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
         "nomeFantasia"   = 'TECHDISTRIB',
         "tipoPessoa"     = 'J',
         "codCidade"      = ${ cidadeSP.codCidade },
+        "codCondDePag"   = ${ codCondDePag },
         "enderecoForn"   = 'AV. PAULISTA, 726',
         "bairroForn"     = 'BELA VISTA',
         "cepForn"        = '01310100',
@@ -329,10 +349,10 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
   {
     const [ inserted ] = await sql`
       INSERT INTO "Fornecedores"
-        ( "fornecedor", "nomeFantasia", "tipoPessoa", "codCidade", "enderecoForn",
+        ( "fornecedor", "nomeFantasia", "tipoPessoa", "codCidade", "codCondDePag", "enderecoForn",
          "bairroForn", "cepForn", "foneForn", "cpfCnpjForn", "inscEstSubTrib" )
       VALUES
-        ( 'TECHDISTRIB INFORMÁTICA LTDA', 'TECHDISTRIB', 'J', ${ cidadeSP.codCidade },
+        ( 'TECHDISTRIB INFORMÁTICA LTDA', 'TECHDISTRIB', 'J', ${ cidadeSP.codCidade }, ${ codCondDePag },
          'AV. PAULISTA, 726', 'BELA VISTA', '01310100', '+551133331111',
          '12345678000190', '111111111111' )
       RETURNING "codForn"
@@ -351,6 +371,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
         "nomeFantasia"   = 'INFOSUL TI',
         "tipoPessoa"     = 'J',
         "codCidade"      = ${ cidadeCWB.codCidade },
+        "codCondDePag"   = ${ codCondDePag },
         "enderecoForn"   = 'RUA XV DE NOVEMBRO, 1000',
         "bairroForn"     = 'CENTRO',
         "cepForn"        = '80060000',
@@ -363,32 +384,13 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
   {
     await sql`
       INSERT INTO "Fornecedores"
-        ( "fornecedor", "nomeFantasia", "tipoPessoa", "codCidade", "enderecoForn",
+        ( "fornecedor", "nomeFantasia", "tipoPessoa", "codCidade", "codCondDePag", "enderecoForn",
          "bairroForn", "cepForn", "foneForn", "cpfCnpjForn", "inscEstSubTrib" )
       VALUES
-        ( 'INFOSUL DISTRIBUIDORA DE TI EIRELI', 'INFOSUL TI', 'J', ${ cidadeCWB.codCidade },
+        ( 'INFOSUL DISTRIBUIDORA DE TI EIRELI', 'INFOSUL TI', 'J', ${ cidadeCWB.codCidade }, ${ codCondDePag },
          'RUA XV DE NOVEMBRO, 1000', 'CENTRO', '80060000', '+554122229999',
          '98765432000110', '222222222222' )
     `;
-  }
-
-  // Condição de pagamento
-  let codCondDePag: number;
-  const existCond = await sql`
-    SELECT "codCondDePag" FROM "CondicaoDePagamento" WHERE "descricao" = 'À VISTA' LIMIT 1
-  `;
-  if ( existCond.length > 0 )
-  {
-    codCondDePag = existCond [ 0 ].codCondDePag;
-  }
-  else
-  {
-    const [ inserted ] = await sql`
-      INSERT INTO "CondicaoDePagamento" ( "descricao" )
-      VALUES ( 'À VISTA' )
-      RETURNING "codCondDePag"
-    `;
-    codCondDePag = inserted.codCondDePag;
   }
 
   // Clientes — dados sem máscara

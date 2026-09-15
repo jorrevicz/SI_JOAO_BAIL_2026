@@ -100,3 +100,28 @@ export async function criarCidadeDeTeste
 
     return cidade.codCidade;
 }
+
+/**
+ * Insere uma condição de pagamento descartável e devolve o "codCondDePag" gerado.
+ */
+export async function criarCondicaoDePagamentoDeTeste
+(
+    transaction: postgres.TransactionSql
+): Promise < number >
+{
+    const [ condicao ] = await transaction < { codCondDePag: number }[] >`
+        INSERT INTO "CondicaoDePagamento"
+        (
+            "descricao",
+            "codUser"
+        )
+        VALUES
+        (
+            'CONDIÇÃO DE TESTE',
+            ${ COD_USER_TESTE }
+        )
+        RETURNING "codCondDePag"
+    `;
+
+    return condicao.codCondDePag;
+}

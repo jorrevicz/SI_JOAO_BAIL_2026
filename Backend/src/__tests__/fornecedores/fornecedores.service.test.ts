@@ -40,16 +40,16 @@ describe ( 'FornecedoresService', () =>
     {
         repo.Create.mockResolvedValue ( { codForn: 1 } );
 
-        await service.CreateFornecedor ( { codCidade: 1, fornecedor: 'Tech Distribuidora' }, 7 );
+        await service.CreateFornecedor ( { codCidade: 1, codCondDePag: 1, fornecedor: 'Tech Distribuidora' }, 7 );
 
-        expect ( repo.Create ).toHaveBeenCalledWith ( { codCidade: 1, fornecedor: 'Tech Distribuidora' }, 7 );
+        expect ( repo.Create ).toHaveBeenCalledWith ( { codCidade: 1, codCondDePag: 1, fornecedor: 'Tech Distribuidora' }, 7 );
     });
 
     it ( 'UpdateFornecedor lança 404 quando o registro não existe', async () =>
     {
         repo.Update.mockResolvedValue ( null );
 
-        await expect ( service.UpdateFornecedor ( 99, { codCidade: 1, fornecedor: 'X', isActive: true }, 1 ) )
+        await expect ( service.UpdateFornecedor ( 99, { codCidade: 1, codCondDePag: 1, fornecedor: 'X', isActive: true }, 1 ) )
             .rejects.toMatchObject ( { status: 404 } );
     });
 

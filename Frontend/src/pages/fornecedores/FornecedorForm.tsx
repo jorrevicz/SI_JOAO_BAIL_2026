@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { ApiError } from '../../services/api';
 import { fornecedoresService, type Fornecedor, type CreateFornecedorInput } from '../../services/fornecedores';
 import { type Cidade } from '../../services/cidades';
+import { type CondicaoPagamento } from '../../services/condicoesPagamento';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { CidadeConsulta } from '../cidades/CidadeConsulta';
+import { CondicaoPagamentoConsulta } from '../condicoesPagamento-Parcela/CondicaoPagamentoConsulta';
 
 interface Props
 {
@@ -17,6 +19,7 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
 {
   const [ form, setForm ] = useState < CreateFornecedorInput > ( {
     codCidade:      inicial.codCidade      ?? 0,
+    codCondDePag:   inicial.codCondDePag   ?? 0,
     fornecedor:     inicial.fornecedor     ?? '',
     nomeFantasia:   inicial.nomeFantasia   ?? '',
     tipoPessoa:     inicial.tipoPessoa     ?? undefined,
@@ -30,6 +33,8 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
   } );
   const [ nomeCidadeSel, setNomeCidadeSel ] = useState ( '' );
   const [ consultando, setConsultando ]     = useState ( false );
+  const [ descricaoCondPagSel, setDescricaoCondPagSel ] = useState ( '' );
+  const [ consultandoCondPag, setConsultandoCondPag ]   = useState ( false );
 
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
@@ -47,6 +52,7 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     const dados: CreateFornecedorInput =
     {
       codCidade:      form.codCidade,
+      codCondDePag:   form.codCondDePag,
       fornecedor:     form.fornecedor,
       nomeFantasia:   form.nomeFantasia   || undefined,
       tipoPessoa:     form.tipoPessoa     || undefined,
@@ -93,6 +99,13 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     setForm ( { ...form, codCidade: oCidade.codCidade } );
     setNomeCidadeSel ( oCidade.cidade );
     setConsultando ( false );
+  }
+
+  const handleSelecionarCondPag = ( oCondPag: CondicaoPagamento ) =>
+  {
+    setForm ( { ...form, codCondDePag: oCondPag.codCondDePag } );
+    setDescricaoCondPagSel ( oCondPag.descricao ?? '' );
+    setConsultandoCondPag ( false );
   }
 
   return (
@@ -192,6 +205,25 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
               }
             </div>
           </FormCampo>
+
+          <FormCampo label="Condição de pagamento" obrigatorio colunas={ 6 } erro={ errosCampo.codCondDePag }>
+            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
+              <Botao
+                type='button'
+                $variante='secundario'
+                onClick={ () => setConsultandoCondPag ( true ) }
+              >
+                Consultar
+              </Botao>
+              {
+                descricaoCondPagSel && (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    { descricaoCondPagSel }
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo>
         </FormSecao>
 
         <FormSecao>
@@ -253,6 +285,14 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
           <CidadeConsulta
             onSelecionar={ handleSelecionarCidade }
             onCancelar={ () => setConsultando ( false ) }
+          />
+        )
+      }
+      {
+        consultandoCondPag && (
+          <CondicaoPagamentoConsulta
+            onSelecionar={ handleSelecionarCondPag }
+            onCancelar={ () => setConsultandoCondPag ( false ) }
           />
         )
       }

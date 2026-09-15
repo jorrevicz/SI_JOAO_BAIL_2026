@@ -1,7 +1,7 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import sql from '../../lib/db';
 import withTestTransaction from '../helpers/db-helper';
-import { criarCidadeDeTeste } from '../helpers/fixtures';
+import { criarCidadeDeTeste, criarCondicaoDePagamentoDeTeste } from '../helpers/fixtures';
 import { FornecedoresRepository } from '../../modules/fornecedores/fornecedores.repository';
 
 const repo = new FornecedoresRepository();
@@ -17,11 +17,12 @@ describe ( 'FornecedoresRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const codCidade = await criarCidadeDeTeste ( transaction );
+            const codCidade     = await criarCidadeDeTeste ( transaction );
+            const codCondDePag  = await criarCondicaoDePagamentoDeTeste ( transaction );
 
             const novo = await repo.Create
             (
-                { codCidade, fornecedor: 'Distribuidora Teste Ltda' },
+                { codCidade, codCondDePag, fornecedor: 'Distribuidora Teste Ltda' },
                 1,
                 transaction
             );
@@ -38,12 +39,14 @@ describe ( 'FornecedoresRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const codCidade = await criarCidadeDeTeste ( transaction );
+            const codCidade     = await criarCidadeDeTeste ( transaction );
+            const codCondDePag  = await criarCondicaoDePagamentoDeTeste ( transaction );
 
             const novo = await repo.Create
             (
                 {
                     codCidade,
+                    codCondDePag,
                     fornecedor:  'Fornecedor Completo SA',
                     nomeFantasia: 'FC Distribuidora',
                     cpfCnpjForn: '12345678000190',
@@ -62,11 +65,12 @@ describe ( 'FornecedoresRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const codCidade = await criarCidadeDeTeste ( transaction );
+            const codCidade     = await criarCidadeDeTeste ( transaction );
+            const codCondDePag  = await criarCondicaoDePagamentoDeTeste ( transaction );
 
             const novo = await repo.Create
             (
-                { codCidade, fornecedor: 'Fornecedor Original' },
+                { codCidade, codCondDePag, fornecedor: 'Fornecedor Original' },
                 1,
                 transaction
             );
@@ -74,7 +78,7 @@ describe ( 'FornecedoresRepository (rollback)', () =>
             const atualizado = await repo.Update
             (
                 novo.codForn,
-                { codCidade, fornecedor: 'Fornecedor Atualizado', isActive: true },
+                { codCidade, codCondDePag, fornecedor: 'Fornecedor Atualizado', isActive: true },
                 1,
                 transaction
             );
@@ -87,11 +91,12 @@ describe ( 'FornecedoresRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const codCidade = await criarCidadeDeTeste ( transaction );
+            const codCidade     = await criarCidadeDeTeste ( transaction );
+            const codCondDePag  = await criarCondicaoDePagamentoDeTeste ( transaction );
 
             const novo = await repo.Create
             (
-                { codCidade, fornecedor: 'Para Excluir' },
+                { codCidade, codCondDePag, fornecedor: 'Para Excluir' },
                 1,
                 transaction
             );
@@ -107,11 +112,12 @@ describe ( 'FornecedoresRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const codCidade = await criarCidadeDeTeste ( transaction );
+            const codCidade     = await criarCidadeDeTeste ( transaction );
+            const codCondDePag  = await criarCondicaoDePagamentoDeTeste ( transaction );
 
             const novo = await repo.Create
             (
-                { codCidade, fornecedor: 'Sem Dependentes' },
+                { codCidade, codCondDePag, fornecedor: 'Sem Dependentes' },
                 1,
                 transaction
             );

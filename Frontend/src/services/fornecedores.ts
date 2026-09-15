@@ -4,6 +4,7 @@ export interface Fornecedor
 {
   codForn:        number;
   codCidade:      number;
+  codCondDePag:   number;
   fornecedor:     string;
   nomeFantasia:   string | null;
   tipoPessoa:     string | null;
@@ -22,6 +23,7 @@ export interface Fornecedor
 export interface CreateFornecedorInput
 {
   codCidade:       number;
+  codCondDePag:    number;
   fornecedor:      string;
   nomeFantasia?:   string;
   tipoPessoa?:     string;

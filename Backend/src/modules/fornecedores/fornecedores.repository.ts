@@ -55,6 +55,7 @@ export class FornecedoresRepository
             INSERT INTO "Fornecedores"
             (
                 "codCidade",
+                "codCondDePag",
                 "fornecedor",
                 "nomeFantasia",
                 "tipoPessoa",
@@ -69,6 +70,7 @@ export class FornecedoresRepository
             VALUES
             (
                 ${ forn.codCidade },
+                ${ forn.codCondDePag },
                 ${ forn.fornecedor },
                 ${ forn.nomeFantasia    ?? null },
                 ${ forn.tipoPessoa      ?? null },
@@ -99,6 +101,7 @@ export class FornecedoresRepository
         const [ row ] = await client < Fornecedores[] >`
             UPDATE "Fornecedores"
             SET "codCidade"      = ${ forn.codCidade },
+                "codCondDePag"   = ${ forn.codCondDePag },
                 "fornecedor"     = ${ forn.fornecedor },
                 "nomeFantasia"   = ${ forn.nomeFantasia    ?? null },
                 "tipoPessoa"     = ${ forn.tipoPessoa      ?? null },
