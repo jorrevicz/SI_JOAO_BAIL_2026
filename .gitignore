@@ -13,9 +13,6 @@ docs/relatorio
 
 scripts
 
-# Claude Plans
-docs/ref/
-
 # Variáveis de ambiente
 .env
 .env.*

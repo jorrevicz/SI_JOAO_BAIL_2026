@@ -287,6 +287,14 @@ npm test               # Vitest
 O relatório acadêmico do sistema é escrito em LaTeX e compilado com **latexmk**
 (config em `docs/relatorio/latexmkrc`, saída em `docs/relatorio/build/`).
 
+> **`docs/relatorio/` e `docs/ref/` são inteiramente locais — fora do controle de versão.**
+> O `.gitignore` ignora as duas pastas por completo (`docs/ref`, `docs/relatorio`): nada
+> dentro delas (fontes `.tex`/`.puml`/`.mmd`, PNGs em `img/`, nem o `main.pdf` compilado)
+> vai para commit. A entrega do relatório acadêmico é feita por fora deste repositório
+> (ex.: anexo separado na entrega do trabalho), não via git. Ver
+> [Ao concluir uma tarefa](#ao-concluir-uma-tarefa) — tarefas de código (Backend/Frontend)
+> não são afetadas por essa regra.
+
 ### Estrutura
 
 ```
@@ -319,7 +327,8 @@ docs/relatorio/
                                  proto-*.png ← protótipos de tela, sem fonte de diagrama)
   modelo/                     → PDFs de referência/gabarito fornecidos para o trabalho (não fazem
                                  parte do relatório final, não são gerados nem editados por nós)
-  build/                      → saída do latexmk (só main.pdf deve ir para o commit — ver abaixo)
+  build/                      → saída do latexmk (nada aqui vai para o commit — ver
+                                 "docs/relatorio/ e docs/ref/ são inteiramente locais" acima)
   scripts/
     gerarDiagramaMermaid.ts   → gera diagrama-classes-kaneko.mmd (fonte única ENTIDADES/
                                  RELACIONAMENTOS) e docs/13-diagrama-mermaid.md; script TS sem
@@ -340,8 +349,8 @@ docs/relatorio/
     (rodar a partir de `docs/relatorio/`; `-s 3` dá resolução alta, `-b white` evita fundo
     transparente no PDF). Evite `<br/>` dentro de `Note` em `sequenceDiagram` — o parser do
     mermaid-cli quebra nisso; use texto corrido.
-- Não existe passo de build automático que renderize `.puml`/`.mmd` para PNG — a fonte fica
-  versionada, mas o PNG é gerado manualmente e commitado junto.
+- Não existe passo de build automático que renderize `.puml`/`.mmd` para PNG — o PNG é gerado
+  manualmente e fica junto da fonte em `img/` (ambos locais, não versionados — ver acima).
 - **`scripts/gerarDiagramaMermaid.ts`** — gera o diagrama de classes Mermaid (fonte única
   `ENTIDADES`/`RELACIONAMENTOS`) a partir do schema/roadmap, escrevendo
   `img/diagrama-mermaid.mmd` e `docs/13-diagrama-mermaid.md`. Vive em `docs/relatorio/` (não em
@@ -374,18 +383,13 @@ docs/relatorio/
 
 ### O que sobe no commit
 
-- **Somente `docs/relatorio/build/main.pdf`** entra no commit como artefato de build — nunca
-  os demais gerados pelo latexmk (`.aux`, `.log`, `.fls`, `.out`, `.synctex.gz`, `.toc`).
-  O `.gitignore` já reflete isso: a regra genérica `**/build/` ignora a pasta inteira, com
-  exceções pontuais liberando `docs/relatorio/build/.gitkeep` e
-  `docs/relatorio/build/main.pdf`. Ao adicionar uma exceção nova em `.gitignore`, confira com
-  `git check-ignore -v <arquivo>` que o resultado é o esperado (regras de negação `!padrão`
-  só funcionam se o diretório-pai não estiver bloqueado por uma regra anterior sem exceção).
-- **Sempre gere o PDF antes de commitar** (`cd docs/relatorio && latexmk`) — nunca commitar um
-  `main.pdf` desatualizado em relação às fontes (`.tex`, `.puml`, `.mmd`) que estão sendo
-  versionadas junto.
-- Fontes (`.tex`, `.puml`, `.mmd`) e os PNGs renderizados em `img/` são versionados
-  normalmente — são a entrada e a saída intermediária do relatório, não lixo de build.
+- **Nada.** `docs/relatorio/` e `docs/ref/` são ignorados por completo no `.gitignore`
+  (`docs/ref`, `docs/relatorio`) — fontes (`.tex`, `.puml`, `.mmd`), PNGs em `img/`, o
+  `main.pdf` compilado e o `scripts/gerarDiagramaMermaid.ts` são todos locais, nunca
+  versionados. Não crie exceções (`!padrão`) para liberar arquivos específicos dessas pastas
+  sem antes confirmar com o usuário — a regra é ignorar as pastas inteiras.
+- Gere o PDF normalmente para conferir o resultado (`cd docs/relatorio && latexmk`), mas isso
+  é só para a entrega por fora do repositório — não afeta o que vai para o git.
 
 ## Ao concluir uma tarefa
 
