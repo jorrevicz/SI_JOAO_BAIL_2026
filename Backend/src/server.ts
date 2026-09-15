@@ -2,7 +2,7 @@ import 'dotenv/config';
 import app from './app';
 import sql from './lib/db';
 
-const PORT = process.env.PORT ?? 3000;
+const PORT = process.env.PORT ?? 3333;
 
 app.listen ( PORT, () => {
     console.log ( `Servidor rodando em localhost:${ PORT }` );
