@@ -320,6 +320,11 @@ docs/relatorio/
   modelo/                     → PDFs de referência/gabarito fornecidos para o trabalho (não fazem
                                  parte do relatório final, não são gerados nem editados por nós)
   build/                      → saída do latexmk (só main.pdf deve ir para o commit — ver abaixo)
+  scripts/
+    gerarDiagramaMermaid.ts   → gera diagrama-classes-kaneko.mmd (fonte única ENTIDADES/
+                                 RELACIONAMENTOS) e docs/13-diagrama-mermaid.md; script TS sem
+                                 dependências além do Node (`node:fs`, `node:path`, `node:url`),
+                                 roda isolado do Backend — ver comando abaixo
 ```
 
 ### Ferramentas de diagrama
@@ -337,6 +342,14 @@ docs/relatorio/
     mermaid-cli quebra nisso; use texto corrido.
 - Não existe passo de build automático que renderize `.puml`/`.mmd` para PNG — a fonte fica
   versionada, mas o PNG é gerado manualmente e commitado junto.
+- **`scripts/gerarDiagramaMermaid.ts`** — gera o diagrama de classes Mermaid (fonte única
+  `ENTIDADES`/`RELACIONAMENTOS`) a partir do schema/roadmap, escrevendo
+  `img/diagrama-mermaid.mmd` e `docs/13-diagrama-mermaid.md`. Vive em `docs/relatorio/` (não em
+  `Backend/`) porque só serve ao relatório; não importa nada do Backend, então roda isolado via
+  `npx`, sem precisar de `npm install` nem do `node_modules` do Backend:
+  `cd docs/relatorio && npx -y tsx scripts/gerarDiagramaMermaid.ts`. Ao mudar schema/módulos
+  implementados ou o roadmap, atualize as constantes `ENTIDADES`/`RELACIONAMENTOS` no script e
+  rode-o de novo antes de re-renderizar as partições em `diagramas/classes/*.mmd`.
 - Diagramas de classe/DER com muitas entidades (30+) não cabem legíveis num único diagrama
   Mermaid com layout automático — por isso o diagrama de classes é particionado por subdomínio em
   `diagramas/classes/*.mmd` (ver estrutura acima), em vez de forçar tudo numa imagem só. Ao

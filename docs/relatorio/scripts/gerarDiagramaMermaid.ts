@@ -904,7 +904,7 @@ function montarDocumentoMarkdown ( diagrama: string ): string
 
   return `# 13 — Diagrama de Classes (Mermaid)
 
-Diagrama de classes do sistema, gerado a partir de \`Backend/src/scripts/gerarDiagramaMermaid.ts\`.
+Diagrama de classes do sistema, gerado a partir de \`docs/relatorio/scripts/gerarDiagramaMermaid.ts\`.
 Reflete três fontes, na ordem de precedência descrita em
 [docs/09-roadmap.md](09-roadmap.md):
 
@@ -920,11 +920,12 @@ Também aparecem entidades **descartadas**: constavam no diagrama original (Visu
 foram simplificadas ou removidas do escopo (ver
 [docs/06-modelo-de-dados.md](06-modelo-de-dados.md#princípios-de-modelagem)).
 
-Para regenerar após mudanças no schema ou no roadmap:
+Para regenerar após mudanças no schema ou no roadmap (sem depender do Backend — o script
+não usa nenhuma dependência além do Node, então roda direto via \`npx\`):
 
 \`\`\`bash
-cd Backend
-npm run diagrama:gerar
+cd docs/relatorio
+npx -y tsx scripts/gerarDiagramaMermaid.ts
 \`\`\`
 
 ## Legenda de status
@@ -944,7 +945,7 @@ ${ diagrama }
 function main (): void
 {
   const diretorioAtual = dirname ( fileURLToPath ( import.meta.url ) );
-  const caminhoRaizDocs = resolve ( diretorioAtual, '../../../docs' );
+  const caminhoRaizDocs = resolve ( diretorioAtual, '../..' );
 
   const diagrama = gerarDiagramaMermaid ();
 

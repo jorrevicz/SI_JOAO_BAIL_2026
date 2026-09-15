@@ -15,8 +15,7 @@
     "migrate:down": "dotenv -e .env -- node-pg-migrate down --config-file=database.config.json",
     "migrate:create": "dotenv -e .env -- node-pg-migrate create --config-file=database.config.json",
     "types:gen": "dotenv -e .env -- kanel",
-    "seed": "dotenv -e .env -- tsx src/db/seed.ts",
-    "diagrama:gerar": "tsx src/scripts/gerarDiagramaMermaid.ts"
+    "seed": "dotenv -e .env -- tsx src/db/seed.ts"
   },
   "keywords": [],
   "author": "",
