@@ -120,19 +120,4 @@ export class ParcelasRepository
 
         return row ?? null;
     }
-
-    async HasDependents
-    (
-        id: number,
-        transaction?: postgres.TransactionSql
-    ): Promise < boolean >
-    {
-        const client = transaction ?? sql;
-        const [ row ] = await client`
-            SELECT 1 FROM "ContasAPagar" WHERE "codParcela" = ${ id } AND "isActive" = true
-            LIMIT 1
-        `;
-
-        return !!row;
-    }
 }

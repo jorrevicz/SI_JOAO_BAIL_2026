@@ -8,12 +8,11 @@ function MakeParcelasRepo
 )
 {
     return {
-        List:          vi.fn(),
-        FindById:      vi.fn(),
-        Create:        vi.fn(),
-        Update:        vi.fn(),
-        Delete:        vi.fn(),
-        HasDependents: vi.fn(),
+        List:     vi.fn(),
+        FindById: vi.fn(),
+        Create:   vi.fn(),
+        Update:   vi.fn(),
+        Delete:   vi.fn(),
         ...over,
     };
 }
@@ -115,19 +114,9 @@ describe ( 'ParcelasService', () =>
         expect ( repo.Delete ).not.toHaveBeenCalled();
     });
 
-    it ( 'DeleteParcela lança 409 quando há dependentes', async () =>
+    it ( 'DeleteParcela deleta quando a parcela existe', async () =>
     {
         repo.FindById.mockResolvedValue ( { codParcela: 1 } );
-        repo.HasDependents.mockResolvedValue ( true );
-
-        await expect ( service.DeleteParcela ( 1, 1 ) ).rejects.toMatchObject ( { status: 409 } );
-        expect ( repo.Delete ).not.toHaveBeenCalled();
-    });
-
-    it ( 'DeleteParcela deleta quando não há dependentes', async () =>
-    {
-        repo.FindById.mockResolvedValue ( { codParcela: 1 } );
-        repo.HasDependents.mockResolvedValue ( false );
         repo.Delete.mockResolvedValue ( { codParcela: 1 } );
 
         await service.DeleteParcela ( 1, 1 );

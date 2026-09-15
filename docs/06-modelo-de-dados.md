@@ -21,7 +21,9 @@ conforme DER) e ao requisito de **formas normais**.
   que pode divergir do custo médio atual).
 - **Chaves substitutas:** cada entidade tem um identificador próprio auto-incrementado
   (`codX`). Esse mesmo `codX` serve como **cursor para paginação baseada em cursor**
-  (*cursor-based pagination*) — sem uso de `OFFSET`.
+  (*cursor-based pagination*) — sem uso de `OFFSET`. A exceção é `Compras`, que usa
+  **chave primária composta natural** (`numero` VarChar(28), `modelo` VarChar(2),
+  `serie` VarChar(2)) — o próprio documento de compra, sem `codCompra` substituto.
 - **Sufixo de contexto nos campos de endereço:** campos homônimos entre entidades
   (endereço, bairro, CEP, fone, CPF/CNPJ) recebem sufixo do subdomínio (`Forn`, `Cl`,
   `Transp`) para evitar ambiguidade em JOINs e respostas de API.
@@ -80,14 +82,14 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 | `CondicaoDePagamento` | `codCondDePag` | — | `descricao` VarChar(60), `juroCondPag`, `multaCondPag`, `descontoCondPag` |
 | `FormaDePagamento` | `codFormaDePag` | — | `formaDePag` VarChar(50), `prazoCompensacao` |
 | `Parcelas` | `codParcela` | `codCondDePag` → `CondicaoDePagamento`, `codFormaDePag` → `FormaDePagamento` | `percentual` Decimal(5,2), `numDias` |
-| `ContasAPagar` | `codContasAPag` | `codFornecedor` → `Fornecedores`, `codParcela` → `Parcelas`, `codNfe` → `NotasFiscaisEletronicas` | `vencFatura`, `vlrFatura` |
-| `ContasAReceber` | `codContasARec` | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento`, `codNfe` → `NotasFiscaisEletronicas` | `vencRecibo`, `vlrRecibo`, `dtPagamento` |
+| `ContasAPagar` | (`numero`, `modelo`, `serie`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `vencFatura`, `vlrFatura` |
+| `ContasAReceber` | (`numero`, `modelo`, `serie`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `vencRecibo`, `vlrRecibo`, `dtPagamento` |
 
 ### Compras
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Compras` | `codCompra` | `codForn` → `Fornecedores`, `codTransp` → `Transportadoras`, `codCondDePag` → `CondicaoDePagamento`, `codNfe` → `NotasFiscaisEletronicas` | |
-| `CompraProduto` | (`codCompra`, `codProduto`) | → `Compras`, → `Produtos` | `custoMedioProduto` — dado histórico (custo no momento da compra) |
+| `Compras` | (`numero`, `modelo`, `serie`) | `codForn` → `Fornecedores`, `codTransp` → `Transportadoras`, `codCondDePag` → `CondicaoDePagamento` (obrigatória) | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `dtChegada`/`dtEmissao`/`dtEntrada` (datas da operação) |
+| `CompraProduto` | (`numero`, `modelo`, `serie`, `codProduto`) | → `Compras` (composta), → `Produtos` | `custoMedioProduto` — dado histórico (custo no momento da compra) |
 
 ### Fiscal
 | Tabela | PK | FKs | Campos notáveis |
@@ -118,7 +120,7 @@ As regras de negócio (RN002 dos [Casos de Uso](07-casos-de-uso.md)) determinam 
 |---------|--------------------|----------|
 | Produto ↔ Fornecedor | `ProdutoFornecedor` | ✓ |
 | Produto ↔ Categoria | `ProdutoCategoria` | ✓ |
-| Compra ↔ Produto | `CompraProduto` | ✓ + `custoMedioProduto` (histórico) |
+| Compra ↔ Produto | `CompraProduto` | ✓ (FK composta `numero`/`modelo`/`serie`) + `custoMedioProduto` (histórico) |
 | NF-e ↔ Produto | `ProdutoNfe` | ✓ + campos tributários por item |
 | NF-e ↔ Veículo | `VeiculoNfe` | ✓ |
 

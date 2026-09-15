@@ -60,15 +60,6 @@ export class ParcelasService
             throw new AppError ( 'Parcela não encontrada.', 404 );
         }
 
-        if ( await this.repo.HasDependents ( id ) )
-        {
-            throw new AppError
-            (
-                'Não é possível excluir: há contas a pagar vinculadas a esta parcela.',
-                409
-            );
-        }
-
         await this.repo.Delete ( id, codUser );
     }
 

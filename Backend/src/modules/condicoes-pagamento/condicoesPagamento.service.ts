@@ -84,14 +84,6 @@ export class CondicoesPagamentoService
             {
                 if ( !idsParcRecebidas.has ( existente.codParcela ) )
                 {
-                    if ( await this.parcelasRepo.HasDependents ( existente.codParcela, transaction ) )
-                    {
-                        throw new AppError (
-                            'Não é possível remover: há contas a pagar vinculadas a uma parcela desta condição.',
-                            409
-                        );
-                    }
-
                     await this.parcelasRepo.Delete ( existente.codParcela, codUser, transaction );
                 }
             }

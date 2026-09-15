@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AppError } from '../../shared/errors/AppError';
 import { CondicoesPagamentoService } from '../../modules/condicoes-pagamento/condicoesPagamento.service';
 
 vi.mock ( '../../shared/transaction/withTransaction', () =>
@@ -29,12 +28,11 @@ function MakeParcelasRepo
 )
 {
     return {
-        List:          vi.fn(),
-        FindById:      vi.fn(),
-        Create:        vi.fn(),
-        Update:        vi.fn(),
-        Delete:        vi.fn(),
-        HasDependents: vi.fn(),
+        List:     vi.fn(),
+        FindById: vi.fn(),
+        Create:   vi.fn(),
+        Update:   vi.fn(),
+        Delete:   vi.fn(),
         ...over,
     };
 }
@@ -216,7 +214,6 @@ describe ( 'CondicoesPagamentoService', () =>
         ([
             { codParcela: 20, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
         ]);
-        parcelasRepo.HasDependents.mockResolvedValue ( false );
         parcelasRepo.Delete.mockResolvedValue ( { codParcela: 20 } );
 
         await service.UpdateCondicao
@@ -227,22 +224,6 @@ describe ( 'CondicoesPagamentoService', () =>
         );
 
         expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 20, 1, {} );
-    });
-
-    it ( 'UpdateCondicao lança 409 ao tentar remover parcela com dependentes', async () =>
-    {
-        repo.Update.mockResolvedValue ( { codCondDePag: 1 } );
-        parcelasRepo.List.mockResolvedValue
-        ([
-            { codParcela: 30, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
-        ]);
-        parcelasRepo.HasDependents.mockResolvedValue ( true );
-
-        await expect (
-            service.UpdateCondicao ( 1, { descricao: 'X', isActive: true, parcelas: [] }, 1 )
-        ).rejects.toMatchObject ( { status: 409 } );
-
-        expect ( parcelasRepo.Delete ).not.toHaveBeenCalled();
     });
 
     it ( 'UpdateCondicao lança 400 quando forma de parcela não existe', async () =>

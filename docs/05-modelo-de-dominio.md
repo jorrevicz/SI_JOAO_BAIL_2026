@@ -133,11 +133,27 @@ Condições/formas de pagamento, parcelamento e contas. Estrutura compartilhada 
 - **Operações:** `consultarParcelas()`, `adicionarParcelas()`, `removerParcelas()`, `editarParcelas()`
 
 ### ContasAPagar
-- **Atributos:** `codContasAPag`, `codNfe`, `codFornecedor`, `codParcela`, `vencFatura`, `vlrFatura`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
-- **Operações:** `consultarContasPagar()`, `adicionarContaPagar()`, `editarContaPagar()`, `removerContaPagar()`, `consultarParcelas()`, `registrarContaPaga()`
+- **Atributos:** `numero`, `modelo`, `serie`, `parcela`, `codFornecedor`, `codFormaDePag`, `vencFatura`, `vlrFatura`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- `numero` (VarChar(28)), `modelo` (VarChar(2)), `serie` (VarChar(2)) e `parcela` (Int) formam
+  a **chave primária composta** — chave natural do documento de compra parcelado, substituindo
+  o antigo identificador substituto `codContasAPag`; mesmo tratamento aplicado a
+  [ContasAReceber](#contasareceber) e [Compras](#compras).
+- Conta a pagar **não referencia mais NF-e diretamente** (`codNfe` removido) — o vínculo com
+  a nota fiscal deixa de ser uma FK formal em `ContasAPagar`.
+- Conta a pagar **não referencia mais `Parcelas`** (`codParcela` removido) — `parcela` passa a
+  ser o número da parcela do próprio documento, parte da chave natural, e não mais uma FK para
+  a parcela da condição de pagamento; em seu lugar, `ContasAPagar` passa a referenciar
+  **Forma de Pagamento** (`codFormaDePag`), espelhando `ContasAReceber`.
+- **Operações:** `consultarContasPagar()`, `adicionarContaPagar()`, `editarContaPagar()`, `removerContaPagar()`, `registrarContaPaga()`
 
 ### ContasAReceber
-- **Atributos:** `codContasARec`, `codNfe`, `codCliente`, `codFormaDePag`, `dtEmissao`, `vencRecibo`, `dtPagamento`, `vlrRecibo`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `numero`, `modelo`, `serie`, `parcela`, `codCliente`, `codFormaDePag`, `dtEmissao`, `vencRecibo`, `dtPagamento`, `vlrRecibo`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- `numero` (VarChar(28)), `modelo` (VarChar(2)), `serie` (VarChar(2)) e `parcela` (Int) formam
+  a **chave primária composta** — chave natural do documento de venda parcelado, substituindo
+  o antigo identificador substituto `codContasARec`; mesmo tratamento aplicado a
+  [Compras](#compras).
+- Conta a receber **não referencia mais NF-e diretamente** (`codNfe` removido) — o vínculo com
+  a nota fiscal deixa de ser uma FK formal em `ContasAReceber`.
 - **Operações:** `consultarContasReceber()`, `adicionarContaReceber()`, `editarContaReceber()`, `removerContaReceber()`, `registrarPagamentoRecebido()`
 
 ---
@@ -148,12 +164,22 @@ Registro de compras a fornecedores e os itens comprados. Operação transacional
 (ver [RNF06](04-requisitos.md#requisitos-não-funcionais)).
 
 ### Compras
-- **Atributos:** `codCompra`, `codNfe`, `codForn`, `codTransp`, `codCondDePag`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `numero`, `modelo`, `serie`, `codForn`, `codTransp`, `codCondDePag`, `dtChegada`, `dtEmissao`, `dtEntrada`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- `numero` (VarChar(28)), `modelo` (VarChar(2)) e `serie` (VarChar(2)) formam a **chave
+  primária composta** — chave natural do documento de compra, substituindo o antigo
+  identificador substituto `codCompra`.
+- `dtChegada`, `dtEmissao` e `dtEntrada` — datas de chegada da mercadoria, emissão do
+  documento de compra e da operação de entrada (registro no estoque), respectivamente.
+- `codCondDePag` é **obrigatório** (`NOT NULL`) — toda compra precisa ter uma condição
+  de pagamento definida.
+- Compra **não referencia mais NF-e diretamente** (`codNfe` removido) — o vínculo com a
+  nota fiscal, quando existir, deixa de ser uma FK formal em `Compras`.
 - **Operações:** `consultarCompras()`, `adicionarCompra()`, `cancelarCompra()`, `consultarNotaFiscal()`, `consultarCondicoesPagamento()`, `consultarProdutos()`, `consultarFornecedores()`, `consultarClientes()`, `consultarTransportadoras()`, `realizarCompra()`, `gerarNotaFiscal()`
-- **Liga-se a:** [Fornecedores](#fornecedores), [Transportadoras](#transportadoras), [Condição de Pagamento](#condicaodepagamento), [NF-e](#7-fiscal-nf-e).
+- **Liga-se a:** [Fornecedores](#fornecedores), [Transportadoras](#transportadoras), [Condição de Pagamento](#condicaodepagamento).
 
 ### CompraProduto *(associativa Compra × Produto)*
-- **Atributos:** `codCompra`, `codProduto`, `custoMedioProduto`, `dtCriacao`, `dtEdicao`, `codUser`
+- **Atributos:** `numero`, `modelo`, `serie`, `codProduto`, `custoMedioProduto`, `dtCriacao`, `dtEdicao`, `codUser`
+- `numero`, `modelo`, `serie` — chave estrangeira composta para [Compras](#compras) (substitui `codCompra`).
 - `custoMedioProduto` — dado histórico: custo unitário no momento da compra (pode divergir do custo médio atual).
 - **Operações:** `consultarCompraProdutos()`, `adicionarCompraProduto()`, `editarCompraProduto()`, `removerCompraProduto()`
 
