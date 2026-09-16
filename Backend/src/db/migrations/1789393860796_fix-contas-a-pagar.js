@@ -19,7 +19,7 @@ export const up = ( pgm ) => {
   pgm.sql ( `
     -- "ContasAPagar": adiciona as colunas da chave natural composta (documento + parcela)
     ALTER TABLE "ContasAPagar"
-      ADD COLUMN "numero"  VARCHAR(28) NOT NULL,
+      ADD COLUMN "numero"  VARCHAR(8) NOT NULL,
       ADD COLUMN "modelo"  VARCHAR(2)  NOT NULL,
       ADD COLUMN "serie"   VARCHAR(2)  NOT NULL,
       ADD COLUMN "parcela" INTEGER     NOT NULL;

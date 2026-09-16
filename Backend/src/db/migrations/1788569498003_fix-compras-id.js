@@ -15,7 +15,7 @@ export const up = ( pgm ) => {
   pgm.sql ( `
     -- "Compras": adiciona as colunas da chave natural composta
     ALTER TABLE "Compras"
-      ADD COLUMN "numero" VARCHAR(28) NOT NULL,
+      ADD COLUMN "numero" VARCHAR(8) NOT NULL,
       ADD COLUMN "modelo" VARCHAR(2)  NOT NULL,
       ADD COLUMN "serie"  VARCHAR(2)  NOT NULL;
 
@@ -26,7 +26,7 @@ export const up = ( pgm ) => {
 
     -- "CompraProduto": substitui "codCompra" pelas colunas da FK composta
     ALTER TABLE "CompraProduto"
-      ADD COLUMN "numero" VARCHAR(28) NOT NULL,
+      ADD COLUMN "numero" VARCHAR(8) NOT NULL,
       ADD COLUMN "modelo" VARCHAR(2)  NOT NULL,
       ADD COLUMN "serie"  VARCHAR(2)  NOT NULL,
       DROP COLUMN "codCompra";

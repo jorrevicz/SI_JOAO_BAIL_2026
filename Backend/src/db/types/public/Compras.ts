@@ -41,6 +41,14 @@ export default interface Compras {
   dtEmissao: Date | null;
 
   dtEntrada: Date | null;
+
+  frete: string | null;
+
+  seguro: string | null;
+
+  despesas: string | null;
+
+  justificativaCancelamento: string | null;
 }
 
 /** Represents the initializer for the table public.Compras */
@@ -73,6 +81,14 @@ export interface ComprasInitializer {
   dtEmissao?: Date | null;
 
   dtEntrada?: Date | null;
+
+  frete?: string | null;
+
+  seguro?: string | null;
+
+  despesas?: string | null;
+
+  justificativaCancelamento?: string | null;
 }
 
 /** Represents the mutator for the table public.Compras */
@@ -102,4 +118,12 @@ export interface ComprasMutator {
   dtEmissao?: Date | null;
 
   dtEntrada?: Date | null;
+
+  frete?: string | null;
+
+  seguro?: string | null;
+
+  despesas?: string | null;
+
+  justificativaCancelamento?: string | null;
 }

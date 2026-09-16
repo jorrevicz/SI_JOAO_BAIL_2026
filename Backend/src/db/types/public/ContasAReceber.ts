@@ -32,11 +32,11 @@ export default interface ContasAReceber {
 
   dtEmissao: Date | null;
 
-  vencRecibo: Date | null;
+  dtVencimento: Date | null;
 
   dtPagamento: Date | null;
 
-  vlrRecibo: string | null;
+  valor: string | null;
 
   dtCriacao: Date;
 
@@ -45,6 +45,18 @@ export default interface ContasAReceber {
   codUser: number | null;
 
   isActive: boolean;
+
+  juro: string | null;
+
+  desconto: string | null;
+
+  multa: string | null;
+
+  valorBaixa: string | null;
+
+  dtBaixa: Date | null;
+
+  justificativaCancelamento: string | null;
 }
 
 /** Represents the initializer for the table public.ContasAReceber */
@@ -63,11 +75,11 @@ export interface ContasAReceberInitializer {
 
   dtEmissao?: Date | null;
 
-  vencRecibo?: Date | null;
+  dtVencimento?: Date | null;
 
   dtPagamento?: Date | null;
 
-  vlrRecibo?: string | null;
+  valor?: string | null;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -79,6 +91,18 @@ export interface ContasAReceberInitializer {
 
   /** Default value: true */
   isActive?: boolean;
+
+  juro?: string | null;
+
+  desconto?: string | null;
+
+  multa?: string | null;
+
+  valorBaixa?: string | null;
+
+  dtBaixa?: Date | null;
+
+  justificativaCancelamento?: string | null;
 }
 
 /** Represents the mutator for the table public.ContasAReceber */
@@ -97,11 +121,11 @@ export interface ContasAReceberMutator {
 
   dtEmissao?: Date | null;
 
-  vencRecibo?: Date | null;
+  dtVencimento?: Date | null;
 
   dtPagamento?: Date | null;
 
-  vlrRecibo?: string | null;
+  valor?: string | null;
 
   dtCriacao?: Date;
 
@@ -110,4 +134,16 @@ export interface ContasAReceberMutator {
   codUser?: number | null;
 
   isActive?: boolean;
+
+  juro?: string | null;
+
+  desconto?: string | null;
+
+  multa?: string | null;
+
+  valorBaixa?: string | null;
+
+  dtBaixa?: Date | null;
+
+  justificativaCancelamento?: string | null;
 }

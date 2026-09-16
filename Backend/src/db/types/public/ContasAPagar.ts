@@ -28,9 +28,9 @@ export default interface ContasAPagar {
 
   codFornecedor: FornecedoresCodForn;
 
-  vencFatura: Date | null;
+  dtVencimento: Date | null;
 
-  vlrFatura: string | null;
+  valor: string | null;
 
   dtCriacao: Date;
 
@@ -41,6 +41,20 @@ export default interface ContasAPagar {
   isActive: boolean;
 
   codFormaDePag: FormaDePagamentoCodFormaDePag | null;
+
+  dtEmissao: Date | null;
+
+  juro: string | null;
+
+  desconto: string | null;
+
+  multa: string | null;
+
+  valorBaixa: string | null;
+
+  dtBaixa: Date | null;
+
+  justificativaCancelamento: string | null;
 }
 
 /** Represents the initializer for the table public.ContasAPagar */
@@ -55,9 +69,9 @@ export interface ContasAPagarInitializer {
 
   codFornecedor: FornecedoresCodForn;
 
-  vencFatura?: Date | null;
+  dtVencimento?: Date | null;
 
-  vlrFatura?: string | null;
+  valor?: string | null;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -71,6 +85,20 @@ export interface ContasAPagarInitializer {
   isActive?: boolean;
 
   codFormaDePag?: FormaDePagamentoCodFormaDePag | null;
+
+  dtEmissao?: Date | null;
+
+  juro?: string | null;
+
+  desconto?: string | null;
+
+  multa?: string | null;
+
+  valorBaixa?: string | null;
+
+  dtBaixa?: Date | null;
+
+  justificativaCancelamento?: string | null;
 }
 
 /** Represents the mutator for the table public.ContasAPagar */
@@ -85,9 +113,9 @@ export interface ContasAPagarMutator {
 
   codFornecedor?: FornecedoresCodForn;
 
-  vencFatura?: Date | null;
+  dtVencimento?: Date | null;
 
-  vlrFatura?: string | null;
+  valor?: string | null;
 
   dtCriacao?: Date;
 
@@ -98,4 +126,18 @@ export interface ContasAPagarMutator {
   isActive?: boolean;
 
   codFormaDePag?: FormaDePagamentoCodFormaDePag | null;
+
+  dtEmissao?: Date | null;
+
+  juro?: string | null;
+
+  desconto?: string | null;
+
+  multa?: string | null;
+
+  valorBaixa?: string | null;
+
+  dtBaixa?: Date | null;
+
+  justificativaCancelamento?: string | null;
 }
