@@ -18,7 +18,9 @@ conforme DER) e ao requisito de **formas normais**.
   `ProdutoCategoria`, `CompraProduto`, `ProdutoNfe`, `VeiculoNfe` — nenhuma carrega
   atributos redundantes copiados da entidade-pai; a exceção justificada é
   `CompraProduto.custoMedioProduto`, que é dado histórico (custo no momento da compra,
-  que pode divergir do custo médio atual).
+  que pode divergir do custo médio atual), e `CompraProduto.percentualRateio`/
+  `valorRateio`, dado calculado por item a partir dos custos adicionais da própria
+  compra (`frete`/`seguro`/`despesas`), não uma cópia de outra entidade.
 - **Chaves substitutas:** cada entidade tem um identificador próprio auto-incrementado
   (`codX`). Esse mesmo `codX` serve como **cursor para paginação baseada em cursor**
   (*cursor-based pagination*) — sem uso de `OFFSET`. A exceção é `Compras`, que usa
@@ -82,14 +84,14 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 | `CondicaoDePagamento` | `codCondDePag` | — | `descricao` VarChar(60), `juroCondPag`, `multaCondPag`, `descontoCondPag` |
 | `FormaDePagamento` | `codFormaDePag` | — | `formaDePag` VarChar(50), `prazoCompensacao` |
 | `Parcelas` | `codParcela` | `codCondDePag` → `CondicaoDePagamento`, `codFormaDePag` → `FormaDePagamento` | `percentual` Decimal(5,2), `numDias` |
-| `ContasAPagar` | (`numero`, `modelo`, `serie`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `vencFatura`, `vlrFatura` |
-| `ContasAReceber` | (`numero`, `modelo`, `serie`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `vencRecibo`, `vlrRecibo`, `dtPagamento` |
+| `ContasAPagar` | (`numero`, `modelo`, `serie`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`, `dtVencimento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
+| `ContasAReceber` | (`numero`, `modelo`, `serie`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`, `dtVencimento`, `dtPagamento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
 
 ### Compras
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Compras` | (`numero`, `modelo`, `serie`) | `codForn` → `Fornecedores`, `codTransp` → `Transportadoras`, `codCondDePag` → `CondicaoDePagamento` (obrigatória) | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `dtChegada`/`dtEmissao`/`dtEntrada` (datas da operação) |
-| `CompraProduto` | (`numero`, `modelo`, `serie`, `codProduto`) | → `Compras` (composta), → `Produtos` | `custoMedioProduto` — dado histórico (custo no momento da compra) |
+| `Compras` | (`numero`, `modelo`, `serie`) | `codForn` → `Fornecedores`, `codTransp` → `Transportadoras`, `codCondDePag` → `CondicaoDePagamento` (obrigatória) | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `classificacaoCompra` (`obra-prima`\|`revenda`\|`serviços`), `dtChegada`/`dtEmissao`/`dtEntrada` (datas da operação — `dtChegada` ≥ `dtEmissao` e ≤ data atual), `frete`, `seguro`, `despesas`, `justificativaCancelamento` VarChar(255) |
+| `CompraProduto` | (`numero`, `modelo`, `serie`, `codProduto`) | → `Compras` (composta), → `Produtos` | `custoMedioProduto` — dado histórico (custo no momento da compra); `percentualRateio` Decimal(5,2), `valorRateio` Decimal — rateio dos custos adicionais (`frete`/`seguro`/`despesas`) por item |
 
 ### Fiscal
 | Tabela | PK | FKs | Campos notáveis |
@@ -120,7 +122,7 @@ As regras de negócio (RN002 dos [Casos de Uso](07-casos-de-uso.md)) determinam 
 |---------|--------------------|----------|
 | Produto ↔ Fornecedor | `ProdutoFornecedor` | ✓ |
 | Produto ↔ Categoria | `ProdutoCategoria` | ✓ |
-| Compra ↔ Produto | `CompraProduto` | ✓ (FK composta `numero`/`modelo`/`serie`) + `custoMedioProduto` (histórico) |
+| Compra ↔ Produto | `CompraProduto` | ✓ (FK composta `numero`/`modelo`/`serie`) + `custoMedioProduto` (histórico) + `percentualRateio`/`valorRateio` (rateio de custos adicionais) |
 | NF-e ↔ Produto | `ProdutoNfe` | ✓ + campos tributários por item |
 | NF-e ↔ Veículo | `VeiculoNfe` | ✓ |
 

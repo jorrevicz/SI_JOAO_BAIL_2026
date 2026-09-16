@@ -16,6 +16,23 @@ e o módulo de usuários ([Users](05-modelo-de-dominio.md#users)).
 `entrarConta()`, `sairConta()`, `registrarConta()`, `editarConta()`, `mudarSenha()`,
 `excluirConta()`.
 
+## Reautenticação para cancelamento (RN003)
+
+Além da sessão ativa exigida por RN001, toda operação de **cancelamento** —
+`cancelarCompra()`, `cancelarContaPagar()`, `cancelarContaReceber()`,
+`cancelarNotaFiscal()` e o cancelamento de parcela — exige que o usuário
+**reautentique** (informe a senha novamente) imediatamente antes de confirmar a
+ação, mesmo com sessão ativa. O objetivo é um segundo fator de confirmação para uma
+ação destrutiva sobre documentos financeiros/fiscais, não uma nova sessão completa.
+
+- **Backend:** a rota de cancelamento exige, além do `authMiddleware`, a senha atual
+  do usuário no corpo da requisição; a senha é validada antes de executar
+  `cancelarX()` — falha retorna 401.
+- **Frontend:** o formulário de cancelamento pede a senha num passo de confirmação
+  antes de habilitar o botão de confirmar.
+- Ver [Casos de Uso](07-casos-de-uso.md#regras-de-negócio-transversais) (RN003) para
+  a lista completa de operações afetadas.
+
 ## Atores e perfis
 
 O atributo `Users.perfil` define o papel do usuário. Atores previstos
@@ -53,6 +70,6 @@ com rollback total em caso de falha (ver [Arquitetura](02-arquitetura.md#princí
 ## Documentos relacionados
 
 - [Requisitos](04-requisitos.md) — RNF03–RNF06.
-- [Casos de Uso](07-casos-de-uso.md) — RN001 e fluxos por ator.
+- [Casos de Uso](07-casos-de-uso.md) — RN001–RN003 e fluxos por ator.
 - [Modelo de Domínio](05-modelo-de-dominio.md#8-acesso-e-usuários) — entidade `Users`.
 - [Modelo de Dados](06-modelo-de-dados.md) — campos de auditoria.

@@ -38,7 +38,7 @@ Cada item abaixo é um módulo "Manter/Gerenciar" (CRUD + operações específic
 |-----|-----------|----------------|
 | RNF01 | Todas as telas devem ser **responsivas** (desktop e mobile). | [Stack](03-stack-tecnologica.md) (styled-components) |
 | RNF02 | Tempo de resposta das consultas **≤ 2 segundos**. | [Arquitetura](02-arquitetura.md) |
-| RNF03 | **Autenticação obrigatória** em todos os módulos, exceto login/cadastro. | [Segurança](08-seguranca-e-autenticacao.md) |
+| RNF03 | **Autenticação obrigatória** em todos os módulos, exceto login/cadastro; operações de **cancelamento** exigem reautenticação (RN003). | [Segurança](08-seguranca-e-autenticacao.md) |
 | RNF04 | **Logs de auditoria** para toda inserção, alteração e exclusão. | [Segurança](08-seguranca-e-autenticacao.md) |
 | RNF05 | Proteção contra **SQL Injection, XSS e CSRF**. | [Segurança](08-seguranca-e-autenticacao.md) |
 | RNF06 | Transações críticas (compras, NF, contas) devem ser **atômicas** (rollback em falha). | [Arquitetura](02-arquitetura.md) |

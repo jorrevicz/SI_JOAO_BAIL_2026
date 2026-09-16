@@ -14,6 +14,12 @@ Aplicam-se a praticamente todos os casos de uso:
 - **RN002 — Exclusão protegida:** não se exclui um registro relacionado a outros
   (integridade referencial). Implementação em
   [Modelo de Dados](06-modelo-de-dados.md#integridade-referencial-e-exclusão).
+- **RN003 — Reautenticação para cancelamento:** toda operação de **cancelamento**
+  (`cancelarCompra()`, `cancelarContaPagar()`, `cancelarContaReceber()`,
+  `cancelarNotaFiscal()`, cancelamento de parcela) exige que o usuário **reautentique**
+  (informe a senha novamente) imediatamente antes de confirmar a ação, mesmo com sessão
+  ativa. Detalhamento em
+  [Segurança](08-seguranca-e-autenticacao.md#reautenticação-para-cancelamento-rn003).
 
 Pré-condição comum: **usuário previamente cadastrado** (respeitando RN001).
 Ativação comum: **clicar no item de menu** correspondente.
@@ -60,6 +66,8 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **Ator:** Usuário · **RF:** RF06
 - **RN002:** não excluir parcela relacionada a condições de pagamento ou contas.
 - Parcelas são gerenciadas **dentro** do formulário de Condição de Pagamento (RN003–RN006 aplicadas no conjunto); o endpoint standalone `/api/parcelas` permanece para consultas e ajustes avulsos.
+- **RN003 (transversal):** cancelar uma parcela exige reautenticação — ver
+  [regras transversais](#regras-de-negócio-transversais).
 - **Pós-condição:** cadastrar, consultar, editar e **cancelar** parcelas.
 
 ### Gerenciar Fornecedores
@@ -89,17 +97,56 @@ Ativação comum: **clicar no item de menu** correspondente.
 ### Gerenciar Contas a Pagar
 - **Ator:** Usuário · **RF:** RF11
 - **RN002:** não excluir conta a pagar relacionada a parcelas ou fornecedores.
+- **RN003 (transversal):** `cancelarContaPagar()` exige reautenticação — ver
+  [regras transversais](#regras-de-negócio-transversais).
+- **RN004 — Cancelamento só antes da baixa:** `cancelarContaPagar()` só é permitido
+  enquanto `valorBaixa`/`dtBaixa` ainda estiverem nulos (título não pago); um título já
+  baixado não pode ser cancelado.
 - **Pós-condição:** cadastrar, consultar, editar, remover e **cancelar** contas a pagar.
 
 ### Gerenciar Contas a Receber
 - **Ator:** Usuário · **RF:** RF12
 - **RN002:** não excluir conta a receber relacionada a parcelas ou clientes.
+- **RN003 (transversal):** `cancelarContaReceber()` exige reautenticação — ver
+  [regras transversais](#regras-de-negócio-transversais).
+- **RN004 — Cancelamento só antes da baixa:** `cancelarContaReceber()` só é permitido
+  enquanto `valorBaixa`/`dtBaixa`/`dtPagamento` ainda estiverem nulos (título não
+  recebido); um título já baixado não pode ser cancelado.
 - **Pós-condição:** cadastrar, consultar, editar, remover e **cancelar** contas a receber.
 
 ### Gerenciar Compras
 - **Ator:** Usuário · **RF:** RF13
 - **RN002:** a geração de NF-e só aparece **após validação completa** da compra.
 - **RN003:** compra com nota fiscal já gerada mostra opção apenas para **consultar/solicitar**.
+- **RN004 — Data de chegada:** `dtChegada` não pode ser **anterior** a `dtEmissao`
+  (pode ser igual ou posterior a ela) e deve estar **entre `dtEmissao` e a data
+  atual** — não é permitida data de chegada futura.
+- **RN005 — Classificação única da compra:** toda compra tem exatamente uma
+  `classificacaoCompra` (**obra-prima**, **revenda** ou **serviços**); não é permitido
+  misturar produtos de classificações/propósitos diferentes numa mesma compra (nota
+  fiscal).
+- **RN006 — Condição de pagamento herdada do fornecedor:** ao selecionar o
+  fornecedor, `codCondDePag` é pré-preenchido com a condição de pagamento cadastrada
+  nele; o usuário pode **alterá-la apenas para aquela compra** — a alteração não é
+  gravada de volta no cadastro do fornecedor, que permanece íntegro para consultas
+  futuras.
+- **RN007 — Validação prévia dos códigos do documento:** numa **nova** compra, os
+  demais campos do formulário só são liberados para edição depois que `numero`/
+  `modelo`/`serie` forem validados (formato e inexistência prévia no banco) via
+  consulta dedicada.
+- **RN008 — Exclusão consultável:** ao excluir uma compra, o formulário é
+  apresentado em **modo de consulta** antes de confirmar a exclusão da lista de
+  compras.
+- **RN009 — Custos adicionais antes dos produtos:** os custos adicionais (`frete`,
+  `seguro`, `despesas`) são apresentados **antes** da tabela de produtos no
+  formulário, pois compõem o rateio de custo aplicado a cada item.
+- **RN010 — Total após os subtotais:** o total geral da compra é apresentado
+  **depois** dos subtotais que o compõem (condição de pagamento, subtotal dos
+  produtos, despesas e demais cálculos que impactem a nota final).
+- **RN011 — Rateio de produtos:** a tabela de produtos apresenta o rateio dos
+  custos adicionais por item tanto em **percentual** quanto em **valor**.
+- **RN003 (transversal):** `cancelarCompra()` exige reautenticação — ver
+  [regras transversais](#regras-de-negócio-transversais).
 - **Pós-condição:** cadastrar, consultar, editar, cancelar compras e **gerar nota
   fiscal eletrônica**.
 
@@ -108,6 +155,8 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **RF:** RF14 · **RNF10** (emissão de NF-e).
 - **RN002:** fornecedor, cliente e transportadora participam de fluxos específicos
   (solicitar, confirmar entrega).
+- **RN003 (transversal):** `cancelarNotaFiscal()` exige reautenticação — ver
+  [regras transversais](#regras-de-negócio-transversais).
 - **Pós-condição:** consultar, adicionar, editar, remover, gerar, solicitar,
   confirmar entrega/recebimento e fornecer dados de transporte da nota.
 
@@ -123,4 +172,4 @@ Ativação comum: **clicar no item de menu** correspondente.
 
 - [Requisitos](04-requisitos.md) — RF/RNF associados a cada caso de uso.
 - [Modelo de Domínio](05-modelo-de-dominio.md) — operações que implementam cada fluxo.
-- [Segurança e Autenticação](08-seguranca-e-autenticacao.md) — RN001 e papéis de ator.
+- [Segurança e Autenticação](08-seguranca-e-autenticacao.md) — RN001, RN003 e papéis de ator.

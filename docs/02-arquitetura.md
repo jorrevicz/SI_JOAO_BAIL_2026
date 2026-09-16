@@ -145,6 +145,17 @@ DELETE /api/paises/:id      → remover
 A coluna **consultas primeiro** do [Roadmap](09-roadmap.md) significa implementar os
 `GET` de cada recurso antes dos demais verbos.
 
+Quando um formulário depende de um **código de documento** (chave natural) que precisa
+ser validado — formato e inexistência prévia no banco — antes de liberar a edição dos
+demais campos, o padrão é uma rota de consulta dedicada, sem efeito colateral:
+
+```
+GET /api/compras/validar?numero=...&modelo=...&serie=...   → valida antes de criar
+```
+
+Ver [Compras](05-modelo-de-dominio.md#6-compras) (RN007) para o primeiro uso desse
+padrão.
+
 ## Validação de entrada e erros por campo (RNF05, RNF07)
 
 A validação de payload é feita **no Backend**, pelo middleware `validate(schema)`
