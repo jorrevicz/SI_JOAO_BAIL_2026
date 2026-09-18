@@ -123,6 +123,8 @@ export class FormasPagamentoRepository
             SELECT 1 FROM "Parcelas"        WHERE "codFormaDePag" = ${ id } AND "isActive" = true
             UNION ALL
             SELECT 1 FROM "ContasAReceber"  WHERE "codFormaDePag" = ${ id } AND "isActive" = true
+            UNION ALL
+            SELECT 1 FROM "ContasAPagar"    WHERE "codFormaDePag" = ${ id } AND "isActive" = true
             LIMIT 1
         `;
 

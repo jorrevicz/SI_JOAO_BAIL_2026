@@ -3,7 +3,11 @@ import { z } from 'zod';
 const parcelaCondicaoSchema = z.object
 (
     {
-        codParcela:    z.coerce.number().int().positive().optional(),
+        codParcela: z
+            .coerce.number()
+            .int()
+            .positive()
+            .optional(),
         codFormaDePag: z
             .coerce.number ( { message: 'A forma de pagamento é obrigatória.' } )
             .int()
@@ -16,7 +20,9 @@ const parcelaCondicaoSchema = z.object
             .coerce.number ( { message: 'O número de dias deve ser um número inteiro.' } )
             .int()
             .min ( 1, 'A parcela deve ter ao menos 1 dia (à vista = 1).' ),
-        isActive: z.boolean().optional().default ( true ),
+        isActive: z
+            .boolean()
+            .default ( true ),
     }
 );
 
@@ -65,16 +71,13 @@ const camposCondicao = {
         .max ( 60 ),
     juroCondPag: z
         .coerce.number ( { message: 'Juros deve ser um número.' } )
-        .nonnegative ( 'Juros não pode ser negativo.' )
-        .optional(),
+        .nonnegative ( 'Juros não pode ser negativo.' ),
     multaCondPag: z
         .coerce.number ( { message: 'Multa deve ser um número.' } )
-        .nonnegative ( 'Multa não pode ser negativa.' )
-        .optional(),
+        .nonnegative ( 'Multa não pode ser negativa.' ),
     descontoCondPag: z
         .coerce.number ( { message: 'Desconto deve ser um número.' } )
-        .nonnegative ( 'Desconto não pode ser negativo.' )
-        .optional(),
+        .nonnegative ( 'Desconto não pode ser negativo.' ),
     parcelas: z
         .array ( parcelaCondicaoSchema )
         .min ( 1, 'A condição deve ter ao menos uma parcela.' ),

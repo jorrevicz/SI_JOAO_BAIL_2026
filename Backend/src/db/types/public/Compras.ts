@@ -4,6 +4,7 @@
 import type { FornecedoresCodForn } from './Fornecedores';
 import type { TransportadorasCodTransp } from './Transportadoras';
 import type { CondicaoDePagamentoCodCondDePag } from './CondicaoDePagamento';
+import type { ClassificacoesCompraCodClassificacaoCompra } from './ClassificacoesCompra';
 
 /** Identifier type for public.Compras */
 export type ComprasNumero = string & { __brand: 'public.Compras' };
@@ -28,6 +29,8 @@ export default interface Compras {
 
   codCondDePag: CondicaoDePagamentoCodCondDePag;
 
+  vlrTotal: number;
+
   dtCriacao: Date;
 
   dtEdicao: Date;
@@ -42,13 +45,15 @@ export default interface Compras {
 
   dtEntrada: Date | null;
 
-  frete: string | null;
+  frete: string;
 
-  seguro: string | null;
+  seguro: string;
 
-  despesas: string | null;
+  despesas: string;
 
   justificativaCancelamento: string | null;
+
+  codClassificacaoCompra: ClassificacoesCompraCodClassificacaoCompra;
 }
 
 /** Represents the initializer for the table public.Compras */
@@ -64,6 +69,8 @@ export interface ComprasInitializer {
   codTransp?: TransportadorasCodTransp | null;
 
   codCondDePag: CondicaoDePagamentoCodCondDePag;
+
+  vlrTotal: number;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -82,13 +89,15 @@ export interface ComprasInitializer {
 
   dtEntrada?: Date | null;
 
-  frete?: string | null;
+  frete: string;
 
-  seguro?: string | null;
+  seguro: string;
 
-  despesas?: string | null;
+  despesas: string;
 
   justificativaCancelamento?: string | null;
+
+  codClassificacaoCompra: ClassificacoesCompraCodClassificacaoCompra;
 }
 
 /** Represents the mutator for the table public.Compras */
@@ -105,6 +114,8 @@ export interface ComprasMutator {
 
   codCondDePag?: CondicaoDePagamentoCodCondDePag;
 
+  vlrTotal?: number;
+
   dtCriacao?: Date;
 
   dtEdicao?: Date;
@@ -119,11 +130,13 @@ export interface ComprasMutator {
 
   dtEntrada?: Date | null;
 
-  frete?: string | null;
+  frete?: string;
 
-  seguro?: string | null;
+  seguro?: string;
 
-  despesas?: string | null;
+  despesas?: string;
 
   justificativaCancelamento?: string | null;
+
+  codClassificacaoCompra?: ClassificacoesCompraCodClassificacaoCompra;
 }

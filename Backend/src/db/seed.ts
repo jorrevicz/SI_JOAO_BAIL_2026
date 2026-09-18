@@ -118,6 +118,11 @@ const CATEGORIAS_LISTA = [
   { categoria: 'SOFTWARE E LICENÇAS' },
 ];
 
+// Domínio fechado da classificação de propósito da compra (RN005) — os três valores
+// são fixos e sustentam regra de negócio; não se confundem com "Categorias", que é a
+// taxonomia aberta do catálogo de produtos.
+const CLASSIFICACOES_COMPRA = [ 'obra-prima', 'revenda', 'serviços' ];
+
 async function seedGeografico(): Promise < Record < string, number > > {
   // Paises tem unique index em sigla — usa ON CONFLICT
   const [brasil] = await sql`
@@ -173,6 +178,18 @@ async function seedGeografico(): Promise < Record < string, number > > {
   }
 
   return estadoMap;
+}
+
+async function seedClassificacoesCompra(): Promise < void >
+{
+  for ( const classificacao of CLASSIFICACOES_COMPRA )
+  {
+    await sql`
+      INSERT INTO "ClassificacoesCompra" ( "classificacaoCompra" )
+      VALUES ( ${ classificacao } )
+      ON CONFLICT ( "classificacaoCompra" ) DO NOTHING
+    `;
+  }
 }
 
 async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < Record < string, number > >
@@ -260,32 +277,46 @@ async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < 
       WHERE "produto" = ${ prod.produto }
       LIMIT 1
     `;
+
+    let codProd: number;
+
     if ( existing.length > 0 )
     {
+      codProd = existing [ 0 ].codProd;
+
       await sql`
         UPDATE "Produtos" SET
           "undProduto"     = ${ prod.undProduto },
-          "codCategoria"   = ${ prod.codCategoria },
           "pesoBruto"      = ${ prod.pesoBruto },
           "pesoLiq"        = ${ prod.pesoLiq },
           "saldoProd"      = ${ prod.saldoProd },
           "custoMedioProd" = ${ prod.custoMedioProd },
           "estoque"        = ${ prod.estoque }
-        WHERE "codProd" = ${ existing[ 0 ].codProd }
+        WHERE "codProd" = ${ codProd }
       `;
     }
     else
     {
-      await sql`
+      const [ inserted ] = await sql`
         INSERT INTO "Produtos"
-          ( "produto", "undProduto", "codCategoria", "pesoBruto", "pesoLiq",
+          ( "produto", "undProduto", "pesoBruto", "pesoLiq",
            "saldoProd", "custoMedioProd", "estoque" )
         VALUES
-          ( ${ prod.produto }, ${ prod.undProduto }, ${ prod.codCategoria },
+          ( ${ prod.produto }, ${ prod.undProduto },
            ${ prod.pesoBruto }, ${ prod.pesoLiq }, ${ prod.saldoProd },
            ${ prod.custoMedioProd }, ${ prod.estoque } )
+        RETURNING "codProd"
       `;
+
+      codProd = inserted.codProd;
     }
+
+    // Produto ↔ Categoria é N:N — o vínculo vive na associativa, não em "Produtos"
+    await sql`
+      INSERT INTO "ProdutoCategoria" ( "codProduto", "codCategoria" )
+      VALUES ( ${ codProd }, ${ prod.codCategoria } )
+      ON CONFLICT DO NOTHING
+    `;
   }
 
   void estadoMap;
@@ -315,8 +346,8 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
   else
   {
     const [ inserted ] = await sql`
-      INSERT INTO "CondicaoDePagamento" ( "descricao" )
-      VALUES ( 'À VISTA' )
+      INSERT INTO "CondicaoDePagamento" ( "descricao", "juroCondPag", "multaCondPag", "descontoCondPag" )
+      VALUES ( 'À VISTA', '0.00', '0.00', '0.00' )
       RETURNING "codCondDePag"
     `;
     codCondDePag = inserted.codCondDePag;
@@ -516,9 +547,9 @@ async function seedFinanceiro(): Promise < void >
 {
   // Condições de pagamento
   const condicoes = [
-    { descricao: 'À VISTA',       juroCondPag: null,   multaCondPag: null,   descontoCondPag: '5.00' },
-    { descricao: '30 DIAS',       juroCondPag: '1.00', multaCondPag: '2.00', descontoCondPag: null   },
-    { descricao: '30/60/90 DIAS', juroCondPag: '1.50', multaCondPag: '2.00', descontoCondPag: null   },
+    { descricao: 'À VISTA',       juroCondPag: '0.00', multaCondPag: '0.00', descontoCondPag: '5.00' },
+    { descricao: '30 DIAS',       juroCondPag: '1.00', multaCondPag: '2.00', descontoCondPag: '0.00' },
+    { descricao: '30/60/90 DIAS', juroCondPag: '1.50', multaCondPag: '2.00', descontoCondPag: '0.00' },
   ];
 
   const codCondMap: Record < string, number > = {};
@@ -620,6 +651,87 @@ async function seedFinanceiro(): Promise < void >
   }
 }
 
+// ============================================================
+// T-041 — Seed de Contas a Pagar
+// Ordem: Fornecedores → FormaDePagamento → ContasAPagar
+// ============================================================
+
+async function seedContasAPagar(): Promise < void >
+{
+  const [ forn1 ] = await sql`
+    SELECT "codForn" FROM "Fornecedores" WHERE "cpfCnpjForn" = '12345678000190' LIMIT 1
+  `;
+  const [ forn2 ] = await sql`
+    SELECT "codForn" FROM "Fornecedores" WHERE "cpfCnpjForn" = '98765432000110' LIMIT 1
+  `;
+  const [ boleto ] = await sql`
+    SELECT "codFormaDePag" FROM "FormaDePagamento" WHERE "formaDePag" = 'BOLETO BANCÁRIO' LIMIT 1
+  `;
+  const [ pix ] = await sql`
+    SELECT "codFormaDePag" FROM "FormaDePagamento" WHERE "formaDePag" = 'PIX' LIMIT 1
+  `;
+
+  if ( !forn1 || !forn2 || !boleto || !pix )
+  {
+    throw new Error ( 'Fornecedores/Formas de Pagamento de referência não encontrados — rode seedParceiros e seedFinanceiro primeiro.' );
+  }
+
+  const contas = [
+    {
+      numero:        '00000001',
+      modelo:        '55',
+      serie:         '01',
+      parcela:       1,
+      codFornecedor: forn1.codForn,
+      codFormaDePag: boleto.codFormaDePag,
+      dtEmissao:     '2026-09-01',
+      dtVencimento:  '2026-10-01',
+      valor:         '3200.00',
+      juro:          '0.00',
+      desconto:      '0.00',
+      multa:         '0.00',
+    },
+    {
+      numero:        '00000002',
+      modelo:        '55',
+      serie:         '01',
+      parcela:       1,
+      codFornecedor: forn2.codForn,
+      codFormaDePag: pix.codFormaDePag,
+      dtEmissao:     '2026-09-05',
+      dtVencimento:  '2026-09-05',
+      valor:         '1950.00',
+      juro:          '0.00',
+      desconto:      '5.00',
+      multa:         '0.00',
+    },
+  ];
+
+  for ( const conta of contas )
+  {
+    const existing = await sql`
+      SELECT 1 FROM "ContasAPagar"
+      WHERE "numero"  = ${ conta.numero }
+      AND   "modelo"  = ${ conta.modelo }
+      AND   "serie"   = ${ conta.serie }
+      AND   "parcela" = ${ conta.parcela }
+      LIMIT 1
+    `;
+    if ( existing.length === 0 )
+    {
+      await sql`
+        INSERT INTO "ContasAPagar"
+          ( "numero", "modelo", "serie", "parcela", "codFornecedor", "codFormaDePag",
+           "dtEmissao", "dtVencimento", "valor", "juro", "desconto", "multa" )
+        VALUES
+          ( ${ conta.numero }, ${ conta.modelo }, ${ conta.serie }, ${ conta.parcela },
+           ${ conta.codFornecedor }, ${ conta.codFormaDePag }, ${ conta.dtEmissao },
+           ${ conta.dtVencimento }, ${ conta.valor }, ${ conta.juro }, ${ conta.desconto }, ${ conta.multa } )
+      `;
+    }
+  }
+}
+
 async function main()
 {
   console.log ( 'Iniciando seed...' );
@@ -632,6 +744,10 @@ async function main()
   await seedCatalogo(estadoMap);
   console.log ( `  -> ${CATEGORIAS_LISTA.length} categorias, 5 produtos.` );
 
+  console.log ( '  Classificações de Compra...' );
+  await seedClassificacoesCompra();
+  console.log ( `  -> ${CLASSIFICACOES_COMPRA.length} classificações de compra.` );
+
   console.log ( '  Parceiros (Fornecedores, Clientes, Veículos, Transportadoras)...' );
   await seedParceiros(estadoMap);
   console.log ( '  -> 2 fornecedores, 1 condição de pagamento, 2 clientes, 1 veículo, 1 transportadora.' );
@@ -639,6 +755,10 @@ async function main()
   console.log ( '  Financeiro (Condições, Formas de Pagamento, Parcelas)...' );
   await seedFinanceiro();
   console.log ( '  -> 3 condições de pagamento, 4 formas de pagamento, 5 parcelas.' );
+
+  console.log ( '  Contas a Pagar...' );
+  await seedContasAPagar();
+  console.log ( '  -> 2 contas a pagar.' );
 
   console.log ( 'Seed concluído.' );
 }

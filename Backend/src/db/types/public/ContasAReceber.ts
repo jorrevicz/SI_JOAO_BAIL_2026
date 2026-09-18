@@ -28,7 +28,7 @@ export default interface ContasAReceber {
 
   codCliente: ClientesCodCliente;
 
-  codFormaDePag: FormaDePagamentoCodFormaDePag | null;
+  codFormaDePag: FormaDePagamentoCodFormaDePag;
 
   dtEmissao: Date | null;
 
@@ -36,7 +36,7 @@ export default interface ContasAReceber {
 
   dtPagamento: Date | null;
 
-  valor: string | null;
+  valor: string;
 
   dtCriacao: Date;
 
@@ -46,11 +46,11 @@ export default interface ContasAReceber {
 
   isActive: boolean;
 
-  juro: string | null;
+  juro: string;
 
-  desconto: string | null;
+  desconto: string;
 
-  multa: string | null;
+  multa: string;
 
   valorBaixa: string | null;
 
@@ -71,7 +71,7 @@ export interface ContasAReceberInitializer {
 
   codCliente: ClientesCodCliente;
 
-  codFormaDePag?: FormaDePagamentoCodFormaDePag | null;
+  codFormaDePag: FormaDePagamentoCodFormaDePag;
 
   dtEmissao?: Date | null;
 
@@ -79,7 +79,7 @@ export interface ContasAReceberInitializer {
 
   dtPagamento?: Date | null;
 
-  valor?: string | null;
+  valor: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -92,11 +92,11 @@ export interface ContasAReceberInitializer {
   /** Default value: true */
   isActive?: boolean;
 
-  juro?: string | null;
+  juro: string;
 
-  desconto?: string | null;
+  desconto: string;
 
-  multa?: string | null;
+  multa: string;
 
   valorBaixa?: string | null;
 
@@ -117,7 +117,7 @@ export interface ContasAReceberMutator {
 
   codCliente?: ClientesCodCliente;
 
-  codFormaDePag?: FormaDePagamentoCodFormaDePag | null;
+  codFormaDePag?: FormaDePagamentoCodFormaDePag;
 
   dtEmissao?: Date | null;
 
@@ -125,7 +125,7 @@ export interface ContasAReceberMutator {
 
   dtPagamento?: Date | null;
 
-  valor?: string | null;
+  valor?: string;
 
   dtCriacao?: Date;
 
@@ -135,11 +135,11 @@ export interface ContasAReceberMutator {
 
   isActive?: boolean;
 
-  juro?: string | null;
+  juro?: string;
 
-  desconto?: string | null;
+  desconto?: string;
 
-  multa?: string | null;
+  multa?: string;
 
   valorBaixa?: string | null;
 

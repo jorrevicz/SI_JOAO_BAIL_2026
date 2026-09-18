@@ -23,9 +23,9 @@ export const up = ( pgm ) => {
   pgm.sql ( `
     -- "Compras": campos numéricos de custo da operação e justificativa de cancelamento
     ALTER TABLE "Compras"
-      ADD COLUMN "frete"                    DECIMAL(10,2),
-      ADD COLUMN "seguro"                   DECIMAL(10,2),
-      ADD COLUMN "despesas"                 DECIMAL(10,2),
+      ADD COLUMN "frete"                    DECIMAL(10,2) NOT NULL,
+      ADD COLUMN "seguro"                   DECIMAL(10,2) NOT NULL,
+      ADD COLUMN "despesas"                 DECIMAL(10,2) NOT NULL,
       ADD COLUMN "justificativaCancelamento" VARCHAR(255);
 
     -- "ContasAPagar": unifica nomenclatura de vencimento e valor
@@ -38,9 +38,9 @@ export const up = ( pgm ) => {
     -- baixa e justificativa de cancelamento
     ALTER TABLE "ContasAPagar"
       ADD COLUMN "dtEmissao"                 TIMESTAMP(3),
-      ADD COLUMN "juro"                      DECIMAL(10,2),
-      ADD COLUMN "desconto"                  DECIMAL(10,2),
-      ADD COLUMN "multa"                     DECIMAL(10,2),
+      ADD COLUMN "juro"                      DECIMAL(10,2) NOT NULL,
+      ADD COLUMN "desconto"                  DECIMAL(10,2) NOT NULL,
+      ADD COLUMN "multa"                     DECIMAL(10,2) NOT NULL,
       ADD COLUMN "valorBaixa"                DECIMAL(10,2),
       ADD COLUMN "dtBaixa"                   TIMESTAMP(3),
       ADD COLUMN "justificativaCancelamento" VARCHAR(255);
@@ -53,9 +53,9 @@ export const up = ( pgm ) => {
 
     -- "ContasAReceber": encargos, baixa e justificativa de cancelamento
     ALTER TABLE "ContasAReceber"
-      ADD COLUMN "juro"                      DECIMAL(10,2),
-      ADD COLUMN "desconto"                  DECIMAL(10,2),
-      ADD COLUMN "multa"                     DECIMAL(10,2),
+      ADD COLUMN "juro"                      DECIMAL(10,2) NOT NULL,
+      ADD COLUMN "desconto"                  DECIMAL(10,2) NOT NULL,
+      ADD COLUMN "multa"                     DECIMAL(10,2) NOT NULL,
       ADD COLUMN "valorBaixa"                DECIMAL(10,2),
       ADD COLUMN "dtBaixa"                   TIMESTAMP(3),
       ADD COLUMN "justificativaCancelamento" VARCHAR(255);

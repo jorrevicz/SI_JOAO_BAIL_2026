@@ -42,7 +42,7 @@ export const up = ( pgm ) => {
 
     -- "ContasAPagar": adiciona o vínculo com a forma de pagamento
     ALTER TABLE "ContasAPagar"
-      ADD COLUMN "codFormaDePag" INTEGER;
+      ADD COLUMN "codFormaDePag" INTEGER  NOT NULL;
     CREATE INDEX "ContasAPagar_codFormaDePag_idx" ON "ContasAPagar" ( "codFormaDePag" );
     ALTER TABLE "ContasAPagar"
       ADD CONSTRAINT "ContasAPagar_codFormaDePag_fkey"

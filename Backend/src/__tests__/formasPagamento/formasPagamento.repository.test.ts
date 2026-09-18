@@ -1,9 +1,12 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import sql from '../../lib/db';
 import withTestTransaction from '../helpers/db-helper';
+import { criarFornecedorDeTeste } from '../helpers/fixtures';
 import { FormasPagamentoRepository } from '../../modules/formas-pagamento/formasPagamento.repository';
+import { ContasPagamentoRepository } from '../../modules/contas-pagamento/contas-pagamento.repository';
 
 const repoFormas = new FormasPagamentoRepository();
+const repoContasPagar = new ContasPagamentoRepository();
 
 describe ( 'FormasPagamentoRepository (rollback)', () =>
 {
@@ -52,6 +55,58 @@ describe ( 'FormasPagamentoRepository (rollback)', () =>
 
             expect ( atualizada?.formaDePag ).toBe ( 'Cartão Editado' );
             expect ( atualizada?.prazoCompensacao ).toBe ( 5 );
+        });
+    });
+
+    it ( 'HasDependents retorna false quando não há dependentes', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const nova = await repoFormas.Create
+            (
+                { formaDePag: 'Sem Dependentes' },
+                1,
+                transaction
+            );
+
+            const temDependentes = await repoFormas.HasDependents ( nova.codFormaDePag, transaction );
+            expect ( temDependentes ).toBe ( false );
+        });
+    });
+
+    it ( 'HasDependents retorna true quando há uma conta a pagar vinculada', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const nova = await repoFormas.Create
+            (
+                { formaDePag: 'Usada em Conta a Pagar' },
+                1,
+                transaction
+            );
+
+            const codFornecedor = await criarFornecedorDeTeste ( transaction );
+
+            await repoContasPagar.Create
+            (
+                {
+                    numero:  '00000009',
+                    modelo:  '01',
+                    serie:   '01',
+                    parcela: 1,
+                    codFornecedor,
+                    codFormaDepag: nova.codFormaDePag,
+                    valor: '100.00',
+                    juro: '0.00',
+                    desconto: '0.00',
+                    multa: '0.00',
+                } as never,
+                1,
+                transaction
+            );
+
+            const temDependentes = await repoFormas.HasDependents ( nova.codFormaDePag, transaction );
+            expect ( temDependentes ).toBe ( true );
         });
     });
 });

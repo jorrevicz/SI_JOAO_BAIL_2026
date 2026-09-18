@@ -64,6 +64,7 @@ describe ( 'CondicoesPagamento routes', () =>
             .post ( '/api/condicoes-pagamento' )
             .send ({
                 descricao: 'Soma Errada',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [
                     { codFormaDePag, percentual: 40, numDias: 30, isActive: true },
@@ -85,6 +86,7 @@ describe ( 'CondicoesPagamento routes', () =>
             .post ( '/api/condicoes-pagamento' )
             .send ({
                 descricao: 'Dias Repetidos',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [
                     { codFormaDePag, percentual: 50, numDias: 30, isActive: true },
@@ -106,6 +108,7 @@ describe ( 'CondicoesPagamento routes', () =>
             .post ( '/api/condicoes-pagamento' )
             .send ({
                 descricao: 'Dia Zero',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [ { codFormaDePag, percentual: 100, numDias: 0, isActive: true } ],
             });
@@ -122,6 +125,7 @@ describe ( 'CondicoesPagamento routes', () =>
             .post ( '/api/condicoes-pagamento' )
             .send ({
                 descricao: 'Teste com Parcelas',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [
                     { codFormaDePag, percentual: 50, numDias: 30, isActive: true },
@@ -148,6 +152,7 @@ describe ( 'CondicoesPagamento routes', () =>
             .post ( '/api/condicoes-pagamento' )
             .send ({
                 descricao: 'Rollback Test',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [ { codFormaDePag: 999999, percentual: 100, numDias: 1, isActive: true } ],
             });
@@ -167,6 +172,7 @@ describe ( 'CondicoesPagamento routes', () =>
             .post ( '/api/condicoes-pagamento' )
             .send ({
                 descricao: 'Para Atualizar',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [ { codFormaDePag, percentual: 100, numDias: 30, isActive: true } ],
             });

@@ -30,7 +30,7 @@ export default interface ContasAPagar {
 
   dtVencimento: Date | null;
 
-  valor: string | null;
+  valor: string;
 
   dtCriacao: Date;
 
@@ -40,15 +40,15 @@ export default interface ContasAPagar {
 
   isActive: boolean;
 
-  codFormaDePag: FormaDePagamentoCodFormaDePag | null;
+  codFormaDePag: FormaDePagamentoCodFormaDePag;
 
   dtEmissao: Date | null;
 
-  juro: string | null;
+  juro: string;
 
-  desconto: string | null;
+  desconto: string;
 
-  multa: string | null;
+  multa: string;
 
   valorBaixa: string | null;
 
@@ -71,7 +71,7 @@ export interface ContasAPagarInitializer {
 
   dtVencimento?: Date | null;
 
-  valor?: string | null;
+  valor: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -84,15 +84,15 @@ export interface ContasAPagarInitializer {
   /** Default value: true */
   isActive?: boolean;
 
-  codFormaDePag?: FormaDePagamentoCodFormaDePag | null;
+  codFormaDePag: FormaDePagamentoCodFormaDePag;
 
   dtEmissao?: Date | null;
 
-  juro?: string | null;
+  juro: string;
 
-  desconto?: string | null;
+  desconto: string;
 
-  multa?: string | null;
+  multa: string;
 
   valorBaixa?: string | null;
 
@@ -115,7 +115,7 @@ export interface ContasAPagarMutator {
 
   dtVencimento?: Date | null;
 
-  valor?: string | null;
+  valor?: string;
 
   dtCriacao?: Date;
 
@@ -125,15 +125,15 @@ export interface ContasAPagarMutator {
 
   isActive?: boolean;
 
-  codFormaDePag?: FormaDePagamentoCodFormaDePag | null;
+  codFormaDePag?: FormaDePagamentoCodFormaDePag;
 
   dtEmissao?: Date | null;
 
-  juro?: string | null;
+  juro?: string;
 
-  desconto?: string | null;
+  desconto?: string;
 
-  multa?: string | null;
+  multa?: string;
 
   valorBaixa?: string | null;
 

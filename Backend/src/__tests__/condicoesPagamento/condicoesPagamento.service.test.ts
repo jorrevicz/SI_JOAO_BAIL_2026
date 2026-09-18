@@ -77,13 +77,13 @@ describe ( 'CondicoesPagamentoService', () =>
 
         const resultado = await service.CreateCondicao
         (
-            { descricao: 'À Vista', parcelas: [] },
+            { descricao: 'À Vista', juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0, parcelas: [] },
             1
         );
 
         expect ( repo.Create ).toHaveBeenCalledWith
         (
-            { descricao: 'À Vista', parcelas: [] },
+            { descricao: 'À Vista', juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0, parcelas: [] },
             1,
             {}
         );
@@ -102,7 +102,7 @@ describe ( 'CondicoesPagamentoService', () =>
             { codFormaDePag: 1, percentual: 50, numDias: 60, isActive: true },
         ];
 
-        await service.CreateCondicao ( { descricao: 'Parcelado', parcelas }, 1 );
+        await service.CreateCondicao ( { descricao: 'Parcelado', juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0, parcelas }, 1 );
 
         expect ( parcelasRepo.Create ).toHaveBeenCalledTimes ( 2 );
         expect ( parcelasRepo.Create ).toHaveBeenCalledWith (
@@ -121,6 +121,7 @@ describe ( 'CondicoesPagamentoService', () =>
             service.CreateCondicao (
                 {
                     descricao: 'X',
+                    juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                     parcelas:  [ { codFormaDePag: 99, percentual: 100, numDias: 1, isActive: true } ],
                 },
                 1

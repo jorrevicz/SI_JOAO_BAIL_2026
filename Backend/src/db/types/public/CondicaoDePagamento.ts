@@ -10,11 +10,11 @@ export default interface CondicaoDePagamento {
 
   descricao: string | null;
 
-  juroCondPag: string | null;
+  juroCondPag: string;
 
-  multaCondPag: string | null;
+  multaCondPag: string;
 
-  descontoCondPag: string | null;
+  descontoCondPag: string;
 
   dtCriacao: Date;
 
@@ -31,11 +31,11 @@ export interface CondicaoDePagamentoInitializer {
 
   descricao?: string | null;
 
-  juroCondPag?: string | null;
+  juroCondPag: string;
 
-  multaCondPag?: string | null;
+  multaCondPag: string;
 
-  descontoCondPag?: string | null;
+  descontoCondPag: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -55,11 +55,11 @@ export interface CondicaoDePagamentoMutator {
 
   descricao?: string | null;
 
-  juroCondPag?: string | null;
+  juroCondPag?: string;
 
-  multaCondPag?: string | null;
+  multaCondPag?: string;
 
-  descontoCondPag?: string | null;
+  descontoCondPag?: string;
 
   dtCriacao?: Date;
 
