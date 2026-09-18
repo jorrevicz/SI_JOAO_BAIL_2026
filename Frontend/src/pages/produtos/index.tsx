@@ -12,6 +12,7 @@ import {
 import { useTabelaOrdenada } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
 import { produtosService, type Produto } from '../../services/produtos';
+import { produtoCategoriasService } from '../../services/produtoCategorias';
 import {
   Toolbar, GrupoBotoes, Botao, InputBusca,
   TabelaWrapper, Tabela, RodapeTabela, Paginacao, PaginacaoInfo, Alerta,
@@ -25,6 +26,8 @@ export default function ProdutosPage ()
 {
   'use no memo';
   const [ dados, setDados ]       = useState < Produto[] > ([]);
+  // Produto ↔ Categoria é N:N: os nomes por produto vêm da associativa, não do produto
+  const [ categoriasPorProduto, setCategoriasPorProduto ] = useState < Record < number, string[] > > ( {} );
   const [ editando, setEditando ] = useState < Partial < Produto > | null > ( null );
   const [ erro, setErro ]         = useState ( '' );
   const { sorting, setSorting }   = useTabelaOrdenada ( 'produto' );
@@ -32,8 +35,25 @@ export default function ProdutosPage ()
   const [ pagination, setPagination ]     = useState < PaginationState > ( { pageIndex: 0, pageSize: 25 } );
 
   const carregar = () =>
-    produtosService.listar ( {  } )
-      .then ( setDados )
+    Promise.all( [
+      produtosService.listar ( {  } ),
+      produtoCategoriasService.listar ( undefined, { limit: 100 } ),
+    ] )
+      .then ( ( [ produtos, vinculos ] ) =>
+      {
+        const agrupadas: Record < number, string[] > = {};
+
+        vinculos.forEach ( ( vinculo ) =>
+        {
+          agrupadas [ vinculo.codProduto ] = [
+            ...( agrupadas [ vinculo.codProduto ] ?? [] ),
+            vinculo.categoria,
+          ];
+        } );
+
+        setDados ( produtos );
+        setCategoriasPorProduto ( agrupadas );
+      } )
       .catch ( ( err: Error ) => setErro ( err.message ) );
 
   useEffect ( () => { carregar(); }, [ ] );
@@ -59,8 +79,7 @@ export default function ProdutosPage ()
   };
 
   const columns = [
-    columnHelper.accessor ( 'codProd', { header: 'Código' } ),
-    columnHelper.accessor ( 'codCategoria', { header: 'Código Categoria' } ),
+    columnHelper.accessor ( 'codProd', { header: 'Código' } ), 
     columnHelper.accessor ( 'produto', {
         header: 'Produto',
         cell: ( info ) => (
@@ -77,6 +96,18 @@ export default function ProdutosPage ()
     columnHelper.accessor (
       'estoque',
       { header: 'Estoque', cell: ( info ) => ( info.getValue() ) }
+    ),
+    columnHelper.accessor (
+      ( row ) => ( categoriasPorProduto [ row.codProd ] ?? [] ).join ( ', ' ),
+      {
+        id:     'categorias',
+        header: 'Categorias',
+        cell:   ( info ) => ( 
+          <InfoBlock> 
+            {info.getValue() || '—'} 
+          </InfoBlock> 
+        ),
+      }
     ),
     columnHelper.accessor (
       'saldoProd',

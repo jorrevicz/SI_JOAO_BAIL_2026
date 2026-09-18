@@ -9,17 +9,30 @@ export class ProdutosRepository
     (
         limit:   number,
         afterId = 0,
+        codCategoria?: number,
         transaction?: postgres.TransactionSql
 
     ): Promise < Produtos[] >
     {
         const client = transaction ?? sql;
+
+        // O filtro por categoria atravessa a associativa: Produto ↔ Categoria é N:N,
+        // então não há coluna em "Produtos" para comparar diretamente.
         return client < Produtos[] >`
-            SELECT *
-            FROM "Produtos"
-            WHERE "isActive" = true
-            AND "codProd" > ${ afterId }
-            ORDER BY "codProd"
+            SELECT produto.*
+            FROM "Produtos" produto
+            ${
+                codCategoria
+                    ? client`
+                        INNER JOIN "ProdutoCategoria" vinculo
+                                ON vinculo."codProduto"   = produto."codProd"
+                               AND vinculo."codCategoria" = ${ codCategoria }
+                      `
+                    : client``
+            }
+            WHERE produto."isActive" = true
+            AND produto."codProd" > ${ afterId }
+            ORDER BY produto."codProd"
             LIMIT ${ limit }
         `;
     };
@@ -55,7 +68,6 @@ export class ProdutosRepository
             INSERT INTO "Produtos"
             (
                 "produto",
-                "codCategoria",
                 "undProduto",
                 "pesoBruto",
                 "pesoLiq",
@@ -66,7 +78,6 @@ export class ProdutosRepository
             VALUES
             (
                 ${ prod.produto },
-                ${ prod.codCategoria    ?? null },
                 ${ prod.undProduto      ?? null },
                 ${ prod.pesoBruto       ?? null },
                 ${ prod.pesoLiq         ?? null },
@@ -93,7 +104,6 @@ export class ProdutosRepository
         const [ row ] = await client < Produtos[] >`
             UPDATE "Produtos"
             SET "produto"      = ${ prod.produto },
-                "codCategoria" = ${ prod.codCategoria ?? null },
                 "undProduto"   = ${ prod.undProduto   ?? null },
                 "pesoBruto"    = ${ prod.pesoBruto    ?? null },
                 "pesoLiq"      = ${ prod.pesoLiq      ?? null },

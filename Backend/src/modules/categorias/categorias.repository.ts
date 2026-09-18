@@ -122,11 +122,16 @@ export class CategoriasRepository
     ): Promise < boolean >
     {
         const client = transaction ?? sql;
+
+        // O vínculo Produto ↔ Categoria vive na associativa (N:N); produto inativo não
+        // bloqueia a exclusão da categoria.
         const [ row ] = await client`
             SELECT 1
-            FROM "Produtos"
-            WHERE "codCategoria" = ${ id }
-            AND "isActive" = true
+            FROM "ProdutoCategoria" vinculo
+            INNER JOIN "Produtos" produto
+                    ON produto."codProd" = vinculo."codProduto"
+            WHERE vinculo."codCategoria" = ${ id }
+            AND produto."isActive" = true
             LIMIT 1
         `;
 

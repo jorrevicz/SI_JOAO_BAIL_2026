@@ -1,11 +1,17 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import sql from '../../lib/db';
 import withTestTransaction from '../helpers/db-helper';
+import { criarCategoriaDeTeste } from '../helpers/fixtures';
 import { ProdutosRepository } from '../../modules/produtos/produtos.repository';
-import { CategoriasRepository } from '../../modules/categorias/categorias.repository';
+import { ProdutoCategoriasRepository } from '../../modules/produto-categorias/produtoCategorias.repository';
 
-const repoProdutos    = new ProdutosRepository();
-const repoCategorias  = new CategoriasRepository();
+const repoProdutos          = new ProdutosRepository();
+const repoProdutoCategorias = new ProdutoCategoriasRepository();
+
+// O repositório de Produtos não escreve mais categoria alguma: o vínculo é N:N e vive na
+// associativa "ProdutoCategoria". `categorias` viaja no input só para satisfazer o tipo —
+// quem o consome é o service.
+const SEM_CATEGORIAS = { categorias: [] };
 
 describe ( 'ProdutosRepository (rollback)', () =>
 {
@@ -20,7 +26,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Teclado USB Teste', undProduto: 'UN' },
+                { produto: 'Teclado USB Teste', undProduto: 'UN', ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -33,25 +39,32 @@ describe ( 'ProdutosRepository (rollback)', () =>
         });
     });
 
-    it ( 'Create vincula produto a categoria dentro da transação', async () =>
+    it ( 'List filtra por categoria através da associativa', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const categoria = await repoCategorias.Create
+            const codCategoria = await criarCategoriaDeTeste ( transaction, 'CATEGORIA FILTRO' );
+
+            const daCategoria = await repoProdutos.Create
             (
-                { categoria: 'Periféricos Teste' },
+                { produto: 'Mouse Da Categoria', ...SEM_CATEGORIAS },
+                1,
+                transaction
+            );
+            const foraDaCategoria = await repoProdutos.Create
+            (
+                { produto: 'Monitor Fora Da Categoria', ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
 
-            const produto = await repoProdutos.Create
-            (
-                { produto: 'Mouse USB', codCategoria: categoria.codCategoria },
-                1,
-                transaction
-            );
+            await repoProdutoCategorias.Create ( daCategoria.codProd, codCategoria, transaction );
 
-            expect ( produto.codCategoria ).toBe ( categoria.codCategoria );
+            const filtrados = await repoProdutos.List ( 100, 0, codCategoria, transaction );
+            const codigos   = filtrados.map ( ( produto ) => produto.codProd );
+
+            expect ( codigos ).toContain    ( daCategoria.codProd );
+            expect ( codigos ).not.toContain ( foraDaCategoria.codProd );
         });
     });
 
@@ -61,7 +74,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Monitor Original' },
+                { produto: 'Monitor Original', ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -69,7 +82,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
             const atualizado = await repoProdutos.Update
             (
                 novo.codProd,
-                { produto: 'Monitor Atualizado', undProduto: 'UN', isActive: true },
+                { produto: 'Monitor Atualizado', undProduto: 'UN', isActive: true, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -84,7 +97,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Para Excluir' },
+                { produto: 'Para Excluir', ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -102,7 +115,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Notebook Teste', estoque: 10, custo: 2500 },
+                { produto: 'Notebook Teste', estoque: 10, custo: 2500, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -113,7 +126,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
             const atualizado = await repoProdutos.Update
             (
                 novo.codProd,
-                { produto: 'Notebook Atualizado', isActive: true },
+                { produto: 'Notebook Atualizado', isActive: true, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -130,7 +143,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Sem Dependentes' },
+                { produto: 'Sem Dependentes', ...SEM_CATEGORIAS },
                 1,
                 transaction
             );

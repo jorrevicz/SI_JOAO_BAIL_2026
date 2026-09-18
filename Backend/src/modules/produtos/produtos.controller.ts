@@ -18,10 +18,14 @@ export class ProdutosController
     {
         try
         {
-            const limit   = Math.min ( Number ( req.query.limit ) || 50, 100 );
-            const afterId = Number ( req.query.after ) || 0;
+            const limit        = Math.min ( Number ( req.query.limit ) || 50, 100 );
+            const afterId      = Number ( req.query.after ) || 0;
+            const codCategoria = req.query.codCategoria ? Number ( req.query.codCategoria ) : undefined;
 
-            res.status ( 200 ).json ( await this.service.ListProdutos ( limit, afterId ) );
+            res.status ( 200 ).json
+            (
+                await this.service.ListProdutos ( limit, afterId, codCategoria )
+            );
         }
         catch ( err )
         {

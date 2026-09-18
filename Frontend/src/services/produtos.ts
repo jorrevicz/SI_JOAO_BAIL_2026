@@ -1,9 +1,15 @@
 import api from './api';
 
+// Item da lista de categorias enviada no corpo de criação/edição do produto.
+// A leitura dos vínculos já gravados é feita por produtoCategoriasService.
+export interface CategoriaProdutoInput
+{
+  codCategoria: number;
+}
+
 export interface Produto
 {
   codProd:        number;
-  codCategoria:   number | null;
   produto:        string;
   undProduto:     string | null;
   estoque:        number;
@@ -19,24 +25,24 @@ export interface Produto
 
 export interface CreateProdutoInput
 {
-  produto:       string;
-  codCategoria?: number;
-  undProduto?:   string;
-  estoque?:      number;
-  custo?:        number;
-  pesoBruto?:    number;
-  pesoLiq?:      number;
-  isActive:      boolean;
+  produto:     string;
+  categorias:  CategoriaProdutoInput[];
+  undProduto?: string;
+  estoque?:    number;
+  custo?:      number;
+  pesoBruto?:  number;
+  pesoLiq?:    number;
+  isActive:    boolean;
 }
 
 export interface UpdateProdutoInput
 {
-  produto:       string;
-  codCategoria?: number;
-  undProduto?:   string;
-  pesoBruto?:    number;
-  pesoLiq?:      number;
-  isActive:      boolean;
+  produto:     string;
+  categorias:  CategoriaProdutoInput[];
+  undProduto?: string;
+  pesoBruto?:  number;
+  pesoLiq?:    number;
+  isActive:    boolean;
 }
 
 export const produtosService = {
