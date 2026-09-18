@@ -37,13 +37,12 @@ export const createClienteSchema = z.object
             .string()
             .trim()
             .max ( 8,   'O CEP deve ter no máximo 8 dígitos.' )
-            .regex ( /^[0-9]+$/, 'O CEP deve conter apenas números.')
+            .regex ( /^[0-9]+$/, 'O telefone deve conter apenas 15 dígitos (ex: +55545988884444).')
             .optional(),
         foneCl: z
             .string()
             .trim()
-            .max ( 15,  'O telefone deve ter no máximo 15 dígitos.' )
-            .regex ( /^[0-9]+$/, 'O Telefone deve conter apenas números.')
+            .regex ( /^\+[0-9]{10,15}$/, 'O Telefone deve conter apenas números.')
             .optional(),
     }
 );

@@ -230,7 +230,6 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
           <FormCampo label="Telefone" colunas={ 3 } htmlFor="foneForn" erro={ errosCampo.foneForn }>
             <input
               id="foneForn"
-              type='number'
               value={ form.foneForn ?? '' }
               onChange={ ( evento ) =>
                 setForm ( { ...form, foneForn: evento.target.value.replace ( /\D/g, '' ) || undefined } )

@@ -52,8 +52,7 @@ export const createFornecedorSchema = z.object
         foneForn: z
             .string()
             .trim()
-            .max ( 15,  'O telefone deve ter no máximo 15 dígitos.' )
-            .regex ( /^[0-9]+$/, 'O telefone deve conter apenas números.')
+            .regex ( /^\+[0-9]{10,15}$/, 'O telefone deve conter apenas 15 dígitos (ex: +55545988884444).')
             .optional(),
         cpfCnpjForn: z
             .string()

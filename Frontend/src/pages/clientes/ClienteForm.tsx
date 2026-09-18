@@ -185,7 +185,6 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
           <FormCampo label="Telefone" colunas={ 4 } htmlFor="foneCl" erro={ errosCampo.foneCl }>
             <input
               id="foneCl"
-              type='number'
               value={ form.foneCl ?? '' }
               onChange={ ( evento ) =>
                 setForm ( { ...form, foneCl: evento.target.value.replace ( /\D/g, '' ) || undefined } )
