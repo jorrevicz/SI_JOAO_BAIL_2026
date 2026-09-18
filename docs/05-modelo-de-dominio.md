@@ -78,17 +78,26 @@ Núcleo de mercadorias da empresa (equipamentos, periféricos, acessórios e cor
 removida do escopo do MVP — ver [Modelo de Dados](06-modelo-de-dados.md#princípios-de-modelagem).
 
 ### Produtos
-- **Atributos:** `codProd`, `codCategoria`, `produto`, `undProduto`, `estoque`, `pesoBruto`, `pesoLiq`, `saldoProd`, `custoMedioProd`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `codProd`, `produto`, `undProduto`, `estoque`, `pesoBruto`, `pesoLiq`, `saldoProd`, `custoMedioProd`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Operações:** `consultarProdutos()`, `adicionarProduto()`, `editarProduto()`, `removerProduto()`, `consultarFornecedores()`, `consultarCategorias()`
 - **Imutáveis na edição:** `estoque` e `custoMedioProd` são definidos no cadastro (custo inicial); após a criação só são alterados por **compras** (movimentação de estoque / custo médio ponderado) — nunca por edição direta.
+- O produto **não carrega código de categoria**: a relação com Categorias é **N:N** e vive
+  na associativa `ProdutoCategoria`. Um produto tem **ao menos uma** categoria; a lista é
+  gerenciada de forma embutida e atômica dentro do formulário de produto (mesmo padrão de
+  Condição de Pagamento × Parcelas).
 
 ### Categorias
 - **Atributos:** `codCategoria`, `categoria`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Operações:** `consultarCategorias()`, `adicionarCategoria()`, `editarCategoria()`, `removerCategoria()`
+- Taxonomia **aberta**, mantida pelo usuário. Não se confunde com
+  [ClassificacoesCompra](#6-compras), que é um domínio fechado de propósito de compra.
 
 ### ProdutoCategoria *(associativa Produto × Categoria — FK puras)*
 - **Atributos:** `codProduto`, `codCategoria`
 - **Operações:** `consultarProdutoCategorias()`, `adicionarProdutoCategoria()`, `removerProdutoCategoria()`
+- Sem colunas de auditoria nem `isActive`: o vínculo não tem ciclo de vida próprio e sua
+  remoção é exclusão física — o histórico protegido pelo soft delete vive em `Produtos` e
+  `Categorias`. A exclusão de uma categoria vinculada a produto ativo é bloqueada (RN002).
 
 ### ProdutoFornecedor *(associativa Produto × Fornecedor — FK puras)*
 - **Atributos:** `codProd`, `codForn`, `dtCriacao`, `dtEdicao`, `codUser`
@@ -185,12 +194,13 @@ Registro de compras a fornecedores e os itens comprados. Operação transacional
 (ver [RNF06](04-requisitos.md#requisitos-não-funcionais)).
 
 ### Compras
-- **Atributos:** `numero`, `modelo`, `serie`, `codForn`, `codTransp`, `codCondDePag`, `classificacaoCompra`, `dtChegada`, `dtEmissao`, `dtEntrada`, `frete`, `seguro`, `despesas`, `justificativaCancelamento`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `numero`, `modelo`, `serie`, `codForn`, `codTransp`, `codCondDePag`, `codClassificacaoCompra`, `dtChegada`, `dtEmissao`, `dtEntrada`, `frete`, `seguro`, `despesas`, `vlrTotal`, `justificativaCancelamento`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - `numero` (VarChar(28)), `modelo` (VarChar(2)) e `serie` (VarChar(2)) formam a **chave
   primária composta** — chave natural do documento de compra, substituindo o antigo
   identificador substituto `codCompra`.
-- `classificacaoCompra` — classificação/propósito da compra: **obra-prima**, **revenda**
-  ou **serviços**. Uma compra tem **exatamente uma** classificação (RN005); não se
+- `codClassificacaoCompra` — FK obrigatória para `ClassificacoesCompra`, que define o
+  propósito da compra: **obra-prima**, **revenda** ou **serviços**. Uma compra tem
+  **exatamente uma** classificação (RN005) — por isso é FK 1:N, não associativa; não se
   mistura produtos de propósitos diferentes numa mesma compra/nota fiscal.
 - `dtChegada`, `dtEmissao` e `dtEntrada` — datas de chegada da mercadoria, emissão do
   documento de compra e da operação de entrada (registro no estoque), respectivamente.
@@ -203,6 +213,12 @@ Registro de compras a fornecedores e os itens comprados. Operação transacional
   de cada item (RN009); o total geral da compra é sempre apresentado **depois** dos
   subtotais que o compõem — condição de pagamento, subtotal dos produtos, despesas etc.
   (RN010).
+- `vlrTotal` — valor final da compra, recalculado sempre que qualquer fator do cálculo
+  muda: o subtotal das parcelas da condição de pagamento (`CondicaoDePagamento`/
+  `Parcelas`), os encargos da própria condição (`juroCondPag`/`multaCondPag`/
+  `descontoCondPag`), as características dos produtos vinculados (`CompraProduto` —
+  quantidade e `custoMedioProduto` de cada item) e `frete`/`seguro`/`despesas`. É o
+  campo exibido como total geral da compra (RN010, acima).
 - `justificativaCancelamento` — preenchida por `cancelarCompra()`, registra o motivo do
   cancelamento da compra; `cancelarCompra()` exige **reautenticação** do usuário
   (RN003 transversal, ver [Segurança](08-seguranca-e-autenticacao.md#reautenticação-para-cancelamento-rn003)).
@@ -219,7 +235,16 @@ Registro de compras a fornecedores e os itens comprados. Operação transacional
 - Compra **não referencia mais NF-e diretamente** (`codNfe` removido) — o vínculo com a
   nota fiscal, quando existir, deixa de ser uma FK formal em `Compras`.
 - **Operações:** `consultarCompras()`, `validarDocumentoCompra()`, `adicionarCompra()`, `cancelarCompra()`, `consultarNotaFiscal()`, `consultarCondicoesPagamento()`, `consultarProdutos()`, `consultarFornecedores()`, `consultarClientes()`, `consultarTransportadoras()`, `realizarCompra()`, `gerarNotaFiscal()`
-- **Liga-se a:** [Fornecedores](#fornecedores), [Transportadoras](#transportadoras), [Condição de Pagamento](#condicaodepagamento).
+- **Liga-se a:** [Fornecedores](#fornecedores), [Transportadoras](#transportadoras), [Condição de Pagamento](#condicaodepagamento), ClassificacoesCompra.
+
+### ClassificacoesCompra *(domínio fechado do propósito da compra)*
+- **Atributos:** `codClassificacaoCompra`, `classificacaoCompra`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Operações:** `consultarClassificacoesCompra()`
+- Os três valores — **obra-prima**, **revenda** e **serviços** — são semeados pelo script
+  de seed e sustentam a RN005. Não são uma "categoria": diferente de
+  [Categorias](#3-produtos-e-catálogo), que é taxonomia aberta do catálogo de produtos,
+  este é um domínio fechado do qual depende regra de negócio — renomear ou desativar um
+  valor aqui muda o significado de compras já registradas.
 
 ### CompraProduto *(associativa Compra × Produto)*
 - **Atributos:** `numero`, `modelo`, `serie`, `codProduto`, `custoMedioProduto`, `percentualRateio`, `valorRateio`, `dtCriacao`, `dtEdicao`, `codUser`

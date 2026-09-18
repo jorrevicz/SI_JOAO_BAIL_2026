@@ -32,6 +32,18 @@ compra e financeiro. Web API REST + SPA.
 > navegação hierárquica Categorias → Produtos por query param, formulário em modal com
 > seleção de categoria). NCM/SH foi **descartada** (classificação fiscal/tributária fora de escopo).
 >
+> **Produto ↔ Categoria é N:N:** a FK 1:N `Produtos.codCategoria` foi removida; o vínculo vive
+> na associativa `ProdutoCategoria` (FKs puras, sem auditoria, remoção física), exposta pelo
+> módulo `produto-categorias` (`GET /api/produto-categorias?codProduto=N`). O produto exige
+> **ao menos uma** categoria e a lista é gerenciada de forma embutida e atômica dentro do
+> formulário de produto — mesmo padrão de Condição de Pagamento × Parcelas, porém com
+> reconciliação por **diferença de conjuntos** (o vínculo não tem payload além das duas FKs).
+>
+> **`ClassificacoesCompra`:** domínio fechado (`obra-prima`, `revenda`, `serviços`) semeado
+> pelo seed, referenciado por `Compras.codClassificacaoCompra` (FK obrigatória, RN005). Não
+> reaproveita `Categorias` — aquela é taxonomia aberta do catálogo, esta sustenta regra de
+> negócio. Só schema e seed por enquanto; o endpoint de leitura nasce com o módulo de Compras.
+>
 > **Lote 2B concluído:** Veículos, Fornecedores, Clientes e Transportadoras com CRUDs em
 > 4 camadas, testes TDD (service unitário, repository rollback, routes supertest), soft delete,
 > HasDependents multi-tabela e telas frontend (tabela + modal, selects de Cidades/Estados/Veículos
@@ -271,8 +283,9 @@ npm test               # Vitest (run único)
 npm run test:watch     # Vitest em modo watch
 npm run lint           # ESLint em src/
 npm run format         # Prettier em src/
-npm run migrate        # node-pg-migrate up (aplica migrations SQL)
+npm run migrate:up     # node-pg-migrate up (aplica migrations SQL)
 npm run migrate:down   # node-pg-migrate down (reverte a última migration)
+npm run migrate:drop   # node-pg-migrate down 0 (reverte todas as migrations)
 npm run migrate:create # cria uma nova migration SQL
 npm run types:gen      # kanel — regenera os tipos das tabelas após migrations
 npm run seed           # tsx src/db/seed.ts (idempotente)

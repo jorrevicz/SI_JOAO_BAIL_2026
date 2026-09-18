@@ -67,9 +67,9 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 ### Produtos e Catálogo
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Produtos` | `codProd` | `codCategoria` → `Categorias` | `estoque` INTEGER (def. 0), `saldoProd` Decimal(10,3), `custoMedioProd` Decimal(10,2) |
+| `Produtos` | `codProd` | — (a categoria é N:N, via `ProdutoCategoria`) | `estoque` INTEGER (def. 0), `saldoProd` Decimal(10,3), `custoMedioProd` Decimal(10,2) |
 | `Categorias` | `codCategoria` | — | `categoria` VarChar(40) |
-| `ProdutoCategoria` | (`codProduto`, `codCategoria`) | → `Produtos`, → `Categorias` | associativa N:N — FK puras |
+| `ProdutoCategoria` | (`codProduto`, `codCategoria`) | → `Produtos`, → `Categorias` | associativa N:N — FK puras, sem auditoria nem `isActive`; remoção é exclusão física. Índice `ProdutoCategoria_codCategoria_idx` cobre o caminho categoria → produtos |
 | `ProdutoFornecedor` | (`codProd`, `codForn`) | → `Produtos`, → `Fornecedores` | associativa N:N — FK puras |
 
 ### Logística
@@ -90,7 +90,8 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 ### Compras
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Compras` | (`numero`, `modelo`, `serie`) | `codForn` → `Fornecedores`, `codTransp` → `Transportadoras`, `codCondDePag` → `CondicaoDePagamento` (obrigatória) | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `classificacaoCompra` (`obra-prima`\|`revenda`\|`serviços`), `dtChegada`/`dtEmissao`/`dtEntrada` (datas da operação — `dtChegada` ≥ `dtEmissao` e ≤ data atual), `frete`, `seguro`, `despesas`, `justificativaCancelamento` VarChar(255) |
+| `Compras` | (`numero`, `modelo`, `serie`) | `codForn` → `Fornecedores`, `codTransp` → `Transportadoras`, `codCondDePag` → `CondicaoDePagamento` (obrigatória), `codClassificacaoCompra` → `ClassificacoesCompra` (obrigatória) | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `dtChegada`/`dtEmissao`/`dtEntrada` (datas da operação — `dtChegada` ≥ `dtEmissao` e ≤ data atual), `frete`, `seguro`, `despesas`, `vlrTotal` (valor final recalculado a partir do subtotal das parcelas, encargos da condição de pagamento, produtos vinculados e `frete`/`seguro`/`despesas`), `justificativaCancelamento` VarChar(255) |
+| `ClassificacoesCompra` | `codClassificacaoCompra` | — | `classificacaoCompra` VarChar(12) unique (`obra-prima`\|`revenda`\|`serviços`) — domínio fechado semeado, sustenta a RN005; uma compra tem exatamente uma classificação, por isso é FK 1:N e não associativa |
 | `CompraProduto` | (`numero`, `modelo`, `serie`, `codProduto`) | → `Compras` (composta), → `Produtos` | `custoMedioProduto` — dado histórico (custo no momento da compra); `percentualRateio` Decimal(5,2), `valorRateio` Decimal — rateio dos custos adicionais (`frete`/`seguro`/`despesas`) por item |
 
 ### Fiscal
@@ -121,7 +122,7 @@ As regras de negócio (RN002 dos [Casos de Uso](07-casos-de-uso.md)) determinam 
 | Relação | Tabela associativa | FK puras |
 |---------|--------------------|----------|
 | Produto ↔ Fornecedor | `ProdutoFornecedor` | ✓ |
-| Produto ↔ Categoria | `ProdutoCategoria` | ✓ |
+| Produto ↔ Categoria | `ProdutoCategoria` | ✓ — produto tem ao menos uma categoria; lista gerenciada embutida no formulário de produto |
 | Compra ↔ Produto | `CompraProduto` | ✓ (FK composta `numero`/`modelo`/`serie`) + `custoMedioProduto` (histórico) + `percentualRateio`/`valorRateio` (rateio de custos adicionais) |
 | NF-e ↔ Produto | `ProdutoNfe` | ✓ + campos tributários por item |
 | NF-e ↔ Veículo | `VeiculoNfe` | ✓ |
@@ -133,7 +134,8 @@ DO NOTHING/UPDATE`), respeitando a ordem de dependências:
 
 ```
 Paises → Estados → Cidades
-Categorias → Produtos
+Categorias → Produtos → ProdutoCategoria (vínculo produto × categoria)
+ClassificacoesCompra (domínio fechado — obra-prima, revenda, serviços)
 Fornecedores → CondicaoDePagamento → Clientes
 Veiculos → Transportadoras
 ProdutoFornecedor (vínculo produto × fornecedor)

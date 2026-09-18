@@ -85,7 +85,12 @@ Ativação comum: **clicar no item de menu** correspondente.
 ### Gerenciar Produtos
 - **Ator:** Usuário · **RF:** RF09
 - **RN002:** não excluir produto relacionado a compras, fornecedores ou notas fiscais.
-- **RN003:** deve permitir vinculação de **categorias e fornecedores** ao produto.
+- **RN003 — Ao menos uma categoria:** deve permitir vinculação de **categorias e
+  fornecedores** ao produto. A relação Produto × Categoria é **N:N**: o produto tem uma
+  **lista** de categorias, com **no mínimo uma**, gerenciada de forma embutida e atômica
+  dentro do formulário de produto (mesmo padrão de Condição de Pagamento × Parcelas).
+  Categoria repetida na mesma lista é recusada com 400. O botão "Salvar" fica bloqueado
+  enquanto não houver ao menos uma categoria.
 - **RN004 — Estoque e custo imutáveis na edição:** `estoque` e `custoMedioProd` são informados no cadastro (valor inicial) e **não podem ser alterados** por edição direta. Após a criação, somente **compras** alteram esses valores (movimentação de estoque / custo médio ponderado). O backend omite esses campos do schema de update.
 - **Pós-condição:** cadastrar, consultar, editar, remover produtos e fornecedores/categorias vinculados.
 
@@ -96,7 +101,6 @@ Ativação comum: **clicar no item de menu** correspondente.
 
 ### Gerenciar Contas a Pagar
 - **Ator:** Usuário · **RF:** RF11
-- **RN002:** não excluir conta a pagar relacionada a parcelas ou fornecedores.
 - **RN003 (transversal):** `cancelarContaPagar()` exige reautenticação — ver
   [regras transversais](#regras-de-negócio-transversais).
 - **RN004 — Cancelamento só antes da baixa:** `cancelarContaPagar()` só é permitido
@@ -106,7 +110,6 @@ Ativação comum: **clicar no item de menu** correspondente.
 
 ### Gerenciar Contas a Receber
 - **Ator:** Usuário · **RF:** RF12
-- **RN002:** não excluir conta a receber relacionada a parcelas ou clientes.
 - **RN003 (transversal):** `cancelarContaReceber()` exige reautenticação — ver
   [regras transversais](#regras-de-negócio-transversais).
 - **RN004 — Cancelamento só antes da baixa:** `cancelarContaReceber()` só é permitido
@@ -122,9 +125,11 @@ Ativação comum: **clicar no item de menu** correspondente.
   (pode ser igual ou posterior a ela) e deve estar **entre `dtEmissao` e a data
   atual** — não é permitida data de chegada futura.
 - **RN005 — Classificação única da compra:** toda compra tem exatamente uma
-  `classificacaoCompra` (**obra-prima**, **revenda** ou **serviços**); não é permitido
-  misturar produtos de classificações/propósitos diferentes numa mesma compra (nota
-  fiscal).
+  classificação (`codClassificacaoCompra` → `ClassificacoesCompra`: **obra-prima**,
+  **revenda** ou **serviços**); não é permitido misturar produtos de
+  classificações/propósitos diferentes numa mesma compra (nota fiscal). Por ser
+  "exatamente uma", a relação é FK 1:N — não uma associativa, que tornaria o estado
+  proibido representável no banco.
 - **RN006 — Condição de pagamento herdada do fornecedor:** ao selecionar o
   fornecedor, `codCondDePag` é pré-preenchido com a condição de pagamento cadastrada
   nele; o usuário pode **alterá-la apenas para aquela compra** — a alteração não é
