@@ -67,7 +67,7 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
     }
   };
 
-useEffect ( () =>
+  useEffect ( () =>
   {
     if ( inicial.codPais )
     {
