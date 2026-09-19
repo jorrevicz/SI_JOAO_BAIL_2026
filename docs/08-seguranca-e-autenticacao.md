@@ -71,5 +71,5 @@ com rollback total em caso de falha (ver [Arquitetura](02-arquitetura.md#princí
 
 - [Requisitos](04-requisitos.md) — RNF03–RNF06.
 - [Casos de Uso](07-casos-de-uso.md) — RN001–RN003 e fluxos por ator.
-- [Modelo de Domínio](05-modelo-de-dominio.md#8-acesso-e-usuários) — entidade `Users`.
+- [Modelo de Domínio](05-modelo-de-dominio.md#9-acesso-e-usuários) — entidade `Users`.
 - [Modelo de Dados](06-modelo-de-dados.md) — campos de auditoria.

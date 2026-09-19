@@ -29,8 +29,8 @@ Cada item abaixo é um módulo "Manter/Gerenciar" (CRUD + operações específic
 | RF12 | Manter **Contas a Receber** | [Financeiro](05-modelo-de-dominio.md#5-financeiro) |
 | RF13 | Realizar e Gerenciar **Compras** | [Compras](05-modelo-de-dominio.md#6-compras) |
 | RF14 | Gerenciar **Nota Fiscal Eletrônica** | [Fiscal](05-modelo-de-dominio.md#7-fiscal-nf-e) |
-| RF15 | **Gerenciamento de Usuários e Cadastro** | [Acesso](05-modelo-de-dominio.md#8-acesso-e-usuários) |
-| **RF16** | **Gerenciar Ordens de Serviço (OS)** — abertura, diagnóstico, execução, encerramento e entrega de equipamentos | [Serviços](05-modelo-de-dominio.md) |
+| RF15 | **Gerenciamento de Usuários e Cadastro** | [Acesso](05-modelo-de-dominio.md#9-acesso-e-usuários) |
+| **RF16** | **Gerenciar Ordens de Serviço (OS)** — abertura, diagnóstico, execução, encerramento e entrega de equipamentos | [Atendimento](05-modelo-de-dominio.md#8-atendimento-ordem-de-serviço) |
 
 ## Requisitos não funcionais
 
