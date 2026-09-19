@@ -4,6 +4,7 @@ import type { ContaAPagarId } from './contas-pagamento.repository';
 import { FornecedoresRepository } from '../fornecedores/fornecedores.repository';
 import { FormasPagamentoRepository } from '../formas-pagamento/formasPagamento.repository';
 import { ValidarDocumentoFiscalInexistente } from '../../shared/documento-fiscal/documentoFiscal.service';
+import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
 import type { CreateContasAPAgarInput, UpdateContasAPagarInput } from './contas-pagamento.schema';
 
 export class ContasPagamentoService
@@ -120,6 +121,17 @@ export class ContasPagamentoService
         }
 
         return this.repo.Cancelar ( id, justificativaCancelamento, codUser );
+    }
+
+    async ValidarChave ( chave: DocumentoFiscalChave )
+    {
+        await ValidarDocumentoFiscalInexistente
+        (
+            chave,
+            ( c ) => this.repo.ExisteDocumento ( c )
+        );
+
+        return { valido: true };
     }
 
     async DeleteConta ( id: ContaAPagarId, codUser: number )

@@ -15,6 +15,7 @@ const controller = new ContasPagamentoController();
 const ID_PATH = '/:numero/:modelo/:serie/:parcela';
 
 ContasPagamentoRouter.get    ( '/',                       controller.ListContasController      );
+ContasPagamentoRouter.get    ( '/validar',                controller.ValidarChaveController     );
 ContasPagamentoRouter.get    ( ID_PATH,                   controller.GetByIdContasController   );
 ContasPagamentoRouter.post   ( '/',                       Validate ( createContasAPagarSchema ),      controller.CreateContaController    );
 ContasPagamentoRouter.put    ( ID_PATH,                   Validate ( updateContasaPagarSchema ),      controller.UpdateContaController    );

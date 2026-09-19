@@ -251,6 +251,26 @@ describe ( 'ContasPagamentoService', () =>
         });
     });
 
+    describe ( 'ValidarChave', () =>
+    {
+        const CHAVE = { numero: ID_TESTE.numero, modelo: ID_TESTE.modelo, serie: ID_TESTE.serie };
+
+        it ( 'lança 409 quando já existe um documento com este número, modelo e série', async () =>
+        {
+            repo.ExisteDocumento.mockResolvedValue ( true );
+
+            await expect ( service.ValidarChave ( CHAVE ) ).rejects.toMatchObject ( { status: 409 } );
+        });
+
+        it ( 'resolve quando o documento é inédito', async () =>
+        {
+            repo.ExisteDocumento.mockResolvedValue ( false );
+
+            await expect ( service.ValidarChave ( CHAVE ) ).resolves.toEqual ( { valido: true } );
+            expect ( repo.ExisteDocumento ).toHaveBeenCalledWith ( CHAVE );
+        });
+    });
+
     describe ( 'DeleteConta', () =>
     {
         it ( 'lança 404 quando a conta não existe', async () =>

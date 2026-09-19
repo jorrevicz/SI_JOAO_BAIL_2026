@@ -123,6 +123,42 @@ describe ( 'ContasPagamento routes', () =>
         expect ( res.body ).toEqual ( { mensagem: 'Conta a pagar não encontrada.' } );
     });
 
+    it ( 'GET /api/contas-pagamento/validar com formato inválido retorna 400 com erros por campo', async () =>
+    {
+        const res = await request ( app ).get ( `${ BASE }/validar` ).query ( { numero: '1', modelo: 'ab', serie: '01' } );
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'numero' );
+        expect ( res.body.erros ).toHaveProperty ( 'modelo' );
+    });
+
+    it ( 'GET /api/contas-pagamento/validar com documento inédito retorna 200', async () =>
+    {
+        const res = await request ( app )
+            .get ( `${ BASE }/validar` )
+            .query ( { numero: '00000209', modelo: '01', serie: '01' } );
+
+        expect ( res.status ).toBe ( 200 );
+        expect ( res.body ).toEqual ( { valido: true } );
+    });
+
+    it ( 'GET /api/contas-pagamento/validar com documento já cadastrado retorna 409', async () =>
+    {
+        await request ( app )
+            .post ( BASE )
+            .send ({
+                numero: '00000210', modelo: '01', serie: '01', parcela: 1,
+                codFornecedor, codFormaDePag, valor: '10.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+            });
+
+        const res = await request ( app )
+            .get ( `${ BASE }/validar` )
+            .query ( { numero: '00000210', modelo: '01', serie: '01' } );
+
+        expect ( res.status ).toBe ( 409 );
+        expect ( res.body ).toEqual ( { mensagem: 'Já existe um documento cadastrado com este número, modelo e série.' } );
+    });
+
     it ( 'POST /api/contas-pagamento com payload vazio retorna 400 com erros por campo', async () =>
     {
         const res = await request ( app ).post ( BASE ).send ( {} );

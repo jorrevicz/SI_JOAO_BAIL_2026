@@ -15,6 +15,7 @@ const controller = new ContasReceberController();
 const ID_PATH = '/:numero/:modelo/:serie/:parcela';
 
 ContasReceberRouter.get    ( '/',                       controller.ListContasController                );
+ContasReceberRouter.get    ( '/validar',                controller.ValidarChaveController              );
 ContasReceberRouter.get    ( ID_PATH,                   controller.GetByIdContasController             );
 ContasReceberRouter.post   ( '/',                       Validate ( createContasAReceberSchema ),        controller.CreateContaController               );
 ContasReceberRouter.put    ( ID_PATH,                   Validate ( updateContasAReceberSchema ),        controller.UpdateContaController               );

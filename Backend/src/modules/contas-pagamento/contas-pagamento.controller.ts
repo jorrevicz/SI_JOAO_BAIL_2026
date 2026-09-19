@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ContasPagamentoService } from './contas-pagamento.service';
 import type { ContaAPagarId } from './contas-pagamento.repository';
+import { documentoFiscalSchema } from '../../shared/documento-fiscal/documentoFiscal.schema';
 
 function ExtrairId ( req: Request ): ContaAPagarId
 {
@@ -40,6 +41,43 @@ export class ContasPagamentoController
                 : undefined;
 
             res.status ( 200 ).json ( await this.service.ListContas ( limit, afterCursor ) );
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    }
+
+    ValidarChaveController = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            const resultado = documentoFiscalSchema.safeParse ( req.query );
+
+            if ( !resultado.success )
+            {
+                const erros: Record < string, string > = {};
+
+                for ( const issue of resultado.error.issues )
+                {
+                    const campo = String ( issue.path[ 0 ] ?? '_' );
+                    if ( !( campo in erros ) )
+                    {
+                        erros[ campo ] = issue.message;
+                    }
+                }
+
+                const mensagem = resultado.error.issues.map ( ( issue ) => issue.message ).join ( '; ' );
+
+                res.status ( 400 ).json ( { mensagem, erros } );
+                return;
+            }
+
+            res.status ( 200 ).json ( await this.service.ValidarChave ( resultado.data ) );
         }
         catch ( err )
         {

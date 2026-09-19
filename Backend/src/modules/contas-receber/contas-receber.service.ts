@@ -4,6 +4,7 @@ import type { ContaAReceberId } from './contas-receber.repository';
 import { ClientesRepository } from '../clientes/clientes.repository';
 import { FormasPagamentoRepository } from '../formas-pagamento/formasPagamento.repository';
 import { ValidarDocumentoFiscalInexistente } from '../../shared/documento-fiscal/documentoFiscal.service';
+import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
 import type { CreateContasAReceberInput, UpdateContasAReceberInput } from './contas-receber.schema';
 
 export class ContasReceberService
@@ -120,6 +121,17 @@ export class ContasReceberService
         }
 
         return this.repo.Cancelar ( id, justificativaCancelamento, codUser );
+    }
+
+    async ValidarChave ( chave: DocumentoFiscalChave )
+    {
+        await ValidarDocumentoFiscalInexistente
+        (
+            chave,
+            ( c ) => this.repo.ExisteDocumento ( c )
+        );
+
+        return { valido: true };
     }
 
     async DeleteConta ( id: ContaAReceberId, codUser: number )
