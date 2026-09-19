@@ -64,8 +64,29 @@ compra e financeiro. Web API REST + SPA.
 > (`disabled`/`readOnly`) na edição. Ver
 > [docs/ref/campos-imutaveis-e-cadastro-vs-edicao.md](docs/ref/campos-imutaveis-e-cadastro-vs-edicao.md).
 >
-> **Próximo passo: Fase 3B — Contas a Pagar (RF11) e Contas a Receber (RF12), seguido
-> da Fase OS — Ordem de Serviço (RF16), módulo central da Kaneko Informática.**
+> **Fase 3B — backend de Contas a Pagar (RF11) e Contas a Receber (RF12) concluído:** CRUDs em
+> 4 camadas com testes TDD para as duas entidades; chave primária natural composta (`numero`,
+> `modelo`, `serie`, `parcela`), como em `Compras`; `RegistrarBaixa`/`Cancelar` são operações
+> dedicadas (não passam pelo `Update`), com RN de bloqueio (não baixar conta cancelada, não
+> cancelar conta já baixada). Ainda falta o frontend (T-115A).
+>
+> **Endurecimento de validação (campos obrigatórios e formato):** vários campos que eram
+> opcionais viraram `NOT NULL` — `tipoPessoa`/`cepCl`/`foneCl` (Clientes), `modeloVeiculo`/
+> `marca`/`codAntt` (Veículos), `tipoPessoa`/`cpfCnpjTransp`/`inscEstTransp` (Transportadoras),
+> `tipoPessoa`/`cepForn`/`foneForn`/`cpfCnpjForn`/`inscEstSubTrib` (Fornecedores), `undProduto`/
+> `pesoBruto`/`pesoLiq` (Produtos), `ddd` (Cidades), `ddi`/`moeda` (Países), `prazoCompensacao`
+> (Forma de Pagamento) — com migration de backfill para dados pré-existentes. `juroCondPag`/
+> `multaCondPag`/`descontoCondPag` continuam obrigatórios no Zod (o Backend só valida
+> presença/formato); o Frontend é quem preenche com 0.00 quando o usuário deixa em branco.
+> CEP e CPF/CNPJ passaram a exigir tamanho exato (8 e 11-ou-14 dígitos); telefone valida
+> 10–15 dígitos puros (sem `+`), consistente com o princípio de
+> [dados sem máscara no banco](docs/06-modelo-de-dados.md#princípios-de-modelagem). Corrigido
+> também um typo de campo (`codFormaDepag` → `codFormaDePag`) em Contas a Pagar que impedia
+> qualquer requisição correta de ser aceita.
+>
+> **Próximo passo: Frontend de Fase 3B (T-115A — telas de Contas a Pagar e Contas a
+> Receber), seguido da Fase OS — Ordem de Serviço (RF16), módulo central da Kaneko
+> Informática.**
 
 ## Fonte de verdade: leia `docs/` primeiro
 

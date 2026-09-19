@@ -92,8 +92,18 @@ Pré-requisito de todo o resto (geografia). Implementadas **consultas primeiro**
 
 ## Fase 3B — Contas a Pagar e Contas a Receber
 
-- **Contas a Pagar** (RF11) — referencia Fornecedores, Parcelas, NF-e.
-- **Contas a Receber** (RF12) — referencia Clientes, FormaDePagamento, NF-e.
+- [x] **Contas a Pagar** (RF11) — referencia Fornecedores, FormaDePagamento; chave natural
+      (`numero`, `modelo`, `serie`, `parcela`); `registrarBaixa`/`cancelar` dedicados.
+- [x] **Contas a Receber** (RF12) — referencia Clientes, FormaDePagamento; mesmo padrão de
+      chave natural e `registrarBaixa`/`cancelar`.
+
+> **Backend concluído:** CRUDs em 4 camadas com testes TDD para as duas entidades (service
+> unitário, repository rollback, routes supertest); `RegistrarBaixa`/`Cancelar` como operações
+> dedicadas (não passam pelo `Update`); RN de bloqueio (não baixar conta cancelada, não
+> cancelar conta já baixada).
+>
+> **▶ Próximo passo:** Frontend de Fase 3B (T-115A — telas de Contas a Pagar e Contas a
+> Receber), depois Fase OS.
 
 ## Fase OS — Ordem de Serviço ⭐ módulo central da Kaneko Informática
 

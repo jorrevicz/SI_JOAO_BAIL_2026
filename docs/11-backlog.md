@@ -321,8 +321,8 @@ soft-delete, auditoria e paginação por cursor.
 - [ ] **T-070 — Condição de Pagamento: CRUD** — consultas → C/U/D; Delete bloqueado se em parcelas/compras (RN002). **Dep:** EP-03
 - [ ] **T-071 — Forma de Pagamento: CRUD** — consultas → C/U/D. **Dep:** EP-03
 - [ ] **T-072 — Parcelas: CRUD** — valida FKs condição e forma; Delete bloqueado se em condições/contas. **Dep:** T-070, T-071
-- [ ] **T-073 — Contas a Pagar: CRUD + cancelar** — vincula fornecedor/parcela/NFe; `registrarContaPaga`; cancelar. **Dep:** T-072, EP-06 (T-060)
-- [ ] **T-074 — Contas a Receber: CRUD + cancelar** — vincula cliente/forma/NFe; `registrarPagamentoRecebido`; cancelar. **Dep:** T-072, EP-06 (T-064)
+- [x] **T-073 — Contas a Pagar: CRUD + cancelar** — vincula fornecedor/forma de pagamento; `registrarBaixa`; cancelar. **Dep:** T-072, EP-06 (T-060)
+- [x] **T-074 — Contas a Receber: CRUD + cancelar** — vincula cliente/forma de pagamento; `registrarBaixa`; cancelar. **Dep:** T-072, EP-06 (T-064)
 
 ### Frontend — executar após T-074 completo
 
