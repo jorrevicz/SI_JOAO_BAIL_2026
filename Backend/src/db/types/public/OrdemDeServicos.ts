@@ -4,7 +4,6 @@
 import type { ClientesCodCliente } from './Clientes';
 import type { AparelhosCodAparelho } from './Aparelhos';
 import type { EquipamentosCodEquipamento } from './Equipamentos';
-import type { ProcedimentosCodProcedimento } from './Procedimentos';
 
 /** Identifier type for public.OrdemDeServicos */
 export type OrdemDeServicosNumOdS = string & { __brand: 'public.OrdemDeServicos' };
@@ -36,8 +35,6 @@ export default interface OrdemDeServicos {
   tipoOdS: string;
 
   codEquipamento: EquipamentosCodEquipamento;
-
-  codProcedimento: ProcedimentosCodProcedimento;
 
   historicoManutencao: string | null;
 
@@ -79,8 +76,6 @@ export interface OrdemDeServicosInitializer {
   tipoOdS: string;
 
   codEquipamento: EquipamentosCodEquipamento;
-
-  codProcedimento: ProcedimentosCodProcedimento;
 
   historicoManutencao?: string | null;
 
@@ -125,8 +120,6 @@ export interface OrdemDeServicosMutator {
   tipoOdS?: string;
 
   codEquipamento?: EquipamentosCodEquipamento;
-
-  codProcedimento?: ProcedimentosCodProcedimento;
 
   historicoManutencao?: string | null;
 

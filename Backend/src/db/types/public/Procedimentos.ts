@@ -10,14 +10,6 @@ export default interface Procedimentos {
 
   procedimento: string;
 
-  dthFim: Date;
-
-  posicao: string;
-
-  checagem: string;
-
-  obsProcedimento: string | null;
-
   dtCriacao: Date;
 
   dtEdicao: Date;
@@ -32,15 +24,6 @@ export interface ProcedimentosInitializer {
   codProcedimento?: ProcedimentosCodProcedimento;
 
   procedimento: string;
-
-  /** Default value: CURRENT_TIMESTAMP */
-  dthFim?: Date;
-
-  posicao: string;
-
-  checagem: string;
-
-  obsProcedimento?: string | null;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -59,14 +42,6 @@ export interface ProcedimentosMutator {
   codProcedimento?: ProcedimentosCodProcedimento;
 
   procedimento?: string;
-
-  dthFim?: Date;
-
-  posicao?: string;
-
-  checagem?: string;
-
-  obsProcedimento?: string | null;
 
   dtCriacao?: Date;
 
