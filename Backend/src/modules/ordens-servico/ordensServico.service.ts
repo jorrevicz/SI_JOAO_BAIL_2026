@@ -157,7 +157,7 @@ export class OrdensServicoService
                 }
             }
 
-            return this.FindOrdemServico ( numOdS );
+            return this.FindOrdemServico ( numOdS, transaction );
         } );
     };
 
