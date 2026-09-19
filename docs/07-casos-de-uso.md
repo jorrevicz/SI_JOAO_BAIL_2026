@@ -165,6 +165,25 @@ Ativação comum: **clicar no item de menu** correspondente.
   recebido); um título já baixado não pode ser cancelado.
 - **Pós-condição:** cadastrar, consultar, editar, remover e **cancelar** contas a receber.
 
+### Gerenciar Ordem de Serviço
+- **Atores:** Usuário, **Técnico**, **Cliente** (cada um em fluxo próprio) · **RF:** RF16
+- **Lote OS-A (abertura, consulta, diagnóstico):**
+  - **RN001 — Abertura atômica:** `abrirOS()` cria o cabeçalho da OS e, na mesma
+    transação (RNF06), os registros de `Aparelhos` e `Equipamentos` daquela unidade —
+    os três nascem ou não nascem juntos.
+  - **RN002 — Chave informada:** `numOdS` é informado pelo requisitante na abertura
+    (chave natural, não gerada pelo banco); duplicidade é rejeitada (409 PT — mesmo
+    padrão de `Compras`/`ContasAPagar`/`ContasAReceber`).
+  - **RN003 — Diagnóstico não é edição livre:** `registrarDiagnosticoOS()` é operação
+    dedicada (não passa pelo `Update` genérico) — atualiza `obsTecnica`,
+    `historicoManutencao`, preenche `dtAtendimento` (na primeira vez) e reconcilia a
+    checklist de `ProcedimentosOdS` por diferença de conjuntos (chave
+    `codProcedimento`), mesmo padrão de Condição de Pagamento × Parcelas.
+  - **Pós-condição:** consultar, abrir e registrar diagnóstico de ordens de serviço.
+- **Lotes OS-B/OS-C (execução, aprovação, encerramento, entrega, cancelamento):**
+  regras de negócio detalhadas quando cada lote for implementado — ver
+  [Roadmap](09-roadmap.md#fase-os--ordem-de-serviço-⭐-módulo-central-da-kaneko-informática).
+
 ### Gerenciar Compras
 - **Ator:** Usuário · **RF:** RF13
 - **RN002:** a geração de NF-e só aparece **após validação completa** da compra.

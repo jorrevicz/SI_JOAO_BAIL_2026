@@ -26,6 +26,8 @@ conforme DER) e ao requisito de **formas normais**.
   (*cursor-based pagination*) — sem uso de `OFFSET`. A exceção é `Compras`, que usa
   **chave primária composta natural** (`numero` VarChar(28), `modelo` VarChar(2),
   `serie` VarChar(2)) — o próprio documento de compra, sem `codCompra` substituto.
+  `OrdemDeServicos` segue o mesmo princípio com chave natural simples (`numOdS`
+  Char(8), informado na abertura, sem `codOS` substituto).
 - **Sufixo de contexto nos campos de endereço:** campos homônimos entre entidades
   (endereço, bairro, CEP, fone, CPF/CNPJ) recebem sufixo do subdomínio (`Forn`, `Cl`,
   `Transp`) para evitar ambiguidade em JOINs e respostas de API.
@@ -86,6 +88,22 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 | `Parcelas` | `codParcela` | `codCondDePag` → `CondicaoDePagamento`, `codFormaDePag` → `FormaDePagamento` | `percentual` Decimal(5,2), `numDias` |
 | `ContasAPagar` | (`numero`, `modelo`, `serie`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`, `dtVencimento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
 | `ContasAReceber` | (`numero`, `modelo`, `serie`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`, `dtVencimento`, `dtPagamento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
+
+### Atendimento (Ordem de Serviço)
+| Tabela | PK | FKs | Campos notáveis |
+|--------|----|-----|-----------------|
+| `Aparelhos` | `codAparelho` | — | `aparelho`/`serie` opcionais, `modelo`/`voltagem`/`garantia` obrigatórios — unidade física do cliente, nasce com a OS |
+| `Equipamentos` | `codEquipamento` | — | `equipamento`, `grupoUser` (opcional), `soEq`, `socketEq`, `memoriaRam`, `tipoOffice`, `placaMae`, `bios`, `capacidadeRam`, `possuiSSD`, `possuiHD`, `capacidadeArmz`, `usoArmz` — ficha técnica da máquina daquela OS |
+| `Procedimentos` | `codProcedimento` | — | `procedimento` VarChar(150) — catálogo de checagens padrão |
+| `ProcedimentosOdS` | (`numOdS`, `codProcedimento`) | → `OrdemDeServicos`, → `Procedimentos` | associativa N:N — `posicao` VarChar(8), `checagem` VarChar(8), `obsProcedimento` VarChar(244) opcional, `dthFim` — checklist respondido por OS |
+| `OrdemDeServicos` | `numOdS` CHAR(8) (natural) | `codCliente` → `Clientes`, `codAparelho` → `Aparelhos`, `codEquipamento` → `Equipamentos` | `atendente`, `solicitante`, `defeito` obrigatórios; `dtAtendimento`, `obsTecnica`, `historicoManutencao`, `entreguePara`, `dtExecucao`, `acessorio`, `obsBalcao` opcionais; `tipoOdS` |
+| `Cargos` | `codCargo` | — | `cargo` VarChar(15) — Lote OS-B, ainda sem camada de aplicação |
+| `Funcionarios` | `codFuncionario` | `codCidade` → `Cidades`, `codCargo` → `Cargos` | `funcionario`, `funcFone` — Lote OS-B |
+| `Servicos` | `codServico` | `codFuncionario` → `Funcionarios` | `servico`, `valor` — catálogo de serviços, Lote OS-B |
+| `Pecas` | `codPeca` | — | `peca` — catálogo simplificado de peças da OS, Lote OS-B |
+| `ServicosOdS` | (`codServico`, `numOdS`) | → `Servicos`, → `OrdemDeServicos` | associativa N:N — `qtdServico`, Lote OS-B |
+| `OrcamentoPecasOdS` | (`codPeca`, `numOdS`) | → `Pecas`, → `OrdemDeServicos` | associativa N:N — `vlrPv`, `aprovado`, Lote OS-B |
+| `SubstituirPecasOdS` | (`codPeca`, `numOdS`) | → `Pecas`, → `OrdemDeServicos` | associativa N:N — `qtdPeca`, `vlrUnitarioPeca`, Lote OS-B |
 
 ### Compras
 | Tabela | PK | FKs | Campos notáveis |

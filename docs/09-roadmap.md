@@ -117,32 +117,85 @@ Abertura → Diagnóstico → Execução (serviços + peças) → Aprovação do
          → Encerramento (cobrança) → Entrega do equipamento
 ```
 
-Campos principais (a detalhar no modelo de domínio):
+Entidades e operações detalhadas em
+[Modelo de Domínio § Atendimento (Ordem de Serviço)](05-modelo-de-dominio.md#8-atendimento-ordem-de-serviço)
+(`OrdemDeServico`, `Aparelhos`, `Equipamentos`, `Procedimentos`, `ProcedimentosOdS` no
+Lote OS-A; `Cargos`, `Funcionarios`, `Servicos`, `Pecas`, `ServicosOdS`,
+`OrcamentoPecasOdS`, `SubstituirPecasOdS` — já criadas no banco, sem camada de
+aplicação — nos Lotes OS-B/OS-C).
 
-- **Equipamento:** tipo, marca, modelo, número de série, defeito relatado, senha.
-- **Cliente** responsável (referencia `Clientes`).
-- **Técnico** responsável (referencia `Users`).
-- **Status:** Aberta | Em Diagnóstico | Aguardando Aprovação | Em Execução |
-  Aguardando Peça | Pronta | Entregue | Cancelada.
-- **Serviços executados:** descrição e valor por linha de serviço.
-- **Peças utilizadas:** referencia `Produtos` + quantidade + valor unitário.
-- **Valor total** da OS (serviços + peças).
-- **Condição de Pagamento** (referencia `CondicaoDePagamento`).
-- **Prazo de entrega previsto** e data real de entrega.
-- **Garantia** (dias corridos a partir da entrega).
-- **Observações internas** e **laudo técnico**.
+> O esquema abaixo reflete a migration `add-ordem-de-servico-tables` (já aplicada ao
+> banco antes desta revisão da documentação) — ver nota de revisão na seção 8 do
+> [Modelo de Domínio](05-modelo-de-dominio.md#8-atendimento-ordem-de-serviço).
 
-Dependências:
+Campos principais (Lote OS-A):
+
+- **Aparelho recebido:** tipo/nome, série (opcionais), modelo, voltagem, garantia —
+  registro por unidade física, nasce com a OS.
+- **Ficha técnica do equipamento:** SO, socket, RAM, placa-mãe, BIOS, armazenamento
+  (SSD/HD, capacidade, uso), Office, grupo de usuários de rede — levantada para a
+  máquina daquela OS.
+- **Cliente** responsável (referencia `Clientes`); **atendente** e **solicitante**
+  (texto livre).
+- **Defeito relatado**, **acessórios entregues**, **observações de balcão**, **tipo da
+  OS** (`tipoOdS`).
+- **Diagnóstico:** observação técnica (`obsTecnica`), histórico de manutenção,
+  checklist de checagens padronizadas (`Procedimentos` × `ProcedimentosOdS`).
+- **Chave:** `numOdS` — natural, informada na abertura (sem `codOS` substituto).
+
+Campos ainda **fora do Lote OS-A** (chegam nos Lotes OS-B/OS-C, ver abaixo): status
+(máquina de estados), valor total, condição de pagamento, prazo/garantia, execução de
+serviços e peças, aprovação do cliente, encerramento e entrega.
+
+Dependências (Lote OS-A):
 
 ```
-Clientes + Produtos + CondicaoDePagamento + Users → OrdemDeServico
-OrdemDeServico → ContasAReceber (ao encerrar)
+Clientes → OrdemDeServico
+Aparelhos + Equipamentos → OrdemDeServico (nascem juntos em abrirOS())
+Procedimentos → ProcedimentosOdS → OrdemDeServico (checklist do diagnóstico)
 ```
 
-- [ ] **Backend:** migration + model + schema Zod + service (TDD) + repository +
-      controller + routes.
-- [ ] **Frontend:** listagem com filtro por status, formulário em modal (abertura),
-      tela de detalhes com linha de serviços/peças e avanço de status.
+Seguindo o padrão de "revezamento três em três" (ver [Princípios de entrega](#princípios-de-entrega)),
+a fase é dividida em **3 lotes por etapa do ciclo de vida**, cada um com tasks
+de backend + frontend, consultas antes de escrita:
+
+### Lote OS-A — Abertura e Diagnóstico ✓ backend concluído
+
+1. [x] **Backend:** CRUD de Ordem de Serviço (abertura, consulta, diagnóstico) —
+       migration de ajuste (`ProcedimentosOdS`) + schema Zod + service (TDD) +
+       repository + controller + routes; inclui os cadastros de apoio necessários
+       (`Procedimentos`, catálogo) e as entidades embutidas na abertura (`Aparelhos`,
+       `Equipamentos`).
+2. [ ] **Frontend:** listagem com filtro por cliente.
+3. [ ] **Frontend:** formulário de abertura e de diagnóstico (modal).
+
+> **Backend concluído:** `abrirOS()` cria o cabeçalho e, na mesma transação (RNF06),
+> os registros de `Aparelhos`/`Equipamentos` daquela unidade; `numOdS` é validado
+> quanto à disponibilidade (`23505` → 409 PT). `registrarDiagnosticoOS()` é operação
+> dedicada que preenche `obsTecnica`/`historicoManutencao`/`dtAtendimento` e reconcilia
+> a checklist de `ProcedimentosOdS` por diferença de conjuntos (mesmo padrão de
+> Condição de Pagamento × Parcelas). Testes TDD (service unitário, repository
+> rollback, routes supertest) para `Procedimentos` e `OrdemDeServico`.
+>
+> **▶ Próximo passo:** Frontend do Lote OS-A, depois Lote OS-B.
+
+### Lote OS-B — Execução (serviços e peças) e Aprovação
+
+1. [ ] **Backend:** camada de aplicação para `Cargos`/`Funcionarios` (técnico
+       responsável) e `Servicos`/`Pecas` (catálogos); linhas `ServicosOdS` e
+       `OrcamentoPecasOdS`/`SubstituirPecasOdS` embutidas na OS.
+2. [ ] **Backend:** status (a definir — a migration atual não tem coluna de status;
+       decidir se é adicionada) e aprovação do cliente (`aprovado` em
+       `OrcamentoPecasOdS`).
+3. [ ] **Frontend:** tela de detalhes com linha de serviços/peças e aprovação.
+
+### Lote OS-C — Encerramento (cobrança) e Entrega
+
+1. [ ] **Backend:** encerramento da OS — geração de `ContasAReceber` (depende de
+       decisão sobre condição de pagamento na OS, ainda sem coluna no schema atual).
+2. [ ] **Backend:** registro de entrega (`entreguePara`, `dtExecucao`) e cancelamento
+       de OS.
+3. [ ] **Frontend:** tela de encerramento/entrega e cobrança.
 
 ## Fase 4 — Transacional
 

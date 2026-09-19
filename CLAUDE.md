@@ -84,9 +84,27 @@ compra e financeiro. Web API REST + SPA.
 > também um typo de campo (`codFormaDepag` → `codFormaDePag`) em Contas a Pagar que impedia
 > qualquer requisição correta de ser aceita.
 >
-> **Próximo passo: Frontend de Fase 3B (T-115A — telas de Contas a Pagar e Contas a
-> Receber), seguido da Fase OS — Ordem de Serviço (RF16), módulo central da Kaneko
-> Informática.**
+> **Fase OS — Lote OS-A (backend) concluído:** CRUD de Ordem de Serviço (abertura,
+> consulta, diagnóstico) em 4 camadas com testes TDD. **A migration que criou o schema da
+> Fase OS (`add-ordem-de-servico-tables`) já havia sido aplicada ao banco antes desta
+> documentação** — o modelo original em `docs/05` (`codOS`, `status`, `valorTotal`, peças
+> via `Produtos`) foi descartado e a documentação reescrita para refletir o schema real
+> (`Aparelhos`, `Equipamentos`, `Procedimentos`, `OrdemDeServicos`, chave natural `numOdS`);
+> ver nota de revisão em
+> [docs/05 §8](docs/05-modelo-de-dominio.md#8-atendimento-ordem-de-serviço). A única
+> correção sobre essa migration foi uma migration adicional
+> (`ajustar-procedimentos-checklist-ods`) que move `posicao`/`checagem`/`obsProcedimento`/
+> `dthFim` de `Procedimentos` para a nova associativa `ProcedimentosOdS` — um único
+> `codProcedimento` no cabeçalho da OS não comporta a checklist de múltiplas checagens por
+> atendimento. `abrirOS()` cria a OS e, na mesma transação (RNF06), os registros de
+> `Aparelhos`/`Equipamentos` daquela unidade; `registrarDiagnosticoOS()` é operação
+> dedicada que reconcilia a checklist por diferença de conjuntos (mesmo padrão de Condição
+> de Pagamento × Parcelas). `Cargos`/`Funcionarios`/`Servicos`/`Pecas`/`ServicosOdS`/
+> `OrcamentoPecasOdS`/`SubstituirPecasOdS` já existem no banco (mesma migration original)
+> mas ainda sem camada de aplicação — entram no Lote OS-B.
+>
+> **Próximo passo: Frontend do Lote OS-A (listagem e formulários de abertura/diagnóstico),
+> seguido do Lote OS-B — Execução (serviços e peças) e Aprovação.**
 
 ## Fonte de verdade: leia `docs/` primeiro
 

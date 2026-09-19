@@ -280,7 +280,135 @@ Documentada em [Logística e Veículos](#veiculonfe) — vincula o veículo de t
 
 ---
 
-## 8. Acesso e Usuários
+## 8. Atendimento (Ordem de Serviço)
+
+Módulo central da Kaneko Informática (RF16) — recebimento, diagnóstico, execução e
+entrega de equipamentos. Ver [Roadmap](09-roadmap.md#fase-os--ordem-de-serviço-⭐-módulo-central-da-kaneko-informática)
+para a ordem de implementação (lotes OS-A/OS-B/OS-C).
+
+> **Nota de revisão (Lote OS-A):** o esquema desta seção foi implementado no banco
+> (migration `add-ordem-de-servico-tables`) **antes** desta revisão da documentação, com
+> um desenho diferente do que constava aqui originalmente (chave substituta `codOS`,
+> `status` como máquina de estados, `valorTotal`, `condicaoDePagamento`, peças via
+> `Produtos`). Por decisão do responsável pelo projeto, **a migration já aplicada é a
+> fonte de verdade** — esta seção foi reescrita para refletir o schema real; o desenho
+> anterior foi descartado. A única correção feita sobre a migration original (por
+> decisão do responsável pelo projeto) foi mover `posicao`/`checagem`/`obsProcedimento`/
+> `dthFim` de `Procedimentos` para a nova tabela associativa
+> [ProcedimentosOdS](#procedimentosods-checklist-de-checagens---associativa-os--procedimento),
+> pois um único `codProcedimento` no cabeçalho da OS não comporta a checklist de
+> múltiplas checagens por atendimento (ver migration
+> `ajustar-procedimentos-checklist-ods`).
+
+### Aparelhos *(unidade física recebida do cliente)*
+- **Atributos:** `codAparelho`, `aparelho`, `serie`, `modelo`, `voltagem`, `garantia`,
+  `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- `aparelho` (tipo/nome do aparelho, ex.: "Notebook") e `serie` (número de série) são
+  opcionais — nem toda unidade tem série visível; `modelo`, `voltagem` e `garantia`
+  (texto livre, ex.: "12 meses", "fora de garantia") são obrigatórios e próprios daquela
+  unidade específica (não de um catálogo — duas unidades do mesmo modelo têm garantias
+  diferentes).
+- **Não é cadastro de apoio pré-existente:** nasce junto com a Ordem de Serviço, na
+  mesma transação de `abrirOS()` (RNF06) — não há tela nem rota própria de cadastro.
+- **Liga-se a:** [OrdemDeServico](#ordemdeservico) (1:1, referenciado por `codAparelho`).
+
+### Equipamentos *(ficha técnica de hardware/software da máquina)*
+- **Atributos:** `codEquipamento`, `equipamento`, `grupoUser`, `soEq`, `socketEq`,
+  `memoriaRam`, `tipoOffice`, `placaMae`, `bios`, `capacidadeRam`, `possuiSSD`,
+  `possuiHD`, `capacidadeArmz`, `usoArmz`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- Ficha levantada para o computador **daquela OS específica** (specs reais da máquina
+  recebida) — não é catálogo de configurações reaproveitável. `grupoUser` é o nome do
+  grupo de usuários com acesso de rede àquele computador (por isso opcional — nem toda
+  máquina está em rede); os demais campos técnicos são obrigatórios.
+- **Não é cadastro de apoio pré-existente:** nasce junto com a Ordem de Serviço, na
+  mesma transação de `abrirOS()` (RNF06), ao lado de [Aparelhos](#aparelhos-unidade-física-recebida-do-cliente).
+- **Liga-se a:** [OrdemDeServico](#ordemdeservico) (1:1, referenciado por `codEquipamento`).
+
+### Procedimentos *(catálogo de checagens padrão)*
+- **Atributos:** `codProcedimento`, `procedimento`, `dtCriacao`, `dtEdicao`, `codUser`,
+  `isActive`
+- Cadastro de apoio simples (mesmo padrão de `Categorias`) — cada checagem padronizada
+  (ex.: "Há lacres?", "Aparelho liga?") é cadastrada uma única vez e reutilizada em
+  quantas OS forem necessárias; a resposta de cada checagem por atendimento vive em
+  [ProcedimentosOdS](#procedimentosods-checklist-de-checagens---associativa-os--procedimento).
+- **Operações:** `consultarProcedimentos()`, `adicionarProcedimento()`,
+  `editarProcedimento()`, `removerProcedimento()`
+
+### ProcedimentosOdS *(checklist de checagens — associativa OS × Procedimento)*
+- **Atributos:** `numOdS`, `codProcedimento`, `posicao`, `checagem`, `obsProcedimento`,
+  `dthFim`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- Chave composta (`numOdS`, `codProcedimento`) — no máximo uma resposta por checagem do
+  catálogo em cada OS. `posicao` é a posição física da observação em relação ao
+  equipamento (ex.: "Embaixo"); `checagem` é o resultado (ex.: "SIM"/"NÃO");
+  `obsProcedimento` é opcional (detalhe da observação); `dthFim` é a data/hora em que
+  aquela checagem foi finalizada.
+- Gerenciada de forma embutida e atômica dentro do formulário de diagnóstico da OS (mesmo
+  padrão de Condição de Pagamento × Parcelas), respondida via `registrarDiagnosticoOS()`,
+  com reconciliação por diferença de conjuntos pela chave `codProcedimento` (mesmo padrão
+  de Parcelas: item ausente da lista enviada é removido, item novo é criado).
+- **Operações:** `adicionarProcedimentoOS()`, `editarProcedimentoOS()`,
+  `removerProcedimentoOS()`, `consultarProcedimentosOS()`
+- **Liga-se a:** [OrdemDeServico](#ordemdeservico), [Procedimentos](#procedimentos-catálogo-de-checagens-padrão).
+
+### OrdemDeServico
+- **Atributos:** `numOdS`, `codCliente`, `atendente`, `dtAtendimento`, `dtExecucao`,
+  `codAparelho`, `acessorio`, `defeito`, `obsBalcao`, `obsTecnica`, `entreguePara`,
+  `tipoOdS`, `codEquipamento`, `historicoManutencao`, `solicitante`, `dtCriacao`,
+  `dtEdicao`, `codUser`, `isActive`
+- `numOdS` — **chave primária natural** `CHAR(8)`, informada pelo requisitante na
+  abertura (mesmo padrão de chave natural de `Compras`/`ContasAPagar`/`ContasAReceber`);
+  o Postgres rejeita duplicidade (`23505` → 409 PT).
+- **Relacionamento:** referencia **Cliente** (`codCliente`), **Aparelho**
+  (`codAparelho`) e **Equipamento** (`codEquipamento`); agrega
+  [ProcedimentosOdS](#procedimentosods-checklist-de-checagens---associativa-os--procedimento).
+- `atendente` (quem abriu a OS) e `solicitante` (quem solicitou o serviço, pode diferir
+  do cliente cadastrado) são texto livre; `acessorio`, `obsBalcao`, `entreguePara` e
+  `historicoManutencao` são opcionais.
+- **Abertura (`abrirOS()`):** cria o cabeçalho e, na mesma transação (RNF06), os
+  registros de [Aparelhos](#aparelhos-unidade-física-recebida-do-cliente) e
+  [Equipamentos](#equipamentos-ficha-técnica-de-hardwaresoftware-da-máquina) daquela
+  unidade — os três nascem ou não nascem juntos. Preenche `codCliente`, `atendente`,
+  `acessorio`, `defeito`, `obsBalcao`, `tipoOdS`, `solicitante`; `dtAtendimento`,
+  `dtExecucao`, `obsTecnica` e `entreguePara` começam nulos.
+- **Diagnóstico (`registrarDiagnosticoOS()`):** operação dedicada (não passa pelo
+  `Update`) que define/atualiza `obsTecnica` e `historicoManutencao`, preenche
+  `dtAtendimento` (data do primeiro diagnóstico, se ainda nula) e reconcilia a lista de
+  [ProcedimentosOdS](#procedimentosods-checklist-de-checagens---associativa-os--procedimento)
+  enviada.
+- **Ainda fora do Lote OS-A** (ver [Roadmap](09-roadmap.md#fase-os--ordem-de-serviço-⭐-módulo-central-da-kaneko-informática)):
+  não há `status` (máquina de estados), `valorTotal`, `condicaoDePagamento`,
+  `garantiaDias`, execução de serviços/peças, aprovação do cliente, encerramento
+  (geração de Conta a Receber), registro de entrega nem cancelamento formal — essas
+  tabelas já existem no banco (ver abaixo) mas ainda sem camada de aplicação.
+- **Operações do Lote OS-A:** `consultarOrdensServico()`, `abrirOS()`,
+  `registrarDiagnosticoOS()`, `consultarClientes()`.
+- **Liga-se a:** [Clientes](#clientes), [Aparelhos](#aparelhos-unidade-física-recebida-do-cliente),
+  [Equipamentos](#equipamentos-ficha-técnica-de-hardwaresoftware-da-máquina),
+  [Procedimentos](#procedimentos-catálogo-de-checagens-padrão) (via ProcedimentosOdS).
+
+### Entidades do Lote OS-B (execução) — já no banco, sem camada de aplicação
+
+Criadas pela mesma migration inicial da Fase OS; a documentação de operações/regras de
+negócio destas entidades é adiada para o Lote OS-B, quando ganham service/controller/rotas:
+
+- **Cargos** — `codCargo`, `cargo`, auditoria. Cadastro de apoio de cargos internos.
+- **Funcionarios** — `codFuncionario`, `codCidade` → `Cidades`, `codCargo` → `Cargos`,
+  `funcionario`, `funcFone`, auditoria. Substitui `Users` como referência de técnico
+  responsável nas linhas de serviço (recursos humanos, não login).
+- **Servicos** — `codServico`, `servico`, `valor`, `codFuncionario` → `Funcionarios`,
+  auditoria. Catálogo de serviços com preço fixo.
+- **Pecas** — `codPeca`, `peca`, auditoria. Catálogo de peças específico da OS
+  (mais simples que `Produtos`, que continua sendo o catálogo de revenda).
+- **ServicosOdS** *(associativa OS × Servico)* — `codServico`, `numOdS`, `qtdServico`,
+  auditoria. Serviços efetivamente executados na OS.
+- **OrcamentoPecasOdS** *(associativa OS × Peca)* — `codPeca`, `numOdS`, `vlrPv`,
+  `aprovado`, auditoria. Orçamento de peças pendente de aprovação do cliente.
+- **SubstituirPecasOdS** *(associativa OS × Peca)* — `codPeca`, `numOdS`, `qtdPeca`,
+  `vlrUnitarioPeca`, auditoria. Peças efetivamente substituídas após aprovação.
+
+---
+
+## 9. Acesso e Usuários
 
 ### Users
 - **Atributos:** `codUser`, `perfil`, `user`, `email`, `senha`, `dtCriacao`, `dtEdicao`, `isActive`
@@ -298,9 +426,9 @@ Localização ──< Parceiros ──< Compras >── Produtos
      └──< Veículos  │            ▼            │
             │       │          NF-e ◀─────────┘
             └───────┴──────────▶ │
-                    Financeiro ◀─┘
-                         ▲
-                       Acesso (Users → auditoria em todas)
+                    Financeiro ◀─┴──────── Atendimento (OS) ◀── Produtos (peças)
+                         ▲                       ▲
+                       Acesso (Users → auditoria em todas; técnico da OS)
 ```
 
 ## Documentos relacionados
