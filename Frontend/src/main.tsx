@@ -19,6 +19,8 @@ import CondicoesPagamentoPage from './pages/condicoesPagamento-Parcela';
 import { FormasPagamentoPage }    from './pages/formasPagamento';
 import ContasPagamentoPage    from './pages/contasPagamento';
 import ContasReceberPage      from './pages/contasReceber';
+import ProcedimentosPage      from './pages/procedimentos';
+import OrdensServicoPage      from './pages/ordensServico';
 
 ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
   <React.StrictMode>
@@ -41,6 +43,8 @@ ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
             <Route path="/formas-pagamento"    element={<FormasPagamentoPage />} />
             <Route path="/contas-pagamento"    element={<ContasPagamentoPage />} />
             <Route path="/contas-receber"      element={<ContasReceberPage />} />
+            <Route path="/procedimentos"       element={<ProcedimentosPage />} />
+            <Route path="/ordens-servico"      element={<OrdensServicoPage />} />
           </Routes>
         </Layout>
       </BrowserRouter>

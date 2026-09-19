@@ -36,6 +36,11 @@ export default function Layout
             <NavSubLink as={ NavLink } to="/contas-pagamento">Contas a Pagar</NavSubLink>
             <NavSubLink as={ NavLink } to="/contas-receber">Contas a Receber</NavSubLink>
           </NavGrupo>
+          <NavGrupo>
+            <NavGrupoLabel>Atendimento</NavGrupoLabel>
+            <NavSubLink as={ NavLink } to="/ordens-servico">Ordens de Serviço</NavSubLink>
+            <NavSubLink as={ NavLink } to="/procedimentos">Procedimentos</NavSubLink>
+          </NavGrupo>
         </nav>
       </Sidebar>
       <Conteudo>{ children }</Conteudo>
