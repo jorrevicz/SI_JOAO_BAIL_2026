@@ -37,4 +37,28 @@ describe ( 'Clientes routes', () =>
             .send ( { codCidade: 1, cliente: 'A'.repeat ( 129 ) } );
         expect ( res.status ).toBe ( 400 );
     });
+
+    it ( 'POST /api/clientes com CEP zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/clientes' )
+            .send ({
+                codCidade: 1, cliente: 'Cliente Teste', tipoPessoa: 'FISICA',
+                cepCl: '00000000', foneCl: '5511988887777',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'cepCl' );
+    });
+
+    it ( 'POST /api/clientes com telefone zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/clientes' )
+            .send ({
+                codCidade: 1, cliente: 'Cliente Teste', tipoPessoa: 'FISICA',
+                cepCl: '20511120', foneCl: '0000000000',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'foneCl' );
+    });
 });

@@ -18,7 +18,8 @@ export const createCidadeSchema = z.object
             .string ( { message: 'O DDD é obrigatório.' } )
             .trim()
             .length ( 2, 'O DDD deve ter 2 dígitos.' )
-            .regex ( /^[0-9]+$/, 'O DDD deve conter apenas números.'),
+            .regex ( /^[0-9]+$/, 'O DDD deve conter apenas números.')
+            .refine ( ( valor ) => valor.length !== 2 || !/^0+$/.test ( valor ), 'O DDD não pode ser preenchido apenas com zeros.' ),
     }
 );
 

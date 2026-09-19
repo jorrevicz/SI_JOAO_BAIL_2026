@@ -68,11 +68,11 @@ const camposProduto = {
 
     pesoBruto: z
         .number ( { message: 'O peso bruto é obrigatório.' } )
-        .nonnegative ( 'O peso bruto não pode ser negativo.' ),
+        .positive ( 'O peso bruto deve ser maior que zero.' ),
 
     pesoLiq: z
         .number ( { message: 'O peso líquido é obrigatório.' } )
-        .nonnegative ( 'O peso líquido não pode ser negativo.' ),
+        .positive ( 'O peso líquido deve ser maior que zero.' ),
 
     estoque: z
         .number ( { message: 'O estoque inicial é obrigatório.' } )

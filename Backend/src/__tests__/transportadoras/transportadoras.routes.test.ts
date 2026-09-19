@@ -37,4 +37,16 @@ describe ( 'Transportadoras routes', () =>
             .send ( { codCidade: 1, transportadora: 'Rápida Transportes', tipoPessoa: 'INVALIDO' } );
         expect ( res.status ).toBe ( 400 );
     });
+
+    it ( 'POST /api/transportadoras com CPF/CNPJ zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/transportadoras' )
+            .send ({
+                codCidade: 1, transportadora: 'Rápida Transportes', tipoPessoa: 'JURIDICA',
+                cpfCnpjTransp: '00000000000000', inscEstTransp: '111111111111',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'cpfCnpjTransp' );
+    });
 });

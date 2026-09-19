@@ -37,4 +37,43 @@ describe ( 'Fornecedores routes', () =>
             .send ( { codCidade: 1, fornecedor: 'A'.repeat ( 129 ) } );
         expect ( res.status ).toBe ( 400 );
     });
+
+    it ( 'POST /api/fornecedores com CEP zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/fornecedores' )
+            .send ({
+                codCidade: 1, codCondDePag: 1, fornecedor: 'Fornecedor Teste', tipoPessoa: 'JURIDICA',
+                cepForn: '00000000', foneForn: '551133331111',
+                cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'cepForn' );
+    });
+
+    it ( 'POST /api/fornecedores com telefone zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/fornecedores' )
+            .send ({
+                codCidade: 1, codCondDePag: 1, fornecedor: 'Fornecedor Teste', tipoPessoa: 'JURIDICA',
+                cepForn: '01310100', foneForn: '0000000000',
+                cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'foneForn' );
+    });
+
+    it ( 'POST /api/fornecedores com CPF/CNPJ zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/fornecedores' )
+            .send ({
+                codCidade: 1, codCondDePag: 1, fornecedor: 'Fornecedor Teste', tipoPessoa: 'JURIDICA',
+                cepForn: '01310100', foneForn: '551133331111',
+                cpfCnpjForn: '00000000000000', inscEstSubTrib: '111111111111',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'cpfCnpjForn' );
+    });
 });

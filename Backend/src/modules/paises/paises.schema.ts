@@ -30,7 +30,8 @@ export const createPaisSchema = z.object
             .trim()
             .min ( 1, 'O DDI é obrigatório.' )
             .max ( 4 )
-            .regex ( /^[0-9]+$/, 'O DDI deve conter apenas números.' ),
+            .regex ( /^[0-9]+$/, 'O DDI deve conter apenas números.' )
+            .refine ( ( valor ) => valor.length < 1 || valor.length > 4 || !/^0+$/.test ( valor ), 'O DDI não pode ser preenchido apenas com zeros.' ),
         moeda: z
             .string ( { message: 'A moeda é obrigatória.' } )
             .trim()

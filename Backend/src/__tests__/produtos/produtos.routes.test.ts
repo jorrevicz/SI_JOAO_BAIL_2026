@@ -84,6 +84,48 @@ describe ( 'Produtos routes', () =>
         expect ( vinculosRes.body ).toHaveLength ( 2 );
     });
 
+    it ( 'POST /api/produtos com peso bruto zero-preenchido retorna 400', async () =>
+    {
+        const [ codCategoria ] = await obterDuasCategorias();
+
+        const res = await request ( app )
+            .post ( '/api/produtos' )
+            .send
+            ({
+                produto:    nomeUnico ( 'PRODUTO PESO ZERO' ),
+                undProduto: 'UN',
+                pesoBruto:  0,
+                pesoLiq:    0.9,
+                estoque:    0,
+                custo:      0,
+                categorias: [ { codCategoria } ],
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'pesoBruto' );
+    });
+
+    it ( 'POST /api/produtos com peso líquido zero-preenchido retorna 400', async () =>
+    {
+        const [ codCategoria ] = await obterDuasCategorias();
+
+        const res = await request ( app )
+            .post ( '/api/produtos' )
+            .send
+            ({
+                produto:    nomeUnico ( 'PRODUTO PESO LIQ ZERO' ),
+                undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0,
+                estoque:    0,
+                custo:      0,
+                categorias: [ { codCategoria } ],
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'pesoLiq' );
+    });
+
     it ( 'POST /api/produtos sem categorias retorna 400 (RN: ao menos uma categoria)', async () =>
     {
         const res = await request ( app )

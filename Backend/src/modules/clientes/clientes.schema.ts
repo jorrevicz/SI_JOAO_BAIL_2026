@@ -36,11 +36,13 @@ export const createClienteSchema = z.object
             .string ( { message: 'O CEP é obrigatório.' } )
             .trim()
             .length ( 8, 'O CEP deve ter 8 dígitos.' )
-            .regex ( /^[0-9]+$/, 'O CEP deve conter apenas números.'),
+            .regex ( /^[0-9]+$/, 'O CEP deve conter apenas números.')
+            .refine ( ( valor ) => valor.length !== 8 || !/^0+$/.test ( valor ), 'O CEP não pode ser preenchido apenas com zeros.' ),
         foneCl: z
             .string ( { message: 'O telefone é obrigatório.' } )
             .trim()
-            .regex ( /^[0-9]{10,15}$/, 'O telefone deve conter apenas números, com DDI/DDD e o número (ex: 5511988887777).'),
+            .regex ( /^[0-9]{10,15}$/, 'O telefone deve conter apenas números, com DDI/DDD e o número (ex: 5511988887777).')
+            .refine ( ( valor ) => valor.length < 10 || valor.length > 15 || !/^0+$/.test ( valor ), 'O telefone não pode ser preenchido apenas com zeros.' ),
     }
 );
 

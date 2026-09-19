@@ -33,9 +33,19 @@ describe ( 'Cidades routes', () => {
 
     it ( 'POST /api/cidades com payload inválido retorna 400', async () => {
 
-        const res = await request 
+        const res = await request
             ( app ).post ( '/api/cidades' ).send ( { cidade: 'Campinas' } );
 
         expect ( res.status ).toBe ( 400 );
+    });
+
+    it ( 'POST /api/cidades com DDD zero-preenchido retorna 400', async () => {
+
+        const res = await request ( app )
+            .post ( '/api/cidades' )
+            .send ( { codEstado: 1, cidade: 'Campinas', ddd: '00' } );
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'ddd' );
     });
 });

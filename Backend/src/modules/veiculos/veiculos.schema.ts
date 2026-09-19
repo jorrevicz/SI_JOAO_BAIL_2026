@@ -35,7 +35,8 @@ export const createVeiculoSchema = z.object
             .trim()
             .min(8, 'O código ANTT deve ter no mínimo 8 dígitos' )
             .max(9, 'O código ANTT deve ter no máximo 9 dígitos.' )
-            .regex ( /^[0-9]+$/, 'O código ANTT deve conter apenas números.'),
+            .regex ( /^[0-9]+$/, 'O código ANTT deve conter apenas números.')
+            .refine ( ( valor ) => valor.length < 8 || valor.length > 9 || !/^0+$/.test ( valor ), 'O código ANTT não pode ser preenchido apenas com zeros.' ),
     }
 );
 

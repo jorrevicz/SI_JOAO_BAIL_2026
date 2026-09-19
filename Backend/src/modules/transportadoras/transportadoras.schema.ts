@@ -38,7 +38,8 @@ export const createTransportadoraSchema = z.object
         cpfCnpjTransp: z
             .string ( { message: 'O CPF/CNPJ é obrigatório.' } )
             .trim()
-            .regex ( /^([0-9]{11}|[0-9]{14})$/, 'O CPF/CNPJ deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ).'),
+            .regex ( /^([0-9]{11}|[0-9]{14})$/, 'O CPF/CNPJ deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ).')
+            .refine ( ( valor ) => ! ( valor.length === 11 || valor.length === 14 ) || !/^0+$/.test ( valor ), 'O CPF/CNPJ não pode ser preenchido apenas com zeros.' ),
         inscEstTransp: z
             .string ( { message: 'A inscrição estadual é obrigatória.' } )
             .trim()

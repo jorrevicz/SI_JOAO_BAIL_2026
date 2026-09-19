@@ -37,4 +37,15 @@ describe ( 'Veiculos routes', () =>
             .send ( { placaVeiculo: 'ABCDEFGH' } );
         expect ( res.status ).toBe ( 400 );
     });
+
+    it ( 'POST /api/veiculos com código ANTT zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/veiculos' )
+            .send ({
+                placaVeiculo: 'ABC1234', modeloVeiculo: 'Gol', marca: 'VW', codAntt: '00000000',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'codAntt' );
+    });
 });

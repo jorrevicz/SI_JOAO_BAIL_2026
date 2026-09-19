@@ -24,10 +24,19 @@ describe
             expect ( res.body.mensagem ).toBeDefined();
         });
 
-        it('POST /api/paises com payload inválido retorna 400', 
+        it('POST /api/paises com payload inválido retorna 400',
             async () => {
                 const res = await request( app ).post( '/api/paises' ).send( { sigla: 'BR' } );
                 expect ( res.status ).toBe( 400 );
+        });
+
+        it ( 'POST /api/paises com DDI zero-preenchido retorna 400', async () => {
+            const res = await request ( app )
+                .post ( '/api/paises' )
+                .send ( { pais: 'Teste', sigla: 'TST', ddi: '00', moeda: 'ZZZ' } );
+
+            expect ( res.status ).toBe ( 400 );
+            expect ( res.body.erros ).toHaveProperty ( 'ddi' );
         });
     }
 );

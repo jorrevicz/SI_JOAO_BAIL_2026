@@ -34,7 +34,8 @@ export const createContasAReceberSchema = z.object
             .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da multa deve ser um decimal e positivo." ),
         valor: z
             .coerce.string ( { message: "O valor da conta deve ser uma string decimal."})
-            .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da conta deve ser um decimal e positivo." ),
+            .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da conta deve ser um decimal e positivo." )
+            .refine ( ( valor ) => !/^[0-9]+\.[0-9]{2}$/.test ( valor ) || Number ( valor ) > 0, "O valor da conta deve ser maior que zero." ),
         valorBaixa: z
             .coerce.string ( { message: "O valor da baixa deve ser uma string decimal."})
             .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da baixa deve ser um decimal e positivo." )
@@ -67,7 +68,8 @@ export const registrarPagamentoRecebidoSchema = z.object
     {
         valorBaixa: z
             .coerce.string ( { message: "O valor da baixa deve ser uma string decimal."} )
-            .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da baixa deve ser um decimal e positivo." ),
+            .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da baixa deve ser um decimal e positivo." )
+            .refine ( ( valor ) => !/^[0-9]+\.[0-9]{2}$/.test ( valor ) || Number ( valor ) > 0, "O valor da baixa deve ser maior que zero." ),
         dtBaixa: z
             .coerce.date ( { message: "A data da baixa é inválida"} ),
         dtPagamento: z
