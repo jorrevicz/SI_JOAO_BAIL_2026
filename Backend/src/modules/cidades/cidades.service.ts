@@ -39,6 +39,15 @@ export class CidadesService
     {
         await this.AssertEstado ( data.codEstado );
 
+        if ( await this.repo.HasDependents ( id ) )
+        {
+            throw new AppError
+            (
+                'Não é possível editar: há clientes, fornecedores ou transportadoras vinculados a esta cidade.',
+                409
+            );
+        }
+
         const atualizada = await this.repo.Update ( id, data, codUser );
 
         if ( !atualizada )

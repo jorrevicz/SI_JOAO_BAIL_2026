@@ -66,6 +66,15 @@ export class CondicoesPagamentoService
     {
         return WithTransaction ( async ( transaction ) =>
         {
+            if ( await this.repo.HasExternalReferences ( id, transaction ) )
+            {
+                throw new AppError
+                (
+                    'Não é possível editar: há clientes ou compras vinculados a esta condição.',
+                    409
+                );
+            }
+
             const atualizada = await this.repo.Update ( id, data, codUser, transaction );
 
             if ( !atualizada )

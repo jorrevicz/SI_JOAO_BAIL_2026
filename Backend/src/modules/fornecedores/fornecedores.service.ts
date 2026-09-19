@@ -47,6 +47,15 @@ export class FornecedoresService
         codUser: number
     )
     {
+        if ( await this.repo.HasDependents ( id ) )
+        {
+            throw new AppError
+            (
+                'Não é possível editar: há compras, contas ou notas fiscais vinculadas a este fornecedor.',
+                409
+            );
+        }
+
         const atualizado = await this.repo.Update ( id, data, codUser );
 
         if ( !atualizado )

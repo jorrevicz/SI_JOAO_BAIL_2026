@@ -207,6 +207,23 @@ describe ( 'ProdutosService', () =>
         expect ( produtoCategoriasRepo.Delete ).not.toHaveBeenCalled();
     });
 
+    it ( 'UpdateProduto lança 409 quando há dependentes ativos (RN004 transversal)', async () =>
+    {
+        repo.HasDependents.mockResolvedValue ( true );
+
+        await expect
+        (
+            service.UpdateProduto
+            (
+                1,
+                { produto: 'X', categorias: [ { codCategoria: 1 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
+                1
+            )
+        ).rejects.toMatchObject ( { status: 409 } );
+
+        expect ( repo.Update ).not.toHaveBeenCalled();
+    });
+
     it ( 'DeleteProduto lança 404 quando não existe', async () =>
     {
         repo.FindById.mockResolvedValue ( null );

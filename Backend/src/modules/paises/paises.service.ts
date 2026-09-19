@@ -48,6 +48,15 @@ export class PaisesService
         codUser: number
     )
     {
+        if ( await this.repo.HasDependents ( id ) )
+        {
+            throw new AppError
+            (
+                'Não é possível editar: há estados vinculados a este país.',
+                409
+            );
+        };
+
         const atualizado = await this.repo.Update ( id, data, codUser );
 
         if ( !atualizado )

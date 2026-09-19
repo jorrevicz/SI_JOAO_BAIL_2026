@@ -101,6 +101,19 @@ describe ( 'EstadosService', () => {
         ).rejects.toMatchObject ( { status: 404 } );
     });
 
+    it ( 'UpdateEstado lança 409 quando há cidades/veículos vinculados (RN004 transversal)', async () => {
+
+        paisesRepo.FindById.mockResolvedValue ( { codPais: 1 } );
+        estadosRepo.HasDependents.mockResolvedValue ( true );
+
+        await expect
+        (
+            service.UpdateEstado ( 1, { codPais: 1, uf: 'SP', estado: 'São Paulo', isActive: true }, 1 )
+        ).rejects.toMatchObject ( { status: 409 } );
+
+        expect ( estadosRepo.Update ).not.toHaveBeenCalled();
+    });
+
     it ( 'DeleteEstado lança 404 quando não existe', async () => {
 
         estadosRepo.FindById.mockResolvedValue ( null );

@@ -47,6 +47,15 @@ export class TransportadorasService
         codUser: number
     )
     {
+        if ( await this.repo.HasDependents ( id ) )
+        {
+            throw new AppError
+            (
+                'Não é possível editar: há compras ou notas fiscais vinculadas a esta transportadora.',
+                409
+            );
+        }
+
         const atualizada = await this.repo.Update ( id, data, codUser );
 
         if ( !atualizada )

@@ -62,6 +62,16 @@ describe ( 'PaisesService', () => {
             .rejects.toMatchObject ( { status: 404 } );
     });
 
+    it ( 'UpdatePais lança 409 quando há estados vinculados (RN004 transversal)', async () => {
+
+        repo.HasDependents.mockResolvedValue ( true );
+
+        await expect ( service.UpdatePais ( 1, {} as never, 1 ) )
+            .rejects.toMatchObject ( { status: 409 } );
+
+        expect ( repo.Update ).not.toHaveBeenCalled();
+    });
+
     it ( 'DeletePais bloqueia quando há estados vinculados (RN002)', async () => {
 
         repo.FindById.mockResolvedValue ( { codPais: 1 } );

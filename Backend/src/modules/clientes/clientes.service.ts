@@ -47,6 +47,15 @@ export class ClientesService
         codUser: number
     )
     {
+        if ( await this.repo.HasDependents ( id ) )
+        {
+            throw new AppError
+            (
+                'Não é possível editar: há contas a receber vinculadas a este cliente.',
+                409
+            );
+        }
+
         const atualizado = await this.repo.Update ( id, data, codUser );
 
         if ( !atualizado )

@@ -62,6 +62,19 @@ describe ( 'ClientesService', () =>
             .rejects.toMatchObject ( { status: 404 } );
     });
 
+    it ( 'UpdateCliente lança 409 quando há dependentes ativos (RN004 transversal)', async () =>
+    {
+        repo.HasDependents.mockResolvedValue ( true );
+
+        await expect ( service.UpdateCliente ( 1, {
+            codCidade: 1, cliente: 'X',
+            tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+            isActive: true,
+        }, 1 ) ).rejects.toMatchObject ( { status: 409 } );
+
+        expect ( repo.Update ).not.toHaveBeenCalled();
+    });
+
     it ( 'DeleteCliente lança 404 quando não existe', async () =>
     {
         repo.FindById.mockResolvedValue ( null );

@@ -33,6 +33,15 @@ export class FormasPagamentoService
 
     async UpdateForma ( id: number, data: UpdateFormaPagamentoInput, codUser: number )
     {
+        if ( await this.repo.HasDependents ( id ) )
+        {
+            throw new AppError
+            (
+                'Não é possível editar: há parcelas ou contas a receber vinculadas a esta forma de pagamento.',
+                409
+            );
+        }
+
         const atualizada = await this.repo.Update ( id, data, codUser );
 
         if ( !atualizada )

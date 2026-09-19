@@ -12,12 +12,13 @@ function MakeRepo
 )
 {
     return {
-        List:          vi.fn(),
-        FindById:      vi.fn(),
-        Create:        vi.fn(),
-        Update:        vi.fn(),
-        Delete:        vi.fn(),
-        HasDependents: vi.fn(),
+        List:                   vi.fn(),
+        FindById:                vi.fn(),
+        Create:                  vi.fn(),
+        Update:                  vi.fn(),
+        Delete:                  vi.fn(),
+        HasDependents:           vi.fn(),
+        HasExternalReferences:   vi.fn(),
         ...over,
     };
 }
@@ -246,6 +247,42 @@ describe ( 'CondicoesPagamentoService', () =>
         ).rejects.toMatchObject ( { status: 400 } );
 
         expect ( parcelasRepo.Create ).not.toHaveBeenCalled();
+    });
+
+    it ( 'UpdateCondicao lança 409 quando há clientes ou compras vinculados (RN004 transversal)', async () =>
+    {
+        repo.HasExternalReferences.mockResolvedValue ( true );
+
+        await expect (
+            service.UpdateCondicao ( 1, { descricao: 'X', isActive: true, parcelas: [] }, 1 )
+        ).rejects.toMatchObject ( { status: 409 } );
+
+        expect ( repo.Update ).not.toHaveBeenCalled();
+    });
+
+    it ( 'UpdateCondicao não bloqueia por causa das próprias parcelas (filho embutido)', async () =>
+    {
+        const atualizada = { codCondDePag: 1, descricao: 'Parcelado' };
+        repo.HasExternalReferences.mockResolvedValue ( false );
+        repo.Update.mockResolvedValue ( atualizada );
+        parcelasRepo.List.mockResolvedValue
+        ([
+            { codParcela: 10, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
+        ]);
+        formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 1 } );
+        parcelasRepo.Update.mockResolvedValue ( {} );
+
+        const resultado = await service.UpdateCondicao (
+            1,
+            {
+                descricao: 'Parcelado',
+                isActive:  true,
+                parcelas:  [ { codParcela: 10, codFormaDePag: 1, percentual: 100, numDias: 1, isActive: true } ],
+            },
+            1
+        );
+
+        expect ( resultado ).toEqual ( atualizada );
     });
 
     it ( 'DeleteCondicao lança 404 quando não existe', async () =>

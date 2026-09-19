@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AppError } from '../../shared/errors/AppError';
 import { FormasPagamentoService } from '../../modules/formas-pagamento/formasPagamento.service';
 
 function MakeRepo
@@ -65,6 +64,18 @@ describe ( 'FormasPagamentoService', () =>
         const resultado = await service.UpdateForma ( 1, { formaDePag: 'PIX', isActive: true }, 1 );
 
         expect ( resultado ).toEqual ( atualizada );
+    });
+
+    it ( 'UpdateForma lança 409 quando há dependentes ativos (RN004 transversal)', async () =>
+    {
+        repo.HasDependents.mockResolvedValue ( true );
+
+        await expect
+        (
+            service.UpdateForma ( 1, { formaDePag: 'PIX', isActive: true }, 1 )
+        ).rejects.toMatchObject ( { status: 409 } );
+
+        expect ( repo.Update ).not.toHaveBeenCalled();
     });
 
     it ( 'DeleteForma lança 404 quando não existe', async () =>

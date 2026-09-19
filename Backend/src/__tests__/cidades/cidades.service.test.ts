@@ -101,6 +101,19 @@ describe ( 'CidadesService', () => {
         ).rejects.toMatchObject ( { status: 404 } );
     });
 
+    it ( 'UpdateCidade lança 409 quando há clientes/fornecedores/transportadoras vinculados (RN004 transversal)', async () => {
+
+        estadosRepo.FindById.mockResolvedValue ( { codEstado: 1 } );
+        cidadesRepo.HasDependents.mockResolvedValue ( true );
+
+        await expect
+        (
+            service.UpdateCidade ( 1, { codEstado: 1, cidade: 'Campinas', ddd: '19', isActive: true }, 1 )
+        ).rejects.toMatchObject ( { status: 409 } );
+
+        expect ( cidadesRepo.Update ).not.toHaveBeenCalled();
+    });
+
     it ( 'DeleteCidade lança 404 quando não existe', async () => {
 
         cidadesRepo.FindById.mockResolvedValue ( null );

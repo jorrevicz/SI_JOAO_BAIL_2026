@@ -56,6 +56,16 @@ describe ( 'CategoriasService', () =>
             .rejects.toMatchObject ( { status: 404 } );
     });
 
+    it ( 'UpdateCategoria lança 409 quando há produtos vinculados (RN004 transversal)', async () =>
+    {
+        repo.HasDependents.mockResolvedValue ( true );
+
+        await expect ( service.UpdateCategoria ( 1, { categoria: 'X', isActive: true }, 1 ) )
+            .rejects.toMatchObject ( { status: 409 } );
+
+        expect ( repo.Update ).not.toHaveBeenCalled();
+    });
+
     it ( 'DeleteCategoria lança 404 quando não existe', async () =>
     {
         repo.FindById.mockResolvedValue ( null );

@@ -52,6 +52,16 @@ export class EstadosService
   ) 
   {
     await this.AssertPais ( data.codPais );
+
+    if ( await this.repo.HasDependents ( id ) )
+    {
+      throw new AppError
+      (
+        'Não é possível editar: há cidades ou veículos vinculados a este estado.',
+        409
+      );
+    }
+
     const atualizado = await this.repo.Update ( id, data, codUser );
 
     if ( !atualizado )

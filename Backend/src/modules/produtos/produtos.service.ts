@@ -84,6 +84,15 @@ export class ProdutosService
     {
         return WithTransaction ( async ( transaction ) =>
         {
+            if ( await this.repo.HasDependents ( id, transaction ) )
+            {
+                throw new AppError
+                (
+                    'Não é possível editar: produto vinculado a compras ou notas fiscais.',
+                    409
+                );
+            };
+
             const atualizado = await this.repo.Update ( id, data, codUser, transaction );
 
             if ( !atualizado )
