@@ -159,15 +159,15 @@ Seguindo o padrão de "revezamento três em três" (ver [Princípios de entrega]
 a fase é dividida em **3 lotes por etapa do ciclo de vida**, cada um com tasks
 de backend + frontend, consultas antes de escrita:
 
-### Lote OS-A — Abertura e Diagnóstico ✓ backend concluído
+### Lote OS-A — Abertura e Diagnóstico ✓ concluído
 
 1. [x] **Backend:** CRUD de Ordem de Serviço (abertura, consulta, diagnóstico) —
        migration de ajuste (`ProcedimentosOdS`) + schema Zod + service (TDD) +
        repository + controller + routes; inclui os cadastros de apoio necessários
        (`Procedimentos`, catálogo) e as entidades embutidas na abertura (`Aparelhos`,
        `Equipamentos`).
-2. [ ] **Frontend:** listagem com filtro por cliente.
-3. [ ] **Frontend:** formulário de abertura e de diagnóstico (modal).
+2. [x] **Frontend:** listagem com filtro por cliente.
+3. [x] **Frontend:** formulário de abertura e de diagnóstico (modal).
 
 > **Backend concluído:** `abrirOS()` cria o cabeçalho e, na mesma transação (RNF06),
 > os registros de `Aparelhos`/`Equipamentos` daquela unidade; `numOdS` é validado
@@ -177,7 +177,15 @@ de backend + frontend, consultas antes de escrita:
 > Condição de Pagamento × Parcelas). Testes TDD (service unitário, repository
 > rollback, routes supertest) para `Procedimentos` e `OrdemDeServico`.
 >
-> **▶ Próximo passo:** Frontend do Lote OS-A, depois Lote OS-B.
+> **Frontend concluído:** telas de **Procedimentos** (cadastro simples, mesmo padrão de
+> Categorias) e **Ordens de Serviço** — listagem com filtro por cliente (picker
+> `ClienteConsulta` reaproveitado), formulário de abertura (`numOdS` livre + seleção de
+> cliente + campos de Aparelho/Equipamento embutidos, tudo num único `POST`) e modal de
+> diagnóstico dedicado (`PATCH .../diagnostico`) com checklist de `ProcedimentosOdS`
+> embutido e reconciliado (mesmo padrão de Parcelas × Condição de Pagamento, via um
+> `ProcedimentoOdSForm` que reaproveita um novo `ProcedimentoConsulta`).
+>
+> **▶ Próximo passo:** Lote OS-B — Execução (serviços e peças) e Aprovação.
 
 ### Lote OS-B — Execução (serviços e peças) e Aprovação
 

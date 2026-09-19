@@ -84,7 +84,7 @@ compra e financeiro. Web API REST + SPA.
 > também um typo de campo (`codFormaDepag` → `codFormaDePag`) em Contas a Pagar que impedia
 > qualquer requisição correta de ser aceita.
 >
-> **Fase OS — Lote OS-A (backend) concluído:** CRUD de Ordem de Serviço (abertura,
+> **Fase OS — Lote OS-A concluído (backend + frontend):** CRUD de Ordem de Serviço (abertura,
 > consulta, diagnóstico) em 4 camadas com testes TDD. **A migration que criou o schema da
 > Fase OS (`add-ordem-de-servico-tables`) já havia sido aplicada ao banco antes desta
 > documentação** — o modelo original em `docs/05` (`codOS`, `status`, `valorTotal`, peças
@@ -103,8 +103,14 @@ compra e financeiro. Web API REST + SPA.
 > `OrcamentoPecasOdS`/`SubstituirPecasOdS` já existem no banco (mesma migration original)
 > mas ainda sem camada de aplicação — entram no Lote OS-B.
 >
-> **Próximo passo: Frontend do Lote OS-A (listagem e formulários de abertura/diagnóstico),
-> seguido do Lote OS-B — Execução (serviços e peças) e Aprovação.**
+> **Frontend do Lote OS-A concluído:** telas de `Procedimentos` (cadastro simples) e
+> `Ordens de Serviço` (listagem com filtro por cliente, formulário de abertura com
+> Aparelho/Equipamento embutidos, modal de diagnóstico dedicado com checklist de
+> `ProcedimentosOdS` embutido e reconciliado) — mesmos padrões de UI já estabelecidos
+> (`FormModal`/`FormSecao`/`FormCampo`, picker `Consulta` reaproveitado de `ClienteConsulta`,
+> reconciliação embutida de `CondicaoPagamentoForm`/`ParcelaForm`).
+>
+> **Próximo passo: Lote OS-B — Execução (serviços e peças) e Aprovação.**
 
 ## Fonte de verdade: leia `docs/` primeiro
 
