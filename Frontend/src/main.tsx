@@ -17,6 +17,8 @@ import ClientesPage        from './pages/clientes';
 import TransportadorasPage    from './pages/transportadoras';
 import CondicoesPagamentoPage from './pages/condicoesPagamento-Parcela';
 import { FormasPagamentoPage }    from './pages/formasPagamento';
+import ContasPagamentoPage    from './pages/contasPagamento';
+import ContasReceberPage      from './pages/contasReceber';
 
 ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
   <React.StrictMode>
@@ -37,6 +39,8 @@ ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
             <Route path="/transportadoras"     element={<TransportadorasPage />} />
             <Route path="/condicoes-pagamento" element={<CondicoesPagamentoPage />} />
             <Route path="/formas-pagamento"    element={<FormasPagamentoPage />} />
+            <Route path="/contas-pagamento"    element={<ContasPagamentoPage />} />
+            <Route path="/contas-receber"      element={<ContasReceberPage />} />
           </Routes>
         </Layout>
       </BrowserRouter>

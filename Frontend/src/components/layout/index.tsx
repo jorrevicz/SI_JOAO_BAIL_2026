@@ -33,6 +33,8 @@ export default function Layout
             <NavGrupoLabel>Financeiro</NavGrupoLabel>
             <NavSubLink as={ NavLink } to="/condicoes-pagamento">Condições de Pagamento</NavSubLink>
             <NavSubLink as={ NavLink } to="/formas-pagamento">Formas de Pagamento</NavSubLink>
+            <NavSubLink as={ NavLink } to="/contas-pagamento">Contas a Pagar</NavSubLink>
+            <NavSubLink as={ NavLink } to="/contas-receber">Contas a Receber</NavSubLink>
           </NavGrupo>
         </nav>
       </Sidebar>
