@@ -48,6 +48,7 @@ Cada item abaixo é um módulo "Manter/Gerenciar" (CRUD + operações específic
 | RNF10 | Suporte à **emissão de Nota Fiscal Eletrônica**. | [Fiscal](05-modelo-de-dominio.md#7-fiscal-nf-e) |
 | RNF11 | Código com **clean code** e documentação inline. | Convenção de código |
 | RNF12 | Sistema deve permitir **fácil extensão de novos módulos**. | [Arquitetura](02-arquitetura.md) (modularização por subdomínio) |
+| RNF13 | **Edição protegida:** campos de valor/cálculo já consumidos por outra operação são **imutáveis desde o cadastro**; os demais campos de um registro ficam **bloqueados para edição** enquanto ele estiver referenciado por um dependente **ativo** em outra tabela (volta a ser editável quando o dependente for desativado). | [Casos de Uso](07-casos-de-uso.md#regras-de-negócio-transversais) (RN004 transversal) |
 
 ## Documentos relacionados
 
