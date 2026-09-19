@@ -10,7 +10,7 @@ export default interface FormaDePagamento {
 
   formaDePag: string;
 
-  prazoCompensacao: number | null;
+  prazoCompensacao: number;
 
   dtCriacao: Date;
 
@@ -27,7 +27,7 @@ export interface FormaDePagamentoInitializer {
 
   formaDePag: string;
 
-  prazoCompensacao?: number | null;
+  prazoCompensacao: number;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -47,7 +47,7 @@ export interface FormaDePagamentoMutator {
 
   formaDePag?: string;
 
-  prazoCompensacao?: number | null;
+  prazoCompensacao?: number;
 
   dtCriacao?: Date;
 

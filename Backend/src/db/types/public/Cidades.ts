@@ -14,7 +14,7 @@ export default interface Cidades {
 
   cidade: string;
 
-  ddd: string | null;
+  ddd: string;
 
   dtCriacao: Date;
 
@@ -33,7 +33,7 @@ export interface CidadesInitializer {
 
   cidade: string;
 
-  ddd?: string | null;
+  ddd: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -55,7 +55,7 @@ export interface CidadesMutator {
 
   cidade?: string;
 
-  ddd?: string | null;
+  ddd?: string;
 
   dtCriacao?: Date;
 

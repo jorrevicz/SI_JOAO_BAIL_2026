@@ -60,7 +60,7 @@ describe ( 'CidadesService', () => {
 
         await expect
         (
-            service.CreateCidade ( { codEstado: 99, cidade: 'Inexistente' }, 1 )
+            service.CreateCidade ( { codEstado: 99, cidade: 'Inexistente', ddd: '11' }, 1 )
         ).rejects.toMatchObject ( { status: 400 } );
 
         expect ( cidadesRepo.Create ).not.toHaveBeenCalled();
@@ -86,7 +86,7 @@ describe ( 'CidadesService', () => {
 
         await expect
         (
-            service.UpdateCidade ( 1, { codEstado: 99, cidade: 'X', isActive: true }, 1 )
+            service.UpdateCidade ( 1, { codEstado: 99, cidade: 'X', ddd: '11', isActive: true }, 1 )
         ).rejects.toMatchObject ( { status: 400 } );
     });
 
@@ -97,7 +97,7 @@ describe ( 'CidadesService', () => {
 
         await expect
         (
-            service.UpdateCidade ( 99, { codEstado: 1, cidade: 'Campinas', isActive: true }, 1 )
+            service.UpdateCidade ( 99, { codEstado: 1, cidade: 'Campinas', ddd: '19', isActive: true }, 1 )
         ).rejects.toMatchObject ( { status: 404 } );
     });
 

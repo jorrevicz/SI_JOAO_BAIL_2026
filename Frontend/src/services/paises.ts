@@ -17,8 +17,8 @@ export interface CreatePaisInput
 {
   pais:     string;
   sigla:    string;
-  ddi?:     string;
-  moeda?:   string;
+  ddi:      string;
+  moeda:    string;
   isActive: boolean;
 }
 

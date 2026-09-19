@@ -26,13 +26,13 @@ export interface CreateFornecedorInput
   codCondDePag:    number;
   fornecedor:      string;
   nomeFantasia?:   string;
-  tipoPessoa?:     string;
+  tipoPessoa:      'FISICA' | 'JURIDICA' | '';
   enderecoForn?:   string;
   bairroForn?:     string;
-  cepForn?:        string;
-  foneForn?:       string;
-  cpfCnpjForn?:    string;
-  inscEstSubTrib?: string;
+  cepForn:         string;
+  foneForn:        string;
+  cpfCnpjForn:     string;
+  inscEstSubTrib:  string;
   isActive:        boolean;
 }
 

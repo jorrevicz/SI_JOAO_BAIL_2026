@@ -40,16 +40,22 @@ describe ( 'VeiculosService', () =>
     {
         repo.Create.mockResolvedValue ( { codVeiculo: 1 } );
 
-        await service.CreateVeiculo ( { placaVeiculo: 'ABC1234' }, 7 );
+        const dados = { placaVeiculo: 'ABC1234', modeloVeiculo: 'Gol', marca: 'VW', codAntt: '00000001' };
 
-        expect ( repo.Create ).toHaveBeenCalledWith ( { placaVeiculo: 'ABC1234' }, 7 );
+        await service.CreateVeiculo ( dados, 7 );
+
+        expect ( repo.Create ).toHaveBeenCalledWith ( dados, 7 );
     });
 
     it ( 'UpdateVeiculo lança 404 quando o registro não existe', async () =>
     {
         repo.Update.mockResolvedValue ( null );
 
-        await expect ( service.UpdateVeiculo ( 99, { placaVeiculo: 'XYZ9999', isActive: true }, 1 ) )
+        await expect ( service.UpdateVeiculo (
+            99,
+            { placaVeiculo: 'XYZ9999', modeloVeiculo: 'Gol', marca: 'VW', codAntt: '00000001', isActive: true },
+            1
+        ) )
             .rejects.toMatchObject ( { status: 404 } );
     });
 

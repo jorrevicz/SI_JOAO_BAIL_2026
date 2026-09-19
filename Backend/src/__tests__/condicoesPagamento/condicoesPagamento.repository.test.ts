@@ -73,4 +73,35 @@ describe ( 'CondicoesPagamentoRepository (rollback)', () =>
             expect ( parseFloat ( atualizada!.descontoCondPag! ) ).toBe ( 1.0 );
         });
     });
+
+    it ( 'Delete faz soft delete (isActive=false) dentro da transação', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const nova = await repoCondicoes.Create
+            (
+                {
+                    descricao:       'Para Excluir',
+                    juroCondPag:     0,
+                    multaCondPag:    0,
+                    descontoCondPag: 0,
+                    parcelas:        [],
+                },
+                1,
+                transaction
+            );
+
+            await repoCondicoes.Delete ( nova.codCondDePag, 1, transaction );
+
+            const achada = await repoCondicoes.FindById ( nova.codCondDePag, transaction );
+            expect ( achada ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "CondicaoDePagamento" WHERE "codCondDePag" = ${ nova.codCondDePag }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
+        });
+    });
 });

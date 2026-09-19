@@ -16,8 +16,7 @@ export const createClienteSchema = z.object
         tipoPessoa: z
             .enum ( ['FISICA', 'JURIDICA'], {
                 message: 'Tipo de pessoa inválido.'
-            } )
-            .optional(),
+            } ),
         codCondDePag: z
             .number()
             .int()
@@ -34,16 +33,14 @@ export const createClienteSchema = z.object
             .max ( 100, 'O bairro deve ter no máximo 100 caracteres.' )
             .optional(),
         cepCl: z
-            .string()
+            .string ( { message: 'O CEP é obrigatório.' } )
             .trim()
-            .max ( 8,   'O CEP deve ter no máximo 8 dígitos.' )
-            .regex ( /^[0-9]+$/, 'O telefone deve conter apenas 15 dígitos (ex: +55545988884444).')
-            .optional(),
+            .length ( 8, 'O CEP deve ter 8 dígitos.' )
+            .regex ( /^[0-9]+$/, 'O CEP deve conter apenas números.'),
         foneCl: z
-            .string()
+            .string ( { message: 'O telefone é obrigatório.' } )
             .trim()
-            .regex ( /^\+[0-9]{10,15}$/, 'O Telefone deve conter apenas números.')
-            .optional(),
+            .regex ( /^[0-9]{10,15}$/, 'O telefone deve conter apenas números, com DDI/DDD e o número (ex: 5511988887777).'),
     }
 );
 

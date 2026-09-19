@@ -12,9 +12,9 @@ export default interface Paises {
 
   sigla: string;
 
-  ddi: string | null;
+  ddi: string;
 
-  moeda: string | null;
+  moeda: string;
 
   dtCriacao: Date;
 
@@ -33,9 +33,9 @@ export interface PaisesInitializer {
 
   sigla: string;
 
-  ddi?: string | null;
+  ddi: string;
 
-  moeda?: string | null;
+  moeda: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -57,9 +57,9 @@ export interface PaisesMutator {
 
   sigla?: string;
 
-  ddi?: string | null;
+  ddi?: string;
 
-  moeda?: string | null;
+  moeda?: string;
 
   dtCriacao?: Date;
 

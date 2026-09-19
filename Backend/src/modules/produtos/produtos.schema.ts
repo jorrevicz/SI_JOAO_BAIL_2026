@@ -61,32 +61,28 @@ const camposProduto = {
         .min ( 1, 'O produto deve ter ao menos uma categoria.' ),
 
     undProduto: z
-        .string()
+        .string ( { message: 'A unidade é obrigatória.' } )
         .trim()
-        .max ( 4, 'A unidade deve ter no máximo 4 caracteres.' )
-        .optional(),
+        .min ( 1, 'A unidade é obrigatória.' )
+        .max ( 4, 'A unidade deve ter no máximo 4 caracteres.' ),
 
     pesoBruto: z
-        .number()
-        .nonnegative ( 'O peso bruto não pode ser negativo.' )
-        .optional(),
+        .number ( { message: 'O peso bruto é obrigatório.' } )
+        .nonnegative ( 'O peso bruto não pode ser negativo.' ),
 
     pesoLiq: z
-        .number()
-        .nonnegative ( 'O peso líquido não pode ser negativo.' )
-        .optional(),
+        .number ( { message: 'O peso líquido é obrigatório.' } )
+        .nonnegative ( 'O peso líquido não pode ser negativo.' ),
 
     estoque: z
-        .number()
+        .number ( { message: 'O estoque inicial é obrigatório.' } )
         .int ( 'O estoque deve ser um número inteiro.' )
         .nonnegative ( 'O estoque não pode ser negativo.' )
-        .max ( 99999, 'O limite do estoque de produtos são 99.999 unidades.' )
-        .optional(),
+        .max ( 99999, 'O limite do estoque de produtos são 99.999 unidades.' ),
 
     custo: z
-        .number()
-        .nonnegative ( 'O custo não pode ser negativo.' )
-        .optional(),
+        .number ( { message: 'O custo inicial é obrigatório.' } )
+        .nonnegative ( 'O custo não pode ser negativo.' ),
 };
 
 export const createProdutoSchema = z

@@ -22,7 +22,11 @@ describe ( 'FornecedoresRepository (rollback)', () =>
 
             const novo = await repo.Create
             (
-                { codCidade, codCondDePag, fornecedor: 'Distribuidora Teste Ltda' },
+                {
+                    codCidade, codCondDePag, fornecedor: 'Distribuidora Teste Ltda',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
+                },
                 1,
                 transaction
             );
@@ -49,8 +53,11 @@ describe ( 'FornecedoresRepository (rollback)', () =>
                     codCondDePag,
                     fornecedor:  'Fornecedor Completo SA',
                     nomeFantasia: 'FC Distribuidora',
+                    tipoPessoa:  'JURIDICA',
+                    cepForn:     '01310100',
                     cpfCnpjForn: '12345678000190',
                     foneForn:    '11912345678',
+                    inscEstSubTrib: '222222222222',
                 },
                 1,
                 transaction
@@ -70,7 +77,11 @@ describe ( 'FornecedoresRepository (rollback)', () =>
 
             const novo = await repo.Create
             (
-                { codCidade, codCondDePag, fornecedor: 'Fornecedor Original' },
+                {
+                    codCidade, codCondDePag, fornecedor: 'Fornecedor Original',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    cpfCnpjForn: '33333333000103', inscEstSubTrib: '333333333333',
+                },
                 1,
                 transaction
             );
@@ -78,7 +89,12 @@ describe ( 'FornecedoresRepository (rollback)', () =>
             const atualizado = await repo.Update
             (
                 novo.codForn,
-                { codCidade, codCondDePag, fornecedor: 'Fornecedor Atualizado', isActive: true },
+                {
+                    codCidade, codCondDePag, fornecedor: 'Fornecedor Atualizado',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    cpfCnpjForn: '33333333000103', inscEstSubTrib: '333333333333',
+                    isActive: true,
+                },
                 1,
                 transaction
             );
@@ -96,7 +112,11 @@ describe ( 'FornecedoresRepository (rollback)', () =>
 
             const novo = await repo.Create
             (
-                { codCidade, codCondDePag, fornecedor: 'Para Excluir' },
+                {
+                    codCidade, codCondDePag, fornecedor: 'Para Excluir',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    cpfCnpjForn: '44444444000104', inscEstSubTrib: '444444444444',
+                },
                 1,
                 transaction
             );
@@ -105,6 +125,13 @@ describe ( 'FornecedoresRepository (rollback)', () =>
 
             const achado = await repo.FindById ( novo.codForn, transaction );
             expect ( achado ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "Fornecedores" WHERE "codForn" = ${ novo.codForn }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 
@@ -117,7 +144,11 @@ describe ( 'FornecedoresRepository (rollback)', () =>
 
             const novo = await repo.Create
             (
-                { codCidade, codCondDePag, fornecedor: 'Sem Dependentes' },
+                {
+                    codCidade, codCondDePag, fornecedor: 'Sem Dependentes',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    cpfCnpjForn: '55555555000105', inscEstSubTrib: '555555555555',
+                },
                 1,
                 transaction
             );

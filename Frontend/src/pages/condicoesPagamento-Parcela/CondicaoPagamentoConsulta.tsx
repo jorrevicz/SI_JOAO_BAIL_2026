@@ -27,7 +27,7 @@ import
     Paginacao,
     PaginacaoInfo,
 } from './style';
-import { TrSelecionavel } from '../../components/tabela/style';
+import { InfoBlock, TrSelecionavel } from '../../components/tabela/style';
 import { useTabelaOrdenada } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
 import CondicaoPagamentoForm from './CondicaoPagamentoForm';
@@ -101,7 +101,15 @@ export function CondicaoPagamentoConsulta ( { onSelecionar, onCancelar }: Props 
 
     const columns = [
         columnHelper.accessor ( 'codCondDePag', { header: 'Código' } ),
-        columnHelper.accessor ( 'descricao', { header: 'Descrição', cell: ( info ) => info.getValue() ?? '—' } ),
+        columnHelper.accessor ( 'descricao', { 
+                    header: 'Descrição',
+                    cell: ( info ) => (
+                    <InfoBlock>
+                        { info.getValue() ?? '—' }
+                    </InfoBlock>
+                ),
+            }, 
+        ),
         columnHelper.accessor (
             'juroCondPag',
             { header: 'Juros (%)', cell: ( info ) => info.getValue() != null ? parseFloat ( info.getValue()! ).toFixed ( 2 ) + '%' : '—' }
@@ -122,7 +130,7 @@ export function CondicaoPagamentoConsulta ( { onSelecionar, onCancelar }: Props 
             'dtEdicao',
             { header: 'Edição', cell: ( info ) => formatarData ( info.getValue() ) }
         ),
-        columnHelper.accessor ( 'codUser', { header: 'Código Usuário', cell: ( info ) => info.getValue() ?? '-' } ),
+        columnHelper.accessor ( 'codUser', { header: () => <>Código<br/>Usuário</>, cell: ( info ) => info.getValue() ?? '-' } ),
         columnHelper.accessor ( 'isActive', { header: 'Status' } ),
         columnHelper.display ( {
             id: 'acoes',

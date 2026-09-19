@@ -67,6 +67,10 @@ describe ( 'Produtos routes', () =>
             ({
                 produto:    nomeUnico ( 'PRODUTO COM CATEGORIAS' ),
                 undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0.9,
+                estoque:    0,
+                custo:      0,
                 categorias: [ { codCategoria: primeira }, { codCategoria: segunda } ],
             });
 
@@ -109,6 +113,11 @@ describe ( 'Produtos routes', () =>
             .send
             ({
                 produto:    nomeUnico ( 'CATEGORIA REPETIDA' ),
+                undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0.9,
+                estoque:    0,
+                custo:      0,
                 categorias: [ { codCategoria }, { codCategoria } ],
             });
 
@@ -144,6 +153,11 @@ describe ( 'Produtos routes', () =>
             .send
             ({
                 produto:    nomeUnico ( 'PRODUTO A RECONCILIAR' ),
+                undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0.9,
+                estoque:    0,
+                custo:      0,
                 categorias: [ { codCategoria: primeira } ],
             });
 
@@ -156,6 +170,9 @@ describe ( 'Produtos routes', () =>
             .send
             ({
                 produto:    criadoRes.body.produto,
+                undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0.9,
                 isActive:   true,
                 categorias: [ { codCategoria: segunda } ],
             });
@@ -178,6 +195,11 @@ describe ( 'Produtos routes', () =>
             .send
             ({
                 produto:    nomeUnico ( 'PRODUTO FILTRADO' ),
+                undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0.9,
+                estoque:    0,
+                custo:      0,
                 categorias: [ { codCategoria: primeira } ],
             });
 
@@ -203,6 +225,11 @@ describe ( 'Produtos routes', () =>
             .send
             ({
                 produto:    nomeUnico ( 'PRODUTO QUE OCUPA' ),
+                undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0.9,
+                estoque:    0,
+                custo:      0,
                 categorias: [ { codCategoria } ],
             });
 

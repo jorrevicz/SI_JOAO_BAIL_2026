@@ -21,7 +21,10 @@ describe ( 'ClientesRepository (rollback)', () =>
 
             const novo = await repo.Create
             (
-                { codCidade, cliente: 'Maria Oliveira' },
+                {
+                    codCidade, cliente: 'Maria Oliveira',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                },
                 1,
                 transaction
             );
@@ -42,7 +45,10 @@ describe ( 'ClientesRepository (rollback)', () =>
 
             const novo = await repo.Create
             (
-                { codCidade, cliente: 'Cliente Original' },
+                {
+                    codCidade, cliente: 'Cliente Original',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                },
                 1,
                 transaction
             );
@@ -50,7 +56,11 @@ describe ( 'ClientesRepository (rollback)', () =>
             const atualizado = await repo.Update
             (
                 novo.codCliente,
-                { codCidade, cliente: 'Cliente Atualizado', isActive: true },
+                {
+                    codCidade, cliente: 'Cliente Atualizado',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                    isActive: true,
+                },
                 1,
                 transaction
             );
@@ -67,7 +77,10 @@ describe ( 'ClientesRepository (rollback)', () =>
 
             const novo = await repo.Create
             (
-                { codCidade, cliente: 'Para Excluir' },
+                {
+                    codCidade, cliente: 'Para Excluir',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                },
                 1,
                 transaction
             );
@@ -76,6 +89,13 @@ describe ( 'ClientesRepository (rollback)', () =>
 
             const achado = await repo.FindById ( novo.codCliente, transaction );
             expect ( achado ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "Clientes" WHERE "codCliente" = ${ novo.codCliente }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 
@@ -87,7 +107,10 @@ describe ( 'ClientesRepository (rollback)', () =>
 
             const novo = await repo.Create
             (
-                { codCidade, cliente: 'Sem Dependentes' },
+                {
+                    codCidade, cliente: 'Sem Dependentes',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                },
                 1,
                 transaction
             );

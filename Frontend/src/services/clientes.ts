@@ -21,12 +21,12 @@ export interface CreateClienteInput
 {
   codCidade:     number;
   cliente:       string;
-  tipoPessoa?:   string;
+  tipoPessoa:    string;
   codCondDePag?: number;
   enderecoCl?:   string;
   bairroCl?:     string;
-  cepCl?:        string;
-  foneCl?:       string;
+  cepCl:         string;
+  foneCl:        string;
   isActive:      boolean;
 }
 

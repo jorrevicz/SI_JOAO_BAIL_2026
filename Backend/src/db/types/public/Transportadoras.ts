@@ -19,13 +19,13 @@ export default interface Transportadoras {
 
   nomeFantasia: string | null;
 
-  tipoPessoa: string | null;
+  tipoPessoa: string;
 
   enderecoTransp: string | null;
 
-  cpfCnpjTransp: string | null;
+  cpfCnpjTransp: string;
 
-  inscEstTransp: string | null;
+  inscEstTransp: string;
 
   dtCriacao: Date;
 
@@ -48,13 +48,13 @@ export interface TransportadorasInitializer {
 
   nomeFantasia?: string | null;
 
-  tipoPessoa?: string | null;
+  tipoPessoa: string;
 
   enderecoTransp?: string | null;
 
-  cpfCnpjTransp?: string | null;
+  cpfCnpjTransp: string;
 
-  inscEstTransp?: string | null;
+  inscEstTransp: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -80,13 +80,13 @@ export interface TransportadorasMutator {
 
   nomeFantasia?: string | null;
 
-  tipoPessoa?: string | null;
+  tipoPessoa?: string;
 
   enderecoTransp?: string | null;
 
-  cpfCnpjTransp?: string | null;
+  cpfCnpjTransp?: string;
 
-  inscEstTransp?: string | null;
+  inscEstTransp?: string;
 
   dtCriacao?: Date;
 

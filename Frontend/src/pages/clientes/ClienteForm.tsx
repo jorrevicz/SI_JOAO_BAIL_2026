@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type Cidade } from '../../services/cidades';
 import { ApiError } from '../../services/api';
 import { clientesService, type Cliente, type CreateClienteInput } from '../../services/clientes';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { CidadeConsulta } from '../cidades/CidadeConsulta';
+import { cidadesService } from '../../services/cidades';
 
 interface Props
 {
@@ -19,14 +20,15 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
   ({
     codCidade:    inicial.codCidade    ?? 0,
     cliente:      inicial.cliente      ?? '',
-    tipoPessoa:   inicial.tipoPessoa   ?? undefined,
+    tipoPessoa:   inicial.tipoPessoa   ?? '',
     codCondDePag: inicial.codCondDePag ?? undefined,
     enderecoCl:   inicial.enderecoCl   ?? undefined,
     bairroCl:     inicial.bairroCl     ?? undefined,
-    cepCl:        inicial.cepCl        ?? undefined,
-    foneCl:       inicial.foneCl       ?? undefined,
+    cepCl:        inicial.cepCl        ?? '',
+    foneCl:       inicial.foneCl       ?? '',
     isActive:     inicial.isActive     ?? true,
   });
+  const [ codCidadeSel, setCodCidadeSel ] = useState ( 0 );
   const [ nomeCidadeSel, setNomeCidadeSel ]       = useState ('');
   const [ consultando, setConsultando ] = useState ( false );
 
@@ -47,12 +49,12 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
     {
       codCidade:    form.codCidade,
       cliente:      form.cliente,
-      tipoPessoa:   form.tipoPessoa   || undefined,
+      tipoPessoa:   form.tipoPessoa,
       codCondDePag: form.codCondDePag || undefined,
       enderecoCl:   form.enderecoCl   || undefined,
       bairroCl:     form.bairroCl     || undefined,
-      cepCl:        form.cepCl        || undefined,
-      foneCl:       form.foneCl       || undefined,
+      cepCl:        form.cepCl,
+      foneCl:       form.foneCl,
       isActive:     form.isActive     || true,
     };
 
@@ -85,12 +87,25 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
     }
   };
 
+  useEffect ( () =>
+  {
+    if ( inicial.codCidade )
+    {
+      cidadesService.obter ( inicial.codCidade ).then ( ( oCidade ) =>
+      {
+        setCodCidadeSel ( oCidade.codCidade );
+        setNomeCidadeSel ( oCidade.cidade );
+      } );
+    }
+  });
+
   const HandleSelecionarCidade = ( oCidade: Cidade ) =>
   {
     setForm ( { ...form, codCidade: oCidade.codCidade } );
+    setCodCidadeSel ( oCidade.codCidade );
     setNomeCidadeSel ( oCidade.cidade );
     setConsultando ( false );
-  }
+  } 
 
   return (
     <>
@@ -112,13 +127,14 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
 
-          <FormCampo label="Tipo de pessoa" colunas={ 3 } htmlFor="tipoPessoa" erro={ errosCampo.tipoPessoa }>
+          <FormCampo label="Tipo de pessoa" obrigatorio colunas={ 3 } htmlFor="tipoPessoa" erro={ errosCampo.tipoPessoa }>
             <select
               id="tipoPessoa"
-              value={ form.tipoPessoa ?? '' }
+              value={ form.tipoPessoa }
               onChange={ ( evento ) =>
-                setForm ( { ...form, tipoPessoa: ( evento.target.value.toUpperCase() as 'FISICA' | 'JURIDICA' ) || undefined } )
+                setForm ( { ...form, tipoPessoa: evento.target.value.toUpperCase() } )
               }
+              required
             >
               <option value="">— Selecione —</option>
               <option value="FISICA">Física</option>
@@ -128,16 +144,18 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="CEP" colunas={ 2 } htmlFor="cepCl" erro={ errosCampo.cepCl }>
+          <FormCampo label="CEP" obrigatorio colunas={ 2 } htmlFor="cepCl" erro={ errosCampo.cepCl }>
             <input
               id="cepCl"
-              type='number'
-              value={ form.cepCl ?? '' }
+              type='text'
+              inputMode='numeric'
+              value={ form.cepCl }
               onChange={ ( evento ) =>
-                setForm ( { ...form, cepCl: evento.target.value.replace ( /\D/g, '' ) || undefined } )
+                setForm ( { ...form, cepCl: evento.target.value.replace ( /\D/g, '' ) } )
               }
               maxLength={ 8 }
               placeholder="Somente dígitos"
+              required
             />
           </FormCampo>
 
@@ -161,19 +179,44 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Cidade" obrigatorio colunas={ 6 } erro={ errosCampo.codCidade }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
+          <FormCampo label="Cidade" obrigatorio colunas={ 2 } erro={ errosCampo.codCidade }>
+            <div style={ { gap: '0.5rem', alignItems: 'center' } }>
               <Botao
                 type='button'
                 $variante='secundario'
                 onClick={ () => setConsultando( true ) }
               >
                 Consultar
-              </Botao>
+              </Botao>  
+            </div> 
+          </FormCampo>
+
+          <FormCampo label='Código da cidade' colunas={ 2 }>
+            <div>
               {
-                nomeCidadeSel && (
+                (
                   <span style={ { fontSize: '0.875rem' } }>
-                    { nomeCidadeSel }
+                    <input
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ codCidadeSel }
+                    />
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Nome da cidade' colunas={ 4 }>
+            <div>
+              {
+                (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    <input 
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ nomeCidadeSel }
+                    />
                   </span>
                 )
               }
@@ -182,15 +225,18 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Telefone" colunas={ 4 } htmlFor="foneCl" erro={ errosCampo.foneCl }>
+          <FormCampo label="Telefone" obrigatorio colunas={ 4 } htmlFor="foneCl" erro={ errosCampo.foneCl }>
             <input
               id="foneCl"
-              value={ form.foneCl ?? '' }
+              type='text'
+              inputMode='numeric'
+              value={ form.foneCl }
               onChange={ ( evento ) =>
-                setForm ( { ...form, foneCl: evento.target.value.replace ( /\D/g, '' ) || undefined } )
+                setForm ( { ...form, foneCl: evento.target.value.replace ( /\D/g, '' ) } )
               }
               maxLength={ 15 }
-              placeholder="Somente dígitos"
+              placeholder="5511988887777"
+              required
             />
           </FormCampo>
 

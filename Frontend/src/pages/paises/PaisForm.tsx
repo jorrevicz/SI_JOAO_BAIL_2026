@@ -91,24 +91,26 @@ export default function PaisForm ( { inicial, onSalvo, onCancelar }: Props )
           />
         </FormCampo>
 
-        <FormCampo label="DDI" colunas={ 2 } htmlFor="ddi" erro={ errosCampo.ddi }>
+        <FormCampo label="DDI" obrigatorio colunas={ 2 } htmlFor="ddi" erro={ errosCampo.ddi }>
           <input
             id="ddi"
             type='string'
-            value={ form.ddi ?? '' }
-            onChange={ ( evento ) => setForm ( { ...form, ddi: evento.target.value || undefined } ) }
+            value={ form.ddi }
+            onChange={ ( evento ) => setForm ( { ...form, ddi: evento.target.value } ) }
             maxLength={ 4 }
-            placeholder="+55"
+            placeholder="55"
+            required
           />
         </FormCampo>
 
-        <FormCampo label="Moeda" colunas={ 2 } htmlFor="moeda" erro={ errosCampo.moeda }>
+        <FormCampo label="Moeda" obrigatorio colunas={ 2 } htmlFor="moeda" erro={ errosCampo.moeda }>
           <input
             id="moeda"
-            value={ form.moeda ?? '' }
-            onChange={ ( evento ) => setForm ( { ...form, moeda: evento.target.value.toUpperCase() || undefined } ) }
+            value={ form.moeda }
+            onChange={ ( evento ) => setForm ( { ...form, moeda: evento.target.value.toUpperCase() } ) }
             maxLength={ 3 }
             placeholder="BRL"
+            required
           />
         </FormCampo>
 

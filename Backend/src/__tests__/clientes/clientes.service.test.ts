@@ -40,16 +40,25 @@ describe ( 'ClientesService', () =>
     {
         repo.Create.mockResolvedValue ( { codCliente: 1 } );
 
-        await service.CreateCliente ( { codCidade: 1, cliente: 'João da Silva' }, 7 );
+        const dados = {
+            codCidade: 1, cliente: 'João da Silva',
+            tipoPessoa: 'FISICA' as const, cepCl: '20511120', foneCl: '5521988887777',
+        };
 
-        expect ( repo.Create ).toHaveBeenCalledWith ( { codCidade: 1, cliente: 'João da Silva' }, 7 );
+        await service.CreateCliente ( dados, 7 );
+
+        expect ( repo.Create ).toHaveBeenCalledWith ( dados, 7 );
     });
 
     it ( 'UpdateCliente lança 404 quando o registro não existe', async () =>
     {
         repo.Update.mockResolvedValue ( null );
 
-        await expect ( service.UpdateCliente ( 99, { codCidade: 1, cliente: 'X', isActive: true }, 1 ) )
+        await expect ( service.UpdateCliente ( 99, {
+            codCidade: 1, cliente: 'X',
+            tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+            isActive: true,
+        }, 1 ) )
             .rejects.toMatchObject ( { status: 404 } );
     });
 

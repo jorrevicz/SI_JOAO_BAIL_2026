@@ -111,16 +111,12 @@ export class PaisesRepository
     {
         const client = transaction ?? sql;
         const [ row ] = await client < { codPais: number }[] >`
-            DELETE FROM "Paises"
+            UPDATE "Paises"
+            SET "isActive" = false, "codUser" = ${ codUser }, "dtEdicao" = CURRENT_TIMESTAMP
             WHERE "codPais" = ${ id }
             AND "isActive" = true
             RETURNING "codPais"
         `;
-        // UPDATE "Paises"
-            // SET "isActive" = false, "codUser" = ${ codUser }, "dtEdicao" = CURRENT_TIMESTAMP
-            // WHERE "codPais" = ${ id }
-            // AND "isActive" = true
-            // RETURNING "codPais"
 
         return row ?? null;
     };

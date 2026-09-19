@@ -23,13 +23,13 @@ export default interface Fornecedores {
 
   bairroForn: string | null;
 
-  cepForn: string | null;
+  cepForn: string;
 
-  foneForn: string | null;
+  foneForn: string;
 
-  cpfCnpjForn: string | null;
+  cpfCnpjForn: string;
 
-  inscEstSubTrib: string | null;
+  inscEstSubTrib: string;
 
   dtCriacao: Date;
 
@@ -39,7 +39,7 @@ export default interface Fornecedores {
 
   isActive: boolean;
 
-  tipoPessoa: string | null;
+  tipoPessoa: string;
 }
 
 /** Represents the initializer for the table public.Fornecedores */
@@ -58,13 +58,13 @@ export interface FornecedoresInitializer {
 
   bairroForn?: string | null;
 
-  cepForn?: string | null;
+  cepForn: string;
 
-  foneForn?: string | null;
+  foneForn: string;
 
-  cpfCnpjForn?: string | null;
+  cpfCnpjForn: string;
 
-  inscEstSubTrib?: string | null;
+  inscEstSubTrib: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -77,7 +77,7 @@ export interface FornecedoresInitializer {
   /** Default value: true */
   isActive?: boolean;
 
-  tipoPessoa?: string | null;
+  tipoPessoa: string;
 }
 
 /** Represents the mutator for the table public.Fornecedores */
@@ -96,13 +96,13 @@ export interface FornecedoresMutator {
 
   bairroForn?: string | null;
 
-  cepForn?: string | null;
+  cepForn?: string;
 
-  foneForn?: string | null;
+  foneForn?: string;
 
-  cpfCnpjForn?: string | null;
+  cpfCnpjForn?: string;
 
-  inscEstSubTrib?: string | null;
+  inscEstSubTrib?: string;
 
   dtCriacao?: Date;
 
@@ -112,5 +112,5 @@ export interface FornecedoresMutator {
 
   isActive?: boolean;
 
-  tipoPessoa?: string | null;
+  tipoPessoa?: string;
 }

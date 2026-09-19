@@ -95,7 +95,7 @@ export function CidadeConsulta ( { onSelecionar, onCancelar }: Props )
 
     const columns = [
         columnHelper.accessor ( 'codCidade', { header: 'Código' } ),
-        columnHelper.accessor ( 'codEstado', { header: 'Código Estado' } ),
+        columnHelper.accessor ( 'codEstado', { header: () => <>Código<br/>Estado</> } ),
         columnHelper.accessor ( 'cidade', { header: 'Cidade' } ),
         columnHelper.accessor (
           'ddd',
@@ -109,7 +109,7 @@ export function CidadeConsulta ( { onSelecionar, onCancelar }: Props )
           'dtEdicao',
           { header: 'Edição', cell: ( info ) => formatarData ( info.getValue() ) }
         ),
-        columnHelper.accessor ( 'codUser', { header: 'Código Usuário', cell: ( info ) => info.getValue() ?? '-' } ),
+        columnHelper.accessor ( 'codUser', { header: () => <>Código<br/>Usuário</>, cell: ( info ) => info.getValue() ?? '-' } ),
         columnHelper.accessor ( 'isActive', { header: 'Status' } ),
         columnHelper.display ( {
           id: 'acoes',

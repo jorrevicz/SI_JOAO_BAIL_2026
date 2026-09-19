@@ -13,6 +13,9 @@ const repoProdutoCategorias = new ProdutoCategoriasRepository();
 // quem o consome é o service.
 const SEM_CATEGORIAS = { categorias: [] };
 
+// Campos que passaram a ser obrigatórios no cadastro de produto (unidade, pesos, estoque e custo).
+const CAMPOS_PRODUTO = { undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custo: 0 };
+
 describe ( 'ProdutosRepository (rollback)', () =>
 {
     afterAll ( async () =>
@@ -26,7 +29,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Teclado USB Teste', undProduto: 'UN', ...SEM_CATEGORIAS },
+                { produto: 'Teclado USB Teste', ...CAMPOS_PRODUTO, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -47,13 +50,13 @@ describe ( 'ProdutosRepository (rollback)', () =>
 
             const daCategoria = await repoProdutos.Create
             (
-                { produto: 'Mouse Da Categoria', ...SEM_CATEGORIAS },
+                { produto: 'Mouse Da Categoria', ...CAMPOS_PRODUTO, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
             const foraDaCategoria = await repoProdutos.Create
             (
-                { produto: 'Monitor Fora Da Categoria', ...SEM_CATEGORIAS },
+                { produto: 'Monitor Fora Da Categoria', ...CAMPOS_PRODUTO, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -74,7 +77,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Monitor Original', ...SEM_CATEGORIAS },
+                { produto: 'Monitor Original', ...CAMPOS_PRODUTO, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -82,7 +85,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
             const atualizado = await repoProdutos.Update
             (
                 novo.codProd,
-                { produto: 'Monitor Atualizado', undProduto: 'UN', isActive: true, ...SEM_CATEGORIAS },
+                { produto: 'Monitor Atualizado', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -97,7 +100,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Para Excluir', ...SEM_CATEGORIAS },
+                { produto: 'Para Excluir', ...CAMPOS_PRODUTO, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -106,6 +109,13 @@ describe ( 'ProdutosRepository (rollback)', () =>
 
             const achado = await repoProdutos.FindById ( novo.codProd, transaction );
             expect ( achado ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "Produtos" WHERE "codProd" = ${ novo.codProd }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 
@@ -115,7 +125,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Notebook Teste', estoque: 10, custo: 2500, ...SEM_CATEGORIAS },
+                { produto: 'Notebook Teste', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 10, custo: 2500, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -126,7 +136,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
             const atualizado = await repoProdutos.Update
             (
                 novo.codProd,
-                { produto: 'Notebook Atualizado', isActive: true, ...SEM_CATEGORIAS },
+                { produto: 'Notebook Atualizado', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -143,7 +153,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Sem Dependentes', ...SEM_CATEGORIAS },
+                { produto: 'Sem Dependentes', ...CAMPOS_PRODUTO, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );

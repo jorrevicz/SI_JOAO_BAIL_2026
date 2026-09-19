@@ -21,9 +21,9 @@ export default interface Clientes {
 
   bairroCl: string | null;
 
-  cepCl: string | null;
+  cepCl: string;
 
-  foneCl: string | null;
+  foneCl: string;
 
   dtCriacao: Date;
 
@@ -33,7 +33,7 @@ export default interface Clientes {
 
   isActive: boolean;
 
-  tipoPessoa: string | null;
+  tipoPessoa: string;
 }
 
 /** Represents the initializer for the table public.Clientes */
@@ -50,9 +50,9 @@ export interface ClientesInitializer {
 
   bairroCl?: string | null;
 
-  cepCl?: string | null;
+  cepCl: string;
 
-  foneCl?: string | null;
+  foneCl: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -65,7 +65,7 @@ export interface ClientesInitializer {
   /** Default value: true */
   isActive?: boolean;
 
-  tipoPessoa?: string | null;
+  tipoPessoa: string;
 }
 
 /** Represents the mutator for the table public.Clientes */
@@ -82,9 +82,9 @@ export interface ClientesMutator {
 
   bairroCl?: string | null;
 
-  cepCl?: string | null;
+  cepCl?: string;
 
-  foneCl?: string | null;
+  foneCl?: string;
 
   dtCriacao?: Date;
 
@@ -94,5 +94,5 @@ export interface ClientesMutator {
 
   isActive?: boolean;
 
-  tipoPessoa?: string | null;
+  tipoPessoa?: string;
 }

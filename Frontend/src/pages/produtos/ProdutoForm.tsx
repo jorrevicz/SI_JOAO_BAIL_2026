@@ -32,10 +32,10 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
   const [ form, setForm ] = useState < Omit < CreateProdutoInput, 'categorias' > > ( {
     produto:      inicial.produto      ?? '',
     undProduto:   inicial.undProduto   ?? '',
-    estoque:      inicial.estoque      != null ? inicial.estoque : undefined as number | undefined,
-    custo:        inicial.custoMedioProd != null ? parseFloat ( inicial.custoMedioProd ) : undefined as number | undefined,
-    pesoBruto:    inicial.pesoBruto    != null ? parseFloat ( inicial.pesoBruto ) : undefined as number | undefined,
-    pesoLiq:      inicial.pesoLiq      != null ? parseFloat ( inicial.pesoLiq   ) : undefined as number | undefined,
+    estoque:      inicial.estoque      ?? 0,
+    custo:        inicial.custoMedioProd != null ? parseFloat ( inicial.custoMedioProd ) : 0,
+    pesoBruto:    inicial.pesoBruto    != null ? parseFloat ( inicial.pesoBruto ) : 0,
+    pesoLiq:      inicial.pesoLiq      != null ? parseFloat ( inicial.pesoLiq   ) : 0,
     isActive:     inicial.isActive     ?? true,
   } );
   const [ categorias, setCategorias ] = useState < CategoriaLocal[] > ( [] );
@@ -113,9 +113,9 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
         {
           produto:      form.produto,
           categorias:   categoriasMapeadas,
-          undProduto:   form.undProduto   || undefined,
-          pesoBruto:    form.pesoBruto    != null && !isNaN ( form.pesoBruto  ) ? form.pesoBruto  : undefined,
-          pesoLiq:      form.pesoLiq      != null && !isNaN ( form.pesoLiq    ) ? form.pesoLiq    : undefined,
+          undProduto:   form.undProduto,
+          pesoBruto:    form.pesoBruto,
+          pesoLiq:      form.pesoLiq,
           isActive:     form.isActive     ?? true,
         };
         await produtosService.atualizar ( inicial.codProd!, dados );
@@ -126,11 +126,11 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
         {
           produto:      form.produto,
           categorias:   categoriasMapeadas,
-          undProduto:   form.undProduto   || undefined,
-          estoque:      form.estoque      != null && !isNaN ( form.estoque   ) ? form.estoque   : undefined,
-          custo:        form.custo        != null && !isNaN ( form.custo     ) ? form.custo     : undefined,
-          pesoBruto:    form.pesoBruto    != null && !isNaN ( form.pesoBruto ) ? form.pesoBruto : undefined,
-          pesoLiq:      form.pesoLiq      != null && !isNaN ( form.pesoLiq   ) ? form.pesoLiq   : undefined,
+          undProduto:   form.undProduto,
+          estoque:      form.estoque,
+          custo:        form.custo,
+          pesoBruto:    form.pesoBruto,
+          pesoLiq:      form.pesoLiq,
           isActive:     form.isActive     ?? true,
         };
         await produtosService.criar ( dados );
@@ -173,72 +173,77 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           />
         </FormCampo>
 
-        <FormCampo label="Unidade" colunas={ 3 } htmlFor="undProduto" erro={ errosCampo.undProduto }>
+        <FormCampo label="Unidade" obrigatorio colunas={ 2 } htmlFor="undProduto" erro={ errosCampo.undProduto }>
           <input
             id="undProduto"
-            value={ form.undProduto ?? '' }
-            onChange={ ( evento ) => setForm ( { ...form, undProduto: evento.target.value.toUpperCase() || '' } ) }
+            value={ form.undProduto }
+            onChange={ ( evento ) => setForm ( { ...form, undProduto: evento.target.value.toUpperCase() } ) }
             maxLength={ 4 }
             placeholder="UN, KG, CX…"
+            required
           />
         </FormCampo>
       </FormSecao>
 
       <FormSecao>
-        <FormCampo label="Estoque inicial" colunas={ 3 } htmlFor="estoque" erro={ errosCampo.estoque }>
+        <FormCampo label="Estoque inicial" obrigatorio colunas={ 3 } htmlFor="estoque" erro={ errosCampo.estoque }>
           <input
             id="estoque"
             type="number"
             min="0"
             max="99999"
             step="1"
-            value={ form.estoque ?? '' }
+            value={ form.estoque }
             onChange={ ( evento ) =>
-              setForm ( { ...form, estoque: evento.target.value ? parseInt ( evento.target.value, 10 ) : undefined } )
+              setForm ( { ...form, estoque: evento.target.value ? parseInt ( evento.target.value, 10 ) : 0 } )
             }
             disabled={ editando }
             readOnly={ editando }
+            required
           />
         </FormCampo>
 
-        <FormCampo label="Custo inicial (R$)" colunas={ 3 } htmlFor="custo" erro={ errosCampo.custo }>
+        <FormCampo label="Custo inicial (R$)" obrigatorio colunas={ 3 } htmlFor="custo" erro={ errosCampo.custo }>
           <input
             id="custo"
             type="number"
             step="0.01"
             min="0"
-            value={ form.custo ?? '' }
+            value={ form.custo }
             onChange={ ( evento ) =>
-              setForm ( { ...form, custo: evento.target.value ? parseFloat ( evento.target.value ) : undefined } )
+              setForm ( { ...form, custo: evento.target.value ? parseFloat ( evento.target.value ) : 0 } )
             }
             disabled={ editando }
             readOnly={ editando }
+            required
           />
         </FormCampo>
 
-        <FormCampo label="Peso bruto (kg)" colunas={ 3 } htmlFor="pesoBruto" erro={ errosCampo.pesoBruto }>
+        <FormCampo label="Peso bruto (kg)" obrigatorio colunas={ 3 } htmlFor="pesoBruto" erro={ errosCampo.pesoBruto }>
           <input
             id="pesoBruto"
             type="number"
             step="0.001"
             min="0"
-            value={ form.pesoBruto ?? '' }
+            value={ form.pesoBruto }
             onChange={ ( evento ) =>
-              setForm ( { ...form, pesoBruto: evento.target.value ? parseFloat ( evento.target.value ) : undefined } )
+              setForm ( { ...form, pesoBruto: evento.target.value ? parseFloat ( evento.target.value ) : 0 } )
             }
+            required
           />
         </FormCampo>
 
-        <FormCampo label="Peso líquido (kg)" colunas={ 3 } htmlFor="pesoLiq" erro={ errosCampo.pesoLiq }>
+        <FormCampo label="Peso líquido (kg)" obrigatorio colunas={ 3 } htmlFor="pesoLiq" erro={ errosCampo.pesoLiq }>
           <input
             id="pesoLiq"
             type="number"
             step="0.001"
             min="0"
-            value={ form.pesoLiq ?? '' }
+            value={ form.pesoLiq }
             onChange={ ( evento ) =>
-              setForm ( { ...form, pesoLiq: evento.target.value ? parseFloat ( evento.target.value ) : undefined } )
+              setForm ( { ...form, pesoLiq: evento.target.value ? parseFloat ( evento.target.value ) : 0 } )
             }
+            required
           />
         </FormCampo>
 

@@ -27,26 +27,23 @@ export const createTransportadoraSchema = z.object
             .max ( 60,  'O nome fantasia deve ter no máximo 60 caracteres.' )
             .optional(),
         tipoPessoa: z
-            .enum ( ['FISICA', 'JURIDICA'], { 
+            .enum ( ['FISICA', 'JURIDICA'], {
                 message: 'Tipo de pessoa inválido.'
-             } )
-            .optional(),
+             } ),
         enderecoTransp: z
             .string()
             .trim()
             .max ( 35,  'O endereço deve ter no máximo 35 caracteres.' )
             .optional(),
         cpfCnpjTransp: z
-            .string()
+            .string ( { message: 'O CPF/CNPJ é obrigatório.' } )
             .trim()
-            .max ( 14,  'O CPF/CNPJ deve ter no máximo 14 dígitos.' )
-            .regex ( /^[0-9]+$/, 'O CPF/CNPJ deve conter apenas números.')
-            .optional(),
+            .regex ( /^([0-9]{11}|[0-9]{14})$/, 'O CPF/CNPJ deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ).'),
         inscEstTransp: z
-            .string()
+            .string ( { message: 'A inscrição estadual é obrigatória.' } )
             .trim()
-            .max ( 15,  'A inscrição estadual deve ter no máximo 15 caracteres.' )
-            .optional(),
+            .min ( 1, 'A inscrição estadual é obrigatória.' )
+            .max ( 15,  'A inscrição estadual deve ter no máximo 15 caracteres.' ),
     }
 );
 

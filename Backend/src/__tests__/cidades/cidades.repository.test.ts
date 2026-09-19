@@ -45,7 +45,8 @@ describe ( 'CidadesRepository (rollback)', () => {
             (
                 {
                     codEstado,
-                    cidade: 'Tmp Cidade'
+                    cidade: 'Tmp Cidade',
+                    ddd: '11'
                 }, 1, transaction
             );
 
@@ -54,6 +55,13 @@ describe ( 'CidadesRepository (rollback)', () => {
             const achado = await repo.FindById ( novo.codCidade, transaction );
 
             expect ( achado ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "Cidades" WHERE "codCidade" = ${ novo.codCidade }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 
@@ -67,7 +75,8 @@ describe ( 'CidadesRepository (rollback)', () => {
             (
                 {
                     codEstado,
-                    cidade: 'Filtro Cidade'
+                    cidade: 'Filtro Cidade',
+                    ddd: '11'
                 }, 1, transaction
             );
 

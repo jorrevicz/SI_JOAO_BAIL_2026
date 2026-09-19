@@ -21,7 +21,13 @@ describe ( 'TransportadorasRepository (rollback)', () =>
 
             const nova = await repo.Create
             (
-                { codCidade, transportadora: 'Expressa Logística Ltda' },
+                {
+                    codCidade,
+                    transportadora: 'Expressa Logística Ltda',
+                    tipoPessoa:     'JURIDICA',
+                    cpfCnpjTransp:  '11111111000101',
+                    inscEstTransp:  '111111111111',
+                },
                 1,
                 transaction
             );
@@ -42,7 +48,13 @@ describe ( 'TransportadorasRepository (rollback)', () =>
 
             const nova = await repo.Create
             (
-                { codCidade, transportadora: 'Transportadora Original' },
+                {
+                    codCidade,
+                    transportadora: 'Transportadora Original',
+                    tipoPessoa:     'JURIDICA',
+                    cpfCnpjTransp:  '22222222000102',
+                    inscEstTransp:  '222222222222',
+                },
                 1,
                 transaction
             );
@@ -54,6 +66,8 @@ describe ( 'TransportadorasRepository (rollback)', () =>
                     codCidade,
                     transportadora: 'Transportadora Atualizada',
                     tipoPessoa:     'JURIDICA',
+                    cpfCnpjTransp:  '22222222000102',
+                    inscEstTransp:  '222222222222',
                     isActive:       true,
                 },
                 1,
@@ -73,7 +87,13 @@ describe ( 'TransportadorasRepository (rollback)', () =>
 
             const nova = await repo.Create
             (
-                { codCidade, transportadora: 'Para Excluir' },
+                {
+                    codCidade,
+                    transportadora: 'Para Excluir',
+                    tipoPessoa:     'JURIDICA',
+                    cpfCnpjTransp:  '33333333000103',
+                    inscEstTransp:  '333333333333',
+                },
                 1,
                 transaction
             );
@@ -82,6 +102,13 @@ describe ( 'TransportadorasRepository (rollback)', () =>
 
             const achada = await repo.FindById ( nova.codTransp, transaction );
             expect ( achada ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "Transportadoras" WHERE "codTransp" = ${ nova.codTransp }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 
@@ -93,7 +120,13 @@ describe ( 'TransportadorasRepository (rollback)', () =>
 
             const nova = await repo.Create
             (
-                { codCidade, transportadora: 'Sem Dependentes' },
+                {
+                    codCidade,
+                    transportadora: 'Sem Dependentes',
+                    tipoPessoa:     'JURIDICA',
+                    cpfCnpjTransp:  '44444444000104',
+                    inscEstTransp:  '444444444444',
+                },
                 1,
                 transaction
             );

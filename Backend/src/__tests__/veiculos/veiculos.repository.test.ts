@@ -18,7 +18,7 @@ describe ( 'VeiculosRepository (rollback)', () =>
         {
             const novo = await repo.Create
             (
-                { placaVeiculo: 'TST0001', modeloVeiculo: 'Gol', marca: 'VW' },
+                { placaVeiculo: 'TST0001', modeloVeiculo: 'Gol', marca: 'VW', codAntt: '00000001' },
                 1,
                 transaction
             );
@@ -37,7 +37,7 @@ describe ( 'VeiculosRepository (rollback)', () =>
         {
             const novo = await repo.Create
             (
-                { placaVeiculo: 'TST0002' },
+                { placaVeiculo: 'TST0002', modeloVeiculo: 'Gol', marca: 'VW', codAntt: '00000002' },
                 1,
                 transaction
             );
@@ -45,7 +45,7 @@ describe ( 'VeiculosRepository (rollback)', () =>
             const atualizado = await repo.Update
             (
                 novo.codVeiculo,
-                { placaVeiculo: 'TST0002', marca: 'Fiat', isActive: true },
+                { placaVeiculo: 'TST0002', modeloVeiculo: 'Gol', marca: 'Fiat', codAntt: '00000002', isActive: true },
                 1,
                 transaction
             );
@@ -60,7 +60,7 @@ describe ( 'VeiculosRepository (rollback)', () =>
         {
             const novo = await repo.Create
             (
-                { placaVeiculo: 'TST0003' },
+                { placaVeiculo: 'TST0003', modeloVeiculo: 'Gol', marca: 'VW', codAntt: '00000003' },
                 1,
                 transaction
             );
@@ -69,6 +69,13 @@ describe ( 'VeiculosRepository (rollback)', () =>
 
             const achado = await repo.FindById ( novo.codVeiculo, transaction );
             expect ( achado ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "Veiculos" WHERE "codVeiculo" = ${ novo.codVeiculo }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 
@@ -78,7 +85,7 @@ describe ( 'VeiculosRepository (rollback)', () =>
         {
             const novo = await repo.Create
             (
-                { placaVeiculo: 'TST0004' },
+                { placaVeiculo: 'TST0004', modeloVeiculo: 'Gol', marca: 'VW', codAntt: '00000004' },
                 1,
                 transaction
             );

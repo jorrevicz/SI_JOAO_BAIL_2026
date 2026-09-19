@@ -49,6 +49,8 @@ describe ( 'PaisesService', () => {
         ({
             pais: 'Brasil',
             sigla: 'BR',
+            ddi: '55',
+            moeda: 'BRL',
         }, 7 );
     });
 

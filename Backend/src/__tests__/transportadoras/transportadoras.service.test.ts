@@ -40,16 +40,25 @@ describe ( 'TransportadorasService', () =>
     {
         repo.Create.mockResolvedValue ( { codTransp: 1 } );
 
-        await service.CreateTransportadora ( { codCidade: 1, transportadora: 'Rápida Transportes' }, 7 );
+        const dados = {
+            codCidade: 1, transportadora: 'Rápida Transportes',
+            tipoPessoa: 'JURIDICA' as const, cpfCnpjTransp: '11111111000101', inscEstTransp: '111111111111',
+        };
 
-        expect ( repo.Create ).toHaveBeenCalledWith ( { codCidade: 1, transportadora: 'Rápida Transportes' }, 7 );
+        await service.CreateTransportadora ( dados, 7 );
+
+        expect ( repo.Create ).toHaveBeenCalledWith ( dados, 7 );
     });
 
     it ( 'UpdateTransportadora lança 404 quando o registro não existe', async () =>
     {
         repo.Update.mockResolvedValue ( null );
 
-        await expect ( service.UpdateTransportadora ( 99, { codCidade: 1, transportadora: 'X', isActive: true }, 1 ) )
+        await expect ( service.UpdateTransportadora ( 99, {
+            codCidade: 1, transportadora: 'X',
+            tipoPessoa: 'JURIDICA', cpfCnpjTransp: '11111111000101', inscEstTransp: '111111111111',
+            isActive: true,
+        }, 1 ) )
             .rejects.toMatchObject ( { status: 404 } );
     });
 

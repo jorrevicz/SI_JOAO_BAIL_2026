@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError } from '../../services/api';
 import { estadosService, type Estado, type CreateEstadoInput } from '../../services/estados';
-import { type Pais } from '../../services/paises';
+import { paisesService, type Pais } from '../../services/paises';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { PaisConsulta } from '../paises/PaisConsulta';
-
 
 interface Props
 {
@@ -22,6 +21,7 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
     estado:  inicial.estado  ?? '',
     isActive: inicial.isActive ?? true,
   } );
+  const [ codPaisSelecionado, setCodPaisSelecionado ] = useState ( 0 )
   const [ nomePaisSelecionado, setNomePaisSelecionado ] = useState ( '' );
   const [ consultandoPais, setConsultando ] = useState ( false );
 
@@ -67,10 +67,23 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
     }
   };
 
-  const handleSelecionarPais = ( pais: Pais ) =>
+useEffect ( () =>
   {
-    setForm ( { ...form, codPais: pais.codPais } );
-    setNomePaisSelecionado ( pais.pais );
+    if ( inicial.codPais )
+    {
+      paisesService.obter ( inicial.codPais ).then ( ( oPais ) =>
+      {
+        setCodPaisSelecionado ( oPais.codPais );
+        setNomePaisSelecionado ( oPais.pais );
+      } );
+    }
+  });
+
+  const handleSelecionarPais = ( oPais: Pais ) =>
+  {
+    setForm ( { ...form, codPais: oPais.codPais } );
+    setCodPaisSelecionado ( oPais.codPais )
+    setNomePaisSelecionado ( oPais.pais );
     setConsultando ( false );
   };
 
@@ -82,22 +95,7 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
         onFechar={ onCancelar }
         onSubmit={ submit }
       >
-        <FormSecao>
-          <FormCampo label="País" obrigatorio colunas={ 4 } erro={ errosCampo.codPais }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type="button"
-                $variante="secundario"
-                onClick={ () => setConsultando ( true ) }
-              >
-                Consultar
-              </Botao>
-              { nomePaisSelecionado && (
-                <span style={ { fontSize: '0.875rem' } }>{ nomePaisSelecionado }</span>
-              )}
-            </div>
-          </FormCampo>
-
+        <FormSecao> 
           <FormCampo label="Nome do estado" obrigatorio colunas={ 4 } htmlFor="estado" erro={ errosCampo.estado }>
             <input
               id="estado"
@@ -118,7 +116,53 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
               autoFocus
               placeholder="SP"
             />
+          </FormCampo> 
+        </FormSecao>
+
+        <FormSecao>
+          <FormCampo label="País" obrigatorio colunas={ 2 } erro={ errosCampo.codPais }>
+            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
+              <Botao
+                type="button"
+                $variante="secundario"
+                onClick={ () => setConsultando ( true ) }
+              >
+                Consultar
+              </Botao> 
+            </div>
           </FormCampo>
+
+          <FormCampo label='Código do país' colunas={ 2 }>
+            <div>
+              {
+                (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    <input
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ codPaisSelecionado }
+                    />
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Nome do país' colunas={ 4 }>
+            <div>
+              {
+                (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    <input 
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ nomePaisSelecionado }
+                    />
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo> 
 
           <FormCampo label='Status' colunas={ 2 }>
             <CaixaSelecao

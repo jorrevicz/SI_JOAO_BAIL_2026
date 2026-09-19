@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { type Estado } from '../../services/estados';
+import { useEffect, useState } from 'react';
+import { estadosService, type Estado } from '../../services/estados';
 import { ApiError } from '../../services/api';
 import { veiculosService, type Veiculo, type CreateVeiculoInput } from '../../services/veiculos';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
@@ -18,13 +18,14 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
   const [ form, setForm ] = useState < CreateVeiculoInput >
   ( {
     placaVeiculo:  inicial.placaVeiculo  ?? '',
-    modeloVeiculo: inicial.modeloVeiculo ?? undefined,
-    marca:         inicial.marca         ?? undefined,
+    modeloVeiculo: inicial.modeloVeiculo ?? '',
+    marca:         inicial.marca         ?? '',
     codEstado:     inicial.codEstado     ?? undefined,
     placaMercoSul: inicial.placaMercoSul ?? undefined,
-    codAntt:       inicial.codAntt       ?? undefined,
+    codAntt:       inicial.codAntt       ?? '',
     isActive:      inicial.isActive      ?? true,
   } );
+  const [ codEstadoSel, setCodEstadoSel ] = useState ( 0 );
   const [ nomeEstadoSel, setNomeEstadoSel ]   = useState ( '' );
   const [ consultando, setConsultando ]       = useState ( false );
 
@@ -44,11 +45,11 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
     const dados: CreateVeiculoInput =
     {
       placaVeiculo:  form.placaVeiculo,
-      modeloVeiculo: form.modeloVeiculo || undefined,
-      marca:         form.marca         || undefined,
+      modeloVeiculo: form.modeloVeiculo,
+      marca:         form.marca,
       codEstado:     form.codEstado     || undefined,
       placaMercoSul: form.placaMercoSul || undefined,
-      codAntt:       form.codAntt       || undefined,
+      codAntt:       form.codAntt,
       isActive:      form.isActive      || true,
     };
 
@@ -81,6 +82,18 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
     }
   };
 
+  useEffect ( () =>
+  {
+    if ( inicial.codEstado )
+    {
+      estadosService.obter ( inicial.codEstado ).then ( ( oEstado ) =>
+      {
+        setCodEstadoSel ( oEstado.codEstado );
+        setNomeEstadoSel ( oEstado.estado );
+      } );
+    }
+  });
+
   const HandleSelecionarEstado = ( oEstado: Estado ) =>
   {
     setForm ( { ...form, codEstado: oEstado.codEstado } );
@@ -112,32 +125,34 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
 
-          <FormCampo label="Modelo" colunas={ 5 } htmlFor="modeloVeiculo" erro={ errosCampo.modeloVeiculo }>
+          <FormCampo label="Modelo" obrigatorio colunas={ 5 } htmlFor="modeloVeiculo" erro={ errosCampo.modeloVeiculo }>
             <input
               id="modeloVeiculo"
-              value={ form.modeloVeiculo ?? '' }
+              value={ form.modeloVeiculo }
               onChange={ ( evento ) =>
-                setForm ( { ...form, modeloVeiculo: evento.target.value.toUpperCase() || undefined } )
+                setForm ( { ...form, modeloVeiculo: evento.target.value.toUpperCase() } )
               }
               maxLength={ 100 }
+              required
             />
           </FormCampo>
 
-          <FormCampo label="Marca" colunas={ 4 } htmlFor="marca" erro={ errosCampo.marca }>
+          <FormCampo label="Marca" obrigatorio colunas={ 4 } htmlFor="marca" erro={ errosCampo.marca }>
             <input
               id="marca"
               type='text'
-              value={ form.marca ?? '' }
+              value={ form.marca }
               onChange={ ( evento ) =>
-                setForm ( { ...form, marca: evento.target.value.toUpperCase() || undefined } )
+                setForm ( { ...form, marca: evento.target.value.toUpperCase() } )
               }
               maxLength={ 13 }
+              required
             />
           </FormCampo>
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Estado" obrigatorio colunas={ 4 } erro={ errosCampo.codEstado }>
+          <FormCampo label="Estado" obrigatorio colunas={ 2 } erro={ errosCampo.codEstado }>
             <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
               <Botao
                 type='button'
@@ -145,11 +160,36 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
                 onClick={ () => setConsultando ( true ) }
               >
                 Consultar
-              </Botao>
+              </Botao> 
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Código do estado' colunas={ 2 }>
+            <div>
               {
-                nomeEstadoSel && (
+                (
                   <span style={ { fontSize: '0.875rem' } }>
-                    { nomeEstadoSel }
+                    <input
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ codEstadoSel }
+                    />
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Nome do estado' colunas={ 4 }>
+            <div>
+              {
+                (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    <input 
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ nomeEstadoSel }
+                    />
                   </span>
                 )
               }
@@ -170,15 +210,16 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
 
-          <FormCampo label="Código ANTT" colunas={ 3 } htmlFor="codAntt" erro={ errosCampo.codAntt }>
+          <FormCampo label="Código ANTT" obrigatorio colunas={ 3 } htmlFor="codAntt" erro={ errosCampo.codAntt }>
             <input
               id="codAntt"
               type='text'
               max={9}
-              value={ form.codAntt ?? '' }
+              value={ form.codAntt }
               onChange={ ( evento ) =>
-                setForm ( { ...form, codAntt: evento.target.value || undefined } )
+                setForm ( { ...form, codAntt: evento.target.value } )
               }
+              required
             />
           </FormCampo>
 

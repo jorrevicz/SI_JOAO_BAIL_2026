@@ -23,10 +23,10 @@ export interface CreateTransportadoraInput
   transportadora:  string;
   codVeiculo?:     number;
   nomeFantasia?:   string;
-  tipoPessoa?:     'FISICA' | 'JURIDICA';
+  tipoPessoa:      'FISICA' | 'JURIDICA' | '';
   enderecoTransp?: string;
-  cpfCnpjTransp?:  string;
-  inscEstTransp?:  string;
+  cpfCnpjTransp:   string;
+  inscEstTransp:   string;
   isActive:        boolean;
 }
 

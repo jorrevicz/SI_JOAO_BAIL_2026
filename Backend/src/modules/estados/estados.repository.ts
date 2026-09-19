@@ -110,18 +110,14 @@ export class EstadosRepository
   {
     const client = transaction ?? sql;
     const [ row ] = await client < { codEstado: number }[] >`
-        DELETE FROM "Estados"
-        WHERE "codEstado" = ${ id }
-        AND "isActive" = true
+        UPDATE "Estados"
+        SET    "isActive"  = false,
+               "codUser"   = ${ codUser },
+               "dtEdicao"  = CURRENT_TIMESTAMP
+        WHERE  "codEstado" = ${ id }
+        AND    "isActive"  = true
         RETURNING "codEstado"
     `;
-    // UPDATE "Estados" 
-        // SET    "isActive"  = false, 
-        //      "codUser"   = ${ codUser }, 
-        //      "dtEdicao"  = CURRENT_TIMESTAMP
-        // WHERE  "codEstado" = ${ id } 
-        // AND    "isActive"  = true 
-        // RETURNING "codEstado"
 
     return row ?? null;
   }

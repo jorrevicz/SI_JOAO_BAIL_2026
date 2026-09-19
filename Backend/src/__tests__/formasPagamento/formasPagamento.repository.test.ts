@@ -58,13 +58,38 @@ describe ( 'FormasPagamentoRepository (rollback)', () =>
         });
     });
 
+    it ( 'Delete faz soft delete (isActive=false) dentro da transação', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const nova = await repoFormas.Create
+            (
+                { formaDePag: 'Para Excluir', prazoCompensacao: 0 },
+                1,
+                transaction
+            );
+
+            await repoFormas.Delete ( nova.codFormaDePag, 1, transaction );
+
+            const achada = await repoFormas.FindById ( nova.codFormaDePag, transaction );
+            expect ( achada ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "FormaDePagamento" WHERE "codFormaDePag" = ${ nova.codFormaDePag }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
+        });
+    });
+
     it ( 'HasDependents retorna false quando não há dependentes', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
             const nova = await repoFormas.Create
             (
-                { formaDePag: 'Sem Dependentes' },
+                { formaDePag: 'Sem Dependentes', prazoCompensacao: 0 },
                 1,
                 transaction
             );
@@ -80,7 +105,7 @@ describe ( 'FormasPagamentoRepository (rollback)', () =>
         {
             const nova = await repoFormas.Create
             (
-                { formaDePag: 'Usada em Conta a Pagar' },
+                { formaDePag: 'Usada em Conta a Pagar', prazoCompensacao: 0 },
                 1,
                 transaction
             );
@@ -95,7 +120,7 @@ describe ( 'FormasPagamentoRepository (rollback)', () =>
                     serie:   '01',
                     parcela: 1,
                     codFornecedor,
-                    codFormaDepag: nova.codFormaDePag,
+                    codFormaDePag: nova.codFormaDePag,
                     valor: '100.00',
                     juro: '0.00',
                     desconto: '0.00',

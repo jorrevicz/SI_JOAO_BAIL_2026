@@ -24,12 +24,12 @@ export interface ParcelaCondicaoInput
 
 export interface CreateCondicaoPagamentoInput
 {
-  descricao:        string;
-  juroCondPag?:     number;
-  multaCondPag?:    number;
-  descontoCondPag?: number;
-  isActive:         boolean;
-  parcelas:         ParcelaCondicaoInput[];
+  descricao:       string;
+  juroCondPag:     number;
+  multaCondPag:    number;
+  descontoCondPag: number;
+  isActive:        boolean;
+  parcelas:        ParcelaCondicaoInput[];
 }
 
 export interface UpdateCondicaoPagamentoInput

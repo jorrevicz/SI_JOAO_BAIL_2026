@@ -22,7 +22,13 @@ interface Props
 export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }: Props )
 {
   'use no memo'
-  const [ form, setForm ] = useState < Omit < CreateCondicaoPagamentoInput, 'parcelas' > > ({
+  // Juros/multa/desconto aceitam ficar em branco na tela — o valor é preenchido com
+  // 0.00 apenas ao montar o payload de envio (submit), não enquanto o usuário digita.
+  const [ form, setForm ] = useState < Omit < CreateCondicaoPagamentoInput, 'parcelas' | 'juroCondPag' | 'multaCondPag' | 'descontoCondPag' > & {
+    juroCondPag:     number | undefined;
+    multaCondPag:    number | undefined;
+    descontoCondPag: number | undefined;
+  } > ({
     descricao:       inicial.descricao       ?? '',
     juroCondPag:     inicial.juroCondPag     != null ? parseFloat ( inicial.juroCondPag )     : undefined,
     multaCondPag:    inicial.multaCondPag    != null ? parseFloat ( inicial.multaCondPag )    : undefined,
@@ -109,6 +115,9 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
         const payload: CreateCondicaoPagamentoInput =
         {
           ...form,
+          juroCondPag:     form.juroCondPag     ?? 0,
+          multaCondPag:    form.multaCondPag    ?? 0,
+          descontoCondPag: form.descontoCondPag ?? 0,
           parcelas: parcelasMapeadas,
         };
         await condicoesPagamentoService.criar ( payload );

@@ -41,9 +41,9 @@ describe ( 'FormasPagamentoService', () =>
         const nova = { codFormaDePag: 1, formaDePag: 'Boleto' };
         repo.Create.mockResolvedValue ( nova );
 
-        const resultado = await service.CreateForma ( { formaDePag: 'Boleto' }, 1 );
+        const resultado = await service.CreateForma ( { formaDePag: 'Boleto', prazoCompensacao: 3 }, 1 );
 
-        expect ( repo.Create ).toHaveBeenCalledWith ( { formaDePag: 'Boleto' }, 1 );
+        expect ( repo.Create ).toHaveBeenCalledWith ( { formaDePag: 'Boleto', prazoCompensacao: 3 }, 1 );
         expect ( resultado ).toEqual ( nova );
     });
 

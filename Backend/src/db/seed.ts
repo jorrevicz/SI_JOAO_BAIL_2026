@@ -371,7 +371,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
         "enderecoForn"   = 'AV. PAULISTA, 726',
         "bairroForn"     = 'BELA VISTA',
         "cepForn"        = '01310100',
-        "foneForn"       = '+551133331111',
+        "foneForn"       = '551133331111',
         "inscEstSubTrib" = '111111111111'
       WHERE "codForn" = ${ forn1Cod }
     `;
@@ -384,7 +384,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
          "bairroForn", "cepForn", "foneForn", "cpfCnpjForn", "inscEstSubTrib" )
       VALUES
         ( 'TECHDISTRIB INFORMÁTICA LTDA', 'TECHDISTRIB', 'J', ${ cidadeSP.codCidade }, ${ codCondDePag },
-         'AV. PAULISTA, 726', 'BELA VISTA', '01310100', '+551133331111',
+         'AV. PAULISTA, 726', 'BELA VISTA', '01310100', '551133331111',
          '12345678000190', '111111111111' )
       RETURNING "codForn"
     `;
@@ -406,7 +406,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
         "enderecoForn"   = 'RUA XV DE NOVEMBRO, 1000',
         "bairroForn"     = 'CENTRO',
         "cepForn"        = '80060000',
-        "foneForn"       = '+554122229999',
+        "foneForn"       = '554122229999',
         "inscEstSubTrib" = '222222222222'
       WHERE "codForn" = ${ existForn2[ 0 ].codForn }
     `;
@@ -419,7 +419,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
          "bairroForn", "cepForn", "foneForn", "cpfCnpjForn", "inscEstSubTrib" )
       VALUES
         ( 'INFOSUL DISTRIBUIDORA DE TI EIRELI', 'INFOSUL TI', 'J', ${ cidadeCWB.codCidade }, ${ codCondDePag },
-         'RUA XV DE NOVEMBRO, 1000', 'CENTRO', '80060000', '+554122229999',
+         'RUA XV DE NOVEMBRO, 1000', 'CENTRO', '80060000', '554122229999',
          '98765432000110', '222222222222' )
     `;
   }
@@ -436,7 +436,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
          "enderecoCl", "bairroCl", "cepCl", "foneCl" )
       VALUES
         ( 'ANA PAULA LIMA', 'F', ${ cidadeRJ.codCidade }, ${ codCondDePag },
-         'RUA DAS FLORES, 45', 'TIJUCA', '20511120', '+5521988887777' )
+         'RUA DAS FLORES, 45', 'TIJUCA', '20511120', '5521988887777' )
     `;
   }
 
@@ -451,7 +451,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
          "enderecoCl", "bairroCl", "cepCl", "foneCl" )
       VALUES
         ( 'CARLOS EDUARDO SANTOS', 'F', ${ cidadeSP.codCidade }, ${ codCondDePag },
-         'AV. PAULISTA, 1500', 'BELA VISTA', '01310100', '+5511977776666' )
+         'AV. PAULISTA, 1500', 'BELA VISTA', '01310100', '5511977776666' )
     `;
   }
 

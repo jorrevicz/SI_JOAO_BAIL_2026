@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError } from '../../services/api';
 import { fornecedoresService, type Fornecedor, type CreateFornecedorInput } from '../../services/fornecedores';
 import { type Cidade } from '../../services/cidades';
@@ -6,7 +6,9 @@ import { type CondicaoPagamento } from '../../services/condicoesPagamento';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { CidadeConsulta } from '../cidades/CidadeConsulta';
+import { cidadesService } from '../../services/cidades';
 import { CondicaoPagamentoConsulta } from '../condicoesPagamento-Parcela/CondicaoPagamentoConsulta';
+import { condicoesPagamentoService } from '../../services/condicoesPagamento';
 
 interface Props
 {
@@ -22,7 +24,7 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     codCondDePag:   inicial.codCondDePag   ?? 0,
     fornecedor:     inicial.fornecedor     ?? '',
     nomeFantasia:   inicial.nomeFantasia   ?? '',
-    tipoPessoa:     inicial.tipoPessoa     ?? undefined,
+    tipoPessoa:     ( inicial.tipoPessoa as 'FISICA' | 'JURIDICA' ) ?? '',
     enderecoForn:   inicial.enderecoForn   ?? '',
     bairroForn:     inicial.bairroForn     ?? '',
     cepForn:        inicial.cepForn        ?? '',
@@ -31,8 +33,11 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     inscEstSubTrib: inicial.inscEstSubTrib ?? '',
     isActive:       inicial.isActive       ?? true,
   } );
+  const [ codCidadeSel, setCodCidadeSel ] = useState ( 0 );
   const [ nomeCidadeSel, setNomeCidadeSel ] = useState ( '' );
   const [ consultando, setConsultando ]     = useState ( false );
+
+  const [ codCondDepagSel, setCodCondDePagSel ] = useState ( 0 );
   const [ descricaoCondPagSel, setDescricaoCondPagSel ] = useState ( '' );
   const [ consultandoCondPag, setConsultandoCondPag ]   = useState ( false );
 
@@ -55,13 +60,13 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
       codCondDePag:   form.codCondDePag,
       fornecedor:     form.fornecedor,
       nomeFantasia:   form.nomeFantasia   || undefined,
-      tipoPessoa:     form.tipoPessoa     || undefined,
+      tipoPessoa:     form.tipoPessoa,
       enderecoForn:   form.enderecoForn   || undefined,
       bairroForn:     form.bairroForn     || undefined,
-      cepForn:        form.cepForn        || undefined,
-      foneForn:       form.foneForn       || undefined,
-      cpfCnpjForn:    form.cpfCnpjForn    || undefined,
-      inscEstSubTrib: form.inscEstSubTrib || undefined,
+      cepForn:        form.cepForn,
+      foneForn:       form.foneForn,
+      cpfCnpjForn:    form.cpfCnpjForn,
+      inscEstSubTrib: form.inscEstSubTrib,
       isActive:       form.isActive       || true,
     };
 
@@ -93,6 +98,18 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
       setSalvando ( false );
     }
   };
+  
+  useEffect ( () =>
+  {
+    if ( inicial.codCidade )
+    {
+      cidadesService.obter ( inicial.codCidade ).then ( ( oCidade ) =>
+      {
+        setCodCidadeSel ( oCidade.codCidade );
+        setNomeCidadeSel ( oCidade.cidade );
+      } );
+    }
+  });
 
   const handleSelecionarCidade = ( oCidade: Cidade) =>
   {
@@ -100,6 +117,18 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     setNomeCidadeSel ( oCidade.cidade );
     setConsultando ( false );
   }
+
+useEffect ( () =>
+  {
+    if ( inicial.codCondDePag )
+    {
+      condicoesPagamentoService.obter ( inicial.codCondDePag ).then ( ( oCondPag ) =>
+      {
+        setCodCondDePagSel ( oCondPag.codCondDePag );
+        setDescricaoCondPagSel ( oCondPag.descricao ?? '');
+      } );
+    }
+  });
 
   const handleSelecionarCondPag = ( oCondPag: CondicaoPagamento ) =>
   {
@@ -137,13 +166,14 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
             />
           </FormCampo>
 
-          <FormCampo label="Tipo de pessoa" colunas={ 2 } htmlFor="tipoPessoa" erro={ errosCampo.tipoPessoa }>
+          <FormCampo label="Tipo de pessoa" obrigatorio colunas={ 2 } htmlFor="tipoPessoa" erro={ errosCampo.tipoPessoa }>
             <select
               id="tipoPessoa"
-              value={ form.tipoPessoa ?? '' }
+              value={ form.tipoPessoa }
               onChange={ ( evento ) =>
-                setForm ( { ...form, tipoPessoa: evento.target.value.toUpperCase() || undefined } )
+                setForm ( { ...form, tipoPessoa: evento.target.value.toUpperCase() as 'FISICA' | 'JURIDICA' } )
               }
+              required
             >
               <option value="">— Selecione —</option>
               <option value="FISICA">Física</option>
@@ -154,16 +184,18 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="CEP" colunas={ 2 } htmlFor="cepForn" erro={ errosCampo.cepForn }>
+          <FormCampo label="CEP" obrigatorio colunas={ 2 } htmlFor="cepForn" erro={ errosCampo.cepForn }>
             <input
               id="cepForn"
-              type='number'
-              value={ form.cepForn ?? '' }
+              type='text'
+              inputMode='numeric'
+              value={ form.cepForn }
               onChange={ ( evento ) =>
-                setForm ( { ...form, cepForn: evento.target.value.replace ( /\D/g, '' ) || undefined } )
+                setForm ( { ...form, cepForn: evento.target.value.replace ( /\D/g, '' ) } )
               }
               maxLength={ 8 }
               placeholder="Somente dígitos"
+              required
             />
           </FormCampo>
 
@@ -187,7 +219,7 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Cidade" obrigatorio colunas={ 6 } erro={ errosCampo.codCidade }>
+          <FormCampo label="Cidade" obrigatorio colunas={ 2 } erro={ errosCampo.codCidade }>
             <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
               <Botao
                 type='button'
@@ -195,30 +227,36 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
                 onClick={ () => setConsultando ( true ) }
               >
                 Consultar
-              </Botao>
+              </Botao> 
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Código da cidade' colunas={ 2 }>
+            <div>
               {
-                nomeCidadeSel && (
+                (
                   <span style={ { fontSize: '0.875rem' } }>
-                    { nomeCidadeSel }
+                    <input
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ codCidadeSel }
+                    />
                   </span>
                 )
               }
             </div>
           </FormCampo>
 
-          <FormCampo label="Condição de pagamento" obrigatorio colunas={ 6 } erro={ errosCampo.codCondDePag }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultandoCondPag ( true ) }
-              >
-                Consultar
-              </Botao>
+          <FormCampo label='Nome da cidade' colunas={ 4 }>
+            <div>
               {
-                descricaoCondPagSel && (
+                (
                   <span style={ { fontSize: '0.875rem' } }>
-                    { descricaoCondPagSel }
+                    <input 
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ nomeCidadeSel }
+                    />
                   </span>
                 )
               }
@@ -227,38 +265,90 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Telefone" colunas={ 3 } htmlFor="foneForn" erro={ errosCampo.foneForn }>
+          <FormCampo label="Condição de pagamento" obrigatorio colunas={ 3 } erro={ errosCampo.codCondDePag }>
+            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
+              <Botao
+                type='button'
+                $variante='secundario'
+                onClick={ () => setConsultandoCondPag ( true ) }
+              >
+                Consultar
+              </Botao> 
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Código da condição' colunas={ 2 }>
+            <div>
+              {
+                (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    <input
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ codCondDepagSel }
+                    />
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Descrição da condição' colunas={ 4 }>
+            <div>
+              {
+                (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    <input 
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ descricaoCondPagSel }
+                    />
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo>
+        </FormSecao>
+
+        <FormSecao>
+          <FormCampo label="Telefone" obrigatorio colunas={ 3 } htmlFor="foneForn" erro={ errosCampo.foneForn }>
             <input
               id="foneForn"
-              value={ form.foneForn ?? '' }
+              type='text'
+              inputMode='numeric'
+              value={ form.foneForn }
               onChange={ ( evento ) =>
-                setForm ( { ...form, foneForn: evento.target.value.replace ( /\D/g, '' ) || undefined } )
+                setForm ( { ...form, foneForn: evento.target.value.replace ( /\D/g, '' ) } )
               }
               maxLength={ 15 }
-              placeholder="Somente dígitos"
+              placeholder="5511988887777"
+              required
             />
           </FormCampo>
 
-          <FormCampo label="CPF / CNPJ" colunas={ 3 } htmlFor="cpfCnpjForn" erro={ errosCampo.cpfCnpjForn }>
+          <FormCampo label="CPF / CNPJ" obrigatorio colunas={ 3 } htmlFor="cpfCnpjForn" erro={ errosCampo.cpfCnpjForn }>
             <input
               id="cpfCnpjForn"
-              type='number'
-              value={ form.cpfCnpjForn ?? '' }
+              type='text'
+              inputMode='numeric'
+              value={ form.cpfCnpjForn }
               onChange={ ( evento ) =>
-                setForm ( { ...form, cpfCnpjForn: evento.target.value.replace ( /\D/g, '' ) || undefined } )
+                setForm ( { ...form, cpfCnpjForn: evento.target.value.replace ( /\D/g, '' ) } )
               }
               maxLength={ 14 }
               placeholder="Somente dígitos"
+              required
             />
           </FormCampo>
 
-          <FormCampo label="Inscrição estadual / Sub. trib." colunas={ 4 } htmlFor="inscEstSubTrib" erro={ errosCampo.inscEstSubTrib }>
+          <FormCampo label="Inscrição estadual / Sub. trib." obrigatorio colunas={ 4 } htmlFor="inscEstSubTrib" erro={ errosCampo.inscEstSubTrib }>
             <input
               id="inscEstSubTrib"
               type='number'
-              value={ form.inscEstSubTrib ?? '' }
-              onChange={ ( evento ) => setForm ( { ...form, inscEstSubTrib: evento.target.value || undefined } ) }
+              value={ form.inscEstSubTrib }
+              onChange={ ( evento ) => setForm ( { ...form, inscEstSubTrib: evento.target.value } ) }
               maxLength={ 15 }
+              required
             />
           </FormCampo>
 

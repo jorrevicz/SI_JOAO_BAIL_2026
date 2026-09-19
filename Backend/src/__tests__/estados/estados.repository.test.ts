@@ -57,6 +57,13 @@ describe ( 'EstadosRepository (rollback)', () => {
             const achado = await repo.FindById ( novo.codEstado, transaction );
 
             expect ( achado ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "Estados" WHERE "codEstado" = ${ novo.codEstado }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError } from '../../services/api';
-import { type Estado } from '../../services/estados';
+import { estadosService, type Estado } from '../../services/estados';
 import { cidadesService, type Cidade, type CreateCidadeInput } from '../../services/cidades';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
@@ -21,6 +21,7 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
     ddd:       inicial.ddd       ?? '',
     isActive:  inicial.isActive  ?? true,
   } );
+  const [ codEstadoSel, setCodEstadoSel ] = useState ( 0 );
   const [ nomeEstadoSel, setNomeEstadoSel ] = useState ( '' );
   const [ consultando, setConsultando ] = useState ( false );
   const [ erro, setErro ] = useState ( '' );
@@ -65,10 +66,23 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
     }
   };
 
-  const handleSelecionarEstado = ( estado: Estado ) =>
+  useEffect ( () =>
   {
-    setForm ( { ...form, codEstado: estado.codEstado } );
-    setNomeEstadoSel ( estado.estado );
+    if ( inicial.codEstado )
+    {
+      estadosService.obter ( inicial.codEstado ).then ( ( oEstado ) =>
+      {
+        setCodEstadoSel ( oEstado.codEstado );
+        setNomeEstadoSel ( oEstado.estado );
+      } );
+    }
+  });
+
+  const handleSelecionarEstado = ( oEstado: Estado ) =>
+  {
+    setForm ( { ...form, codEstado: oEstado.codEstado } );
+    setCodEstadoSel ( oEstado.codEstado )
+    setNomeEstadoSel ( oEstado.estado );
     setConsultando ( false );
   }
 
@@ -81,25 +95,6 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
         onSubmit={ submit }
       >
         <FormSecao>
-          <FormCampo label="Estado" obrigatorio colunas={ 4 } erro={ errosCampo.codEstado }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultando ( true ) }
-              >
-                Consultar
-              </Botao>
-              {
-                nomeEstadoSel && (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    { nomeEstadoSel }
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
           <FormCampo label="Nome da cidade" obrigatorio colunas={ 4 } htmlFor="cidade" erro={ errosCampo.cidade }>
             <input
               id="cidade"
@@ -112,16 +107,62 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
 
-          <FormCampo label="DDD" colunas={ 2 } htmlFor="ddd" erro={ errosCampo.ddd }>
+          <FormCampo label="DDD" obrigatorio colunas={ 2 } htmlFor="ddd" erro={ errosCampo.ddd }>
             <input
               id="ddd"
               type='number'
-              value={ form.ddd ?? '' }
-              onChange={ ( evento ) => setForm ( { ...form, ddd: evento.target.value.toLocaleUpperCase() || undefined } ) }
+              value={ form.ddd }
+              onChange={ ( evento ) => setForm ( { ...form, ddd: evento.target.value.toLocaleUpperCase() } ) }
               maxLength={ 2 }
               placeholder="11"
+              required
             />
           </FormCampo>
+        </FormSecao>
+        <FormSecao>
+          <FormCampo label="Estado" obrigatorio colunas={ 2 } erro={ errosCampo.codEstado }>
+            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
+              <Botao
+                type='button'
+                $variante='secundario'
+                onClick={ () => setConsultando ( true ) }
+              >
+                Consultar
+              </Botao>
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Código do estado' colunas={ 2 }>
+            <div>
+              {
+                (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    <input
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ codEstadoSel }
+                    />
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo>
+
+          <FormCampo label='Nome do estado' colunas={ 4 }>
+            <div>
+              {
+                (
+                  <span style={ { fontSize: '0.875rem' } }>
+                    <input 
+                      disabled={ true }
+                      readOnly={ true }
+                      value={ nomeEstadoSel }
+                    />
+                  </span>
+                )
+              }
+            </div>
+          </FormCampo> 
 
           <FormCampo label='Status' colunas={ 2 }>
             <CaixaSelecao

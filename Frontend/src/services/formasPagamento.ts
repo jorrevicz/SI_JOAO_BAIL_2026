@@ -13,9 +13,9 @@ export interface FormaPagamento
 
 export interface CreateFormaPagamentoInput
 {
-  formaDePag:        string;
-  prazoCompensacao?: number;
-  isActive:          boolean;
+  formaDePag:       string;
+  prazoCompensacao: number;
+  isActive:         boolean;
 }
 
 export interface UpdateFormaPagamentoInput

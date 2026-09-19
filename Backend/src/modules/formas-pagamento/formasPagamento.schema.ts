@@ -10,11 +10,10 @@ export const createFormaPagamentoSchema = z.object
             .max ( 50 ),
         prazoCompensacao: z
             .coerce.number ( {
-                message: 'Prazo deve ser um número inteiro.'
+                message: 'O prazo de compensação é obrigatório.'
             } )
             .int ( 'Prazo deve ser um número inteiro.' )
-            .nonnegative ( 'Prazo não pode ser negativo.' )
-            .optional(),
+            .nonnegative ( 'Prazo não pode ser negativo.' ),
     }
 );
 

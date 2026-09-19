@@ -85,18 +85,14 @@ describe ( 'ProdutosService', () =>
         repo.Create.mockResolvedValue ( { codProd: 1 } );
         categoriasRepo.FindById.mockResolvedValue ( { codCategoria: 3 } );
 
-        await service.CreateProduto
-        (
-            { produto: 'Teclado USB', categorias: [ { codCategoria: 3 } ] },
-            7
-        );
+        const dados = {
+            produto: 'Teclado USB', categorias: [ { codCategoria: 3 } ],
+            undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custo: 0,
+        };
 
-        expect ( repo.Create ).toHaveBeenCalledWith
-        (
-            { produto: 'Teclado USB', categorias: [ { codCategoria: 3 } ] },
-            7,
-            {}
-        );
+        await service.CreateProduto ( dados, 7 );
+
+        expect ( repo.Create ).toHaveBeenCalledWith ( dados, 7, {} );
     });
 
     it ( 'CreateProduto cria um vínculo por categoria do array', async () =>
@@ -109,6 +105,7 @@ describe ( 'ProdutosService', () =>
             {
                 produto:    'Teclado USB',
                 categorias: [ { codCategoria: 3 }, { codCategoria: 5 } ],
+                undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custo: 0,
             },
             7
         );
@@ -127,7 +124,10 @@ describe ( 'ProdutosService', () =>
         (
             service.CreateProduto
             (
-                { produto: 'Teclado USB', categorias: [ { codCategoria: 999 } ] },
+                {
+                    produto: 'Teclado USB', categorias: [ { codCategoria: 999 } ],
+                    undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custo: 0,
+                },
                 7
             )
         ).rejects.toMatchObject ( { status: 400 } );
@@ -144,7 +144,7 @@ describe ( 'ProdutosService', () =>
             service.UpdateProduto
             (
                 99,
-                { produto: 'X', categorias: [ { codCategoria: 1 } ], isActive: true },
+                { produto: 'X', categorias: [ { codCategoria: 1 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
                 1
             )
         ).rejects.toMatchObject ( { status: 404 } );
@@ -159,7 +159,7 @@ describe ( 'ProdutosService', () =>
         await service.UpdateProduto
         (
             1,
-            { produto: 'X', categorias: [ { codCategoria: 4 } ], isActive: true },
+            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
             1
         );
 
@@ -179,7 +179,7 @@ describe ( 'ProdutosService', () =>
         await service.UpdateProduto
         (
             1,
-            { produto: 'X', categorias: [ { codCategoria: 4 } ], isActive: true },
+            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
             1
         );
 
@@ -199,7 +199,7 @@ describe ( 'ProdutosService', () =>
         await service.UpdateProduto
         (
             1,
-            { produto: 'X', categorias: [ { codCategoria: 4 } ], isActive: true },
+            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
             1
         );
 

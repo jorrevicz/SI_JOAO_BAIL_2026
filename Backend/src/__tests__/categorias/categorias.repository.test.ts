@@ -68,6 +68,13 @@ describe ( 'CategoriasRepository (rollback)', () =>
 
             const achada = await repo.FindById ( nova.codCategoria, transaction );
             expect ( achada ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "Categorias" WHERE "codCategoria" = ${ nova.codCategoria }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 

@@ -42,10 +42,12 @@ describe ( 'PaisesRepository (rollback)', () => {
             async ( transaction ) => {
                 const novo = await repo.Create 
                 ( 
-                    { 
-                        pais: 'Tmp', 
-                        sigla: 'TZ'
-                    }, 
+                    {
+                        pais: 'Tmp',
+                        sigla: 'TZ',
+                        ddi: '99',
+                        moeda: 'TZS'
+                    },
                     1, 
                     transaction
                 );
@@ -53,6 +55,13 @@ describe ( 'PaisesRepository (rollback)', () => {
 
                 const achado = await repo.FindById ( novo.codPais, transaction );
                 expect ( achado ).toBeNull();
+
+                const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                    SELECT "isActive" FROM "Paises" WHERE "codPais" = ${ novo.codPais }
+                `;
+
+                expect ( linhaCrua ).toBeDefined();
+                expect ( linhaCrua.isActive ).toBe ( false );
             }
         );
     });

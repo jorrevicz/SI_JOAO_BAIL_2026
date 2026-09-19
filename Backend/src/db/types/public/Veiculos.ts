@@ -10,9 +10,9 @@ export type VeiculosCodVeiculo = number & { __brand: 'public.Veiculos' };
 export default interface Veiculos {
   codVeiculo: VeiculosCodVeiculo;
 
-  modeloVeiculo: string | null;
+  modeloVeiculo: string;
 
-  marca: string | null;
+  marca: string;
 
   codEstado: EstadosCodEstado | null;
 
@@ -20,7 +20,7 @@ export default interface Veiculos {
 
   placaMercoSul: string | null;
 
-  codAntt: string | null;
+  codAntt: string;
 
   dtCriacao: Date;
 
@@ -35,9 +35,9 @@ export default interface Veiculos {
 export interface VeiculosInitializer {
   codVeiculo?: VeiculosCodVeiculo;
 
-  modeloVeiculo?: string | null;
+  modeloVeiculo: string;
 
-  marca?: string | null;
+  marca: string;
 
   codEstado?: EstadosCodEstado | null;
 
@@ -45,7 +45,7 @@ export interface VeiculosInitializer {
 
   placaMercoSul?: string | null;
 
-  codAntt?: string | null;
+  codAntt: string;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -63,9 +63,9 @@ export interface VeiculosInitializer {
 export interface VeiculosMutator {
   codVeiculo?: VeiculosCodVeiculo;
 
-  modeloVeiculo?: string | null;
+  modeloVeiculo?: string;
 
-  marca?: string | null;
+  marca?: string;
 
   codEstado?: EstadosCodEstado | null;
 
@@ -73,7 +73,7 @@ export interface VeiculosMutator {
 
   placaMercoSul?: string | null;
 
-  codAntt?: string | null;
+  codAntt?: string;
 
   dtCriacao?: Date;
 

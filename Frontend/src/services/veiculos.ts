@@ -18,11 +18,11 @@ export interface Veiculo
 export interface CreateVeiculoInput
 {
   placaVeiculo:  string;
-  modeloVeiculo?: string;
-  marca?:         string;
+  modeloVeiculo:  string;
+  marca:          string;
   codEstado?:     number;
   placaMercoSul?: string;
-  codAntt?:       string;
+  codAntt:        string;
   isActive:       boolean;
 }
 

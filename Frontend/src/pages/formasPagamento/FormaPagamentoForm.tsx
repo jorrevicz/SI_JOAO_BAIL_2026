@@ -15,7 +15,7 @@ export function FormaPagamentoForm ( { inicial, onSalvo, onCancelar }: Props )
 {
   const [ form, setForm ] = useState < CreateFormaPagamentoInput > ({
     formaDePag:       inicial.formaDePag       ?? '',
-    prazoCompensacao: inicial.prazoCompensacao ?? undefined,
+    prazoCompensacao: inicial.prazoCompensacao ?? 0,
     isActive:         inicial.isActive         ?? true,
   });
   const [ erro, setErro ] = useState ( '' );
@@ -85,19 +85,20 @@ export function FormaPagamentoForm ( { inicial, onSalvo, onCancelar }: Props )
           />
         </FormCampo>
 
-        <FormCampo label="Prazo de compensação (dias)" colunas={ 3 } htmlFor="prazoCompensacao" erro={ errosCampo.prazoCompensacao }>
+        <FormCampo label="Prazo de compensação (dias)" obrigatorio colunas={ 3 } htmlFor="prazoCompensacao" erro={ errosCampo.prazoCompensacao }>
           <input
             id="prazoCompensacao"
             type="number"
             min="0"
             step="1"
-            value={ form.prazoCompensacao ?? '' }
+            value={ form.prazoCompensacao }
             onChange={ ( evento ) =>
-              setForm ( { ...form, prazoCompensacao: evento.target.value ? parseInt ( evento.target.value ) : undefined } )
+              setForm ( { ...form, prazoCompensacao: evento.target.value ? parseInt ( evento.target.value ) : 0 } )
             }
             placeholder="0"
             disabled={ editando }
             readOnly={ editando }
+            required
           />
         </FormCampo>
 

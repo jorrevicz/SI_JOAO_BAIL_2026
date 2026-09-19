@@ -10,11 +10,11 @@ export default interface Produtos {
 
   produto: string;
 
-  undProduto: string | null;
+  undProduto: string;
 
-  pesoBruto: string | null;
+  pesoBruto: string;
 
-  pesoLiq: string | null;
+  pesoLiq: string;
 
   saldoProd: string;
 
@@ -37,11 +37,11 @@ export interface ProdutosInitializer {
 
   produto: string;
 
-  undProduto?: string | null;
+  undProduto: string;
 
-  pesoBruto?: string | null;
+  pesoBruto: string;
 
-  pesoLiq?: string | null;
+  pesoLiq: string;
 
   /** Default value: 0 */
   saldoProd?: string;
@@ -70,11 +70,11 @@ export interface ProdutosMutator {
 
   produto?: string;
 
-  undProduto?: string | null;
+  undProduto?: string;
 
-  pesoBruto?: string | null;
+  pesoBruto?: string;
 
-  pesoLiq?: string | null;
+  pesoLiq?: string;
 
   saldoProd?: string;
 

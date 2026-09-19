@@ -13,6 +13,21 @@ import type postgres from 'postgres';
 const COD_USER_TESTE = 1;
 
 /**
+ * "Paises" tem índices únicos em "sigla" e "ddi" — um valor fixo colidiria entre
+ * arquivos de teste rodando em paralelo (e com países inseridos fora de uma transação
+ * revertida, como em contasPagamento.routes.test.ts). Cada chamada gera um valor novo.
+ */
+function gerarSiglaEDdiUnicos(): { sigla: string; ddi: string }
+{
+    const sufixo = Math.floor ( Math.random() * 1000 ).toString().padStart ( 3, '0' );
+
+    return {
+        sigla: `Z${ sufixo.slice ( 0, 2 ) }`,
+        ddi:   sufixo,
+    };
+}
+
+/**
  * Insere um país descartável e devolve o "codPais" gerado.
  */
 export async function criarPaisDeTeste
@@ -20,17 +35,23 @@ export async function criarPaisDeTeste
     transaction: postgres.TransactionSql
 ): Promise < number >
 {
+    const { sigla, ddi } = gerarSiglaEDdiUnicos();
+
     const [ pais ] = await transaction < { codPais: number }[] >`
         INSERT INTO "Paises"
         (
             "pais",
             "sigla",
+            "ddi",
+            "moeda",
             "codUser"
         )
         VALUES
         (
             'TESTE',
-            'ZZ',
+            ${ sigla },
+            ${ ddi },
+            'ZZZ',
             ${ COD_USER_TESTE }
         )
         RETURNING "codPais"
@@ -149,6 +170,11 @@ export async function criarFornecedorDeTeste
             "codCidade",
             "codCondDePag",
             "fornecedor",
+            "tipoPessoa",
+            "cepForn",
+            "foneForn",
+            "cpfCnpjForn",
+            "inscEstSubTrib",
             "codUser"
         )
         VALUES
@@ -156,6 +182,11 @@ export async function criarFornecedorDeTeste
             ${ codCidade },
             ${ codCondDePag },
             'FORNECEDOR DE TESTE',
+            'JURIDICA',
+            '00000000',
+            '00000000000',
+            '00000000000000',
+            '000000000000',
             ${ COD_USER_TESTE }
         )
         RETURNING "codForn"
@@ -211,11 +242,13 @@ export async function criarFormaDePagamentoDeTeste
         INSERT INTO "FormaDePagamento"
         (
             "formaDePag",
+            "prazoCompensacao",
             "codUser"
         )
         VALUES
         (
             'FORMA DE TESTE',
+            0,
             ${ COD_USER_TESTE }
         )
         RETURNING "codFormaDePag"
@@ -266,12 +299,16 @@ export async function criarProdutoDeTeste
         (
             "produto",
             "undProduto",
+            "pesoBruto",
+            "pesoLiq",
             "codUser"
         )
         VALUES
         (
             ${ produto },
             'UN',
+            1,
+            0.9,
             ${ COD_USER_TESTE }
         )
         RETURNING "codProd"

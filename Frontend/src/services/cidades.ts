@@ -16,7 +16,7 @@ export interface CreateCidadeInput
 {
   codEstado: number;
   cidade: string;
-  ddd?: string;
+  ddd: string;
   isActive: boolean;
 }
 

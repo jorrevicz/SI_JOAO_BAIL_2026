@@ -25,24 +25,24 @@ export interface Produto
 
 export interface CreateProdutoInput
 {
-  produto:     string;
-  categorias:  CategoriaProdutoInput[];
-  undProduto?: string;
-  estoque?:    number;
-  custo?:      number;
-  pesoBruto?:  number;
-  pesoLiq?:    number;
-  isActive:    boolean;
+  produto:    string;
+  categorias: CategoriaProdutoInput[];
+  undProduto: string;
+  estoque:    number;
+  custo:      number;
+  pesoBruto:  number;
+  pesoLiq:    number;
+  isActive:   boolean;
 }
 
 export interface UpdateProdutoInput
 {
-  produto:     string;
-  categorias:  CategoriaProdutoInput[];
-  undProduto?: string;
-  pesoBruto?:  number;
-  pesoLiq?:    number;
-  isActive:    boolean;
+  produto:    string;
+  categorias: CategoriaProdutoInput[];
+  undProduto: string;
+  pesoBruto:  number;
+  pesoLiq:    number;
+  isActive:   boolean;
 }
 
 export const produtosService = {
