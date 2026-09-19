@@ -160,6 +160,46 @@ describe ( 'ContasPagamento routes', () =>
         });
     });
 
+    it ( 'POST /api/contas-pagamento com número zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( BASE )
+            .send ({
+                numero: '00000000', modelo: '01', serie: '01', parcela: 1,
+                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'numero' );
+    });
+
+    it ( 'POST /api/contas-pagamento com modelo e série zero-preenchidos retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( BASE )
+            .send ({
+                numero: '00000211', modelo: '00', serie: '00', parcela: 1,
+                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'modelo' );
+        expect ( res.body.erros ).toHaveProperty ( 'serie' );
+    });
+
+    it ( 'POST /api/contas-pagamento com valor zero-preenchido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( BASE )
+            .send ({
+                numero: '00000212', modelo: '01', serie: '01', parcela: 1,
+                codFornecedor, codFormaDePag, valor: '0.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'valor' );
+    });
+
     it ( 'POST /api/contas-pagamento com fornecedor inexistente retorna 400', async () =>
     {
         const res = await request ( app )
@@ -242,6 +282,23 @@ describe ( 'ContasPagamento routes', () =>
 
         expect ( res.status ).toBe ( 404 );
         expect ( res.body ).toEqual ( { mensagem: 'Conta a pagar não encontrada.' } );
+    });
+
+    it ( 'PATCH /api/contas-pagamento/:.../baixa com valor zero-preenchido retorna 400', async () =>
+    {
+        await request ( app )
+            .post ( BASE )
+            .send ({
+                numero: '00000213', modelo: '01', serie: '01', parcela: 1,
+                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+            });
+
+        const res = await request ( app )
+            .patch ( `${ BASE }/00000213/01/01/1/baixa` )
+            .send ( { valorBaixa: '0.00', dtBaixa: '2026-01-15' } );
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'valorBaixa' );
     });
 
     it ( 'PATCH /api/contas-pagamento/:.../baixa registra a baixa e retorna a conta completa', async () =>
