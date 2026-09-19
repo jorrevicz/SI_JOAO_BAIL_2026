@@ -18,6 +18,7 @@ import CondicoesPagamentoRoutes from './modules/condicoes-pagamento/condicoesPag
 import FormasPagamentoRoutes    from './modules/formas-pagamento/formasPagamento.routes';
 import ParcelasRoutes           from './modules/parcelas/parcelas.routes';
 import ContasPagamentoRoutes    from './modules/contas-pagamento/contas-pagamento.routes';
+import ContasReceberRoutes      from './modules/contas-receber/contas-receber.routes';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use ( '/api/condicoes-pagamento', CondicoesPagamentoRoutes );
 app.use ( '/api/formas-pagamento',    FormasPagamentoRoutes    );
 app.use ( '/api/parcelas',            ParcelasRoutes           );
 app.use ( '/api/contas-pagamento',    ContasPagamentoRoutes    );
+app.use ( '/api/contas-receber',      ContasReceberRoutes      );
 
 // 404 para rotas não mapeadas
 app.use 

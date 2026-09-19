@@ -165,6 +165,41 @@ export async function criarFornecedorDeTeste
 }
 
 /**
+ * Insere um cliente descartável e devolve o "codCliente" gerado.
+ */
+export async function criarClienteDeTeste
+(
+    transaction: postgres.TransactionSql
+): Promise < number >
+{
+    const codCidade = await criarCidadeDeTeste ( transaction );
+
+    const [ cliente ] = await transaction < { codCliente: number }[] >`
+        INSERT INTO "Clientes"
+        (
+            "codCidade",
+            "cliente",
+            "tipoPessoa",
+            "cepCl",
+            "foneCl",
+            "codUser"
+        )
+        VALUES
+        (
+            ${ codCidade },
+            'CLIENTE DE TESTE',
+            'JURIDICA',
+            '00000000',
+            '00000000000',
+            ${ COD_USER_TESTE }
+        )
+        RETURNING "codCliente"
+    `;
+
+    return cliente.codCliente;
+}
+
+/**
  * Insere uma forma de pagamento descartável e devolve o "codFormaDePag" gerado.
  */
 export async function criarFormaDePagamentoDeTeste
