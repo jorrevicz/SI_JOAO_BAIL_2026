@@ -10,13 +10,14 @@ function MakeRepo
 )
 {
     return {
-        List:           vi.fn(),
-        FindById:       vi.fn(),
-        Create:         vi.fn(),
-        Update:         vi.fn(),
-        RegistrarBaixa: vi.fn(),
-        Cancelar:       vi.fn(),
-        Delete:         vi.fn(),
+        List:            vi.fn(),
+        FindById:        vi.fn(),
+        ExisteDocumento: vi.fn(),
+        Create:          vi.fn(),
+        Update:          vi.fn(),
+        RegistrarBaixa:  vi.fn(),
+        Cancelar:        vi.fn(),
+        Delete:          vi.fn(),
         ...over,
     };
 }
@@ -78,7 +79,7 @@ describe ( 'ContasPagamentoService', () =>
 
     describe ( 'CreateConta', () =>
     {
-        const dados = { ...ID_TESTE, codFornecedor: 1, codFormaDepag: 2 } as never;
+        const dados = { ...ID_TESTE, codFornecedor: 1, codFormaDePag: 2 } as never;
 
         it ( 'lança 400 quando o fornecedor informado não existe', async () =>
         {
@@ -97,15 +98,30 @@ describe ( 'ContasPagamentoService', () =>
             expect ( repo.Create ).not.toHaveBeenCalled();
         });
 
-        it ( 'delega ao repositório quando fornecedor e forma de pagamento existem', async () =>
+        it ( 'lança 409 quando já existe um documento com este número, modelo e série', async () =>
+        {
+            fornecedoresRepo.FindById.mockResolvedValue ( { codForn: 1 } );
+            formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 2 } );
+            repo.ExisteDocumento.mockResolvedValue ( true );
+
+            await expect ( service.CreateConta ( dados, 1 ) ).rejects.toMatchObject ( { status: 409 } );
+            expect ( repo.Create ).not.toHaveBeenCalled();
+        });
+
+        it ( 'delega ao repositório quando fornecedor e forma de pagamento existem e o documento é inédito', async () =>
         {
             const criada = { ...ID_TESTE, codFornecedor: 1 };
             fornecedoresRepo.FindById.mockResolvedValue ( { codForn: 1 } );
             formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 2 } );
+            repo.ExisteDocumento.mockResolvedValue ( false );
             repo.Create.mockResolvedValue ( criada );
 
             const resultado = await service.CreateConta ( dados, 1 );
 
+            expect ( repo.ExisteDocumento ).toHaveBeenCalledWith
+            (
+                { numero: ID_TESTE.numero, modelo: ID_TESTE.modelo, serie: ID_TESTE.serie }
+            );
             expect ( repo.Create ).toHaveBeenCalledWith ( dados, 1 );
             expect ( resultado ).toEqual ( criada );
         });
@@ -113,7 +129,7 @@ describe ( 'ContasPagamentoService', () =>
 
     describe ( 'UpdateConta', () =>
     {
-        const dados = { ...ID_TESTE, codFornecedor: 1, codFormaDepag: 2, isActive: true } as never;
+        const dados = { ...ID_TESTE, codFornecedor: 1, codFormaDePag: 2, isActive: true } as never;
 
         it ( 'lança 400 quando o fornecedor informado não existe', async () =>
         {

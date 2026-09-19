@@ -1,26 +1,10 @@
 import { z } from "zod";
+import { documentoFiscalSchema } from '../../shared/documento-fiscal/documentoFiscal.schema';
 
 export const createContasAPagarSchema = z.object
 (
     {
-        numero: z
-            .coerce.string ( { message: "O código numérico deve ser campo numérico com zeros à esquerda (ex: '01234567')." } )
-            .min ( 8 )
-            .max ( 8 )
-            .nonempty ( { message: "A conta deve possuir um código numérico."} )
-            .regex ( /^[0-9]+$/, 'O identificador deve conter apenas números.' ),
-        modelo: z
-            .coerce.string ( { message: "O código do modelo deve ser campo numérico com zeros à esquerda (ex: '01234567')."})
-            .min ( 2 )
-            .max ( 2 )
-            .nonempty ( { message: "A conta deve possuir um código do modelo." } )
-            .regex ( /^[0-9]+$/, 'O identificador deve conter apenas números.' ),
-        serie: z
-            .coerce.string ( { message: "O código de série deve ser campo numérico com zeros à esquerda (ex: '01234567')."})
-            .min ( 2 )
-            .max ( 2 )
-            .nonempty ( { message: "A conta deve possuir um código de série." } )
-            .regex ( /^[0-9]+$/, 'O identificador deve conter apenas números.' ),
+        ...documentoFiscalSchema.shape,
         parcela: z
             .coerce.number ( { message: "O código da parcela deve ser um número."})
             .int()
@@ -35,7 +19,7 @@ export const createContasAPagarSchema = z.object
         dtEmissao: z
             .coerce.date ( { message: "A data de emissão é inválida"})
             .optional(),
-        codFormaDepag: z
+        codFormaDePag: z
             .coerce.number ( { message: "O código da forma de pagamento deve ser um número."})
             .int()
             .positive(),
@@ -53,15 +37,15 @@ export const createContasAPagarSchema = z.object
             .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da conta deve ser um decimal e positivo." ),
         valorBaixa: z
             .coerce.string ( { message: "O valor da baixa deve ser uma string decimal."})
-            .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor do juro deve ser um decimal e positivo." )
-            .optional(),
+            .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da baixa deve ser um decimal e positivo." )
+            .nullish(),
         dtBaixa: z
             .coerce.date ( { message: "A data da baixa é inválida"})
-            .optional(),
+            .nullish(),
         justificativaCancelamento: z
             .coerce.string ( { message: "A justificativa deve ser uma string" } )
             .max ( 255 )
-            .optional(),
+            .nullish(),
         isActive: z
             .boolean()
             .default ( true )

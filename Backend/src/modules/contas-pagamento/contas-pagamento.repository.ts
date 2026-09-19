@@ -1,6 +1,7 @@
 import type postgres from 'postgres';
 import sql from '../../lib/db';
 import type ContasAPagar from '../../db/types/public/ContasAPagar';
+import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
 import type { CreateContasAPAgarInput, UpdateContasAPagarInput } from './contas-pagamento.schema';
 
 export interface ContaAPagarId
@@ -64,6 +65,26 @@ export class ContasPagamentoRepository
         return row ?? null;
     }
 
+    async ExisteDocumento
+    (
+        chave: DocumentoFiscalChave,
+        transaction?: postgres.TransactionSql
+    ): Promise < boolean >
+    {
+        const client = transaction ?? sql;
+        const [ row ] = await client`
+            SELECT 1
+            FROM   "ContasAPagar"
+            WHERE  "numero" = ${ chave.numero }
+            AND    "modelo" = ${ chave.modelo }
+            AND    "serie"  = ${ chave.serie }
+            AND    "isActive" = true
+            LIMIT  1
+        `;
+
+        return row !== undefined;
+    }
+
     async Create
     (
         conta: CreateContasAPAgarInput,
@@ -96,7 +117,7 @@ export class ContasPagamentoRepository
                 ${ conta.serie },
                 ${ conta.parcela },
                 ${ conta.codFornecedor },
-                ${ conta.codFormaDepag },
+                ${ conta.codFormaDePag },
                 ${ conta.dtEmissao ?? null },
                 ${ conta.dtVencimento ?? null },
                 ${ conta.valor ?? null },
@@ -123,7 +144,7 @@ export class ContasPagamentoRepository
         const [ row ] = await client < ContasAPagar[] >`
             UPDATE "ContasAPagar"
             SET    "codFornecedor" = ${ conta.codFornecedor },
-                   "codFormaDePag" = ${ conta.codFormaDepag },
+                   "codFormaDePag" = ${ conta.codFormaDePag },
                    "dtEmissao"     = ${ conta.dtEmissao ?? null },
                    "dtVencimento"  = ${ conta.dtVencimento ?? null },
                    "valor"         = ${ conta.valor ?? null },

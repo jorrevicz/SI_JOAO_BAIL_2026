@@ -19,7 +19,7 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
         await withTestTransaction ( async ( transaction ) =>
         {
             const codFornecedor = await criarFornecedorDeTeste ( transaction );
-            const codFormaDepag = await criarFormaDePagamentoDeTeste ( transaction );
+            const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
 
             const nova = await repo.Create
             (
@@ -29,7 +29,7 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
                     serie:   '01',
                     parcela: 1,
                     codFornecedor,
-                    codFormaDepag,
+                    codFormaDePag,
                     valor: '150.00',
                     juro: '0.00',
                     desconto: '0.00',
@@ -54,19 +54,68 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
         });
     });
 
+    it ( 'ExisteDocumento retorna true quando já há conta com o mesmo numero/modelo/serie', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codFornecedor = await criarFornecedorDeTeste ( transaction );
+            const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
+
+            await repo.Create
+            (
+                {
+                    numero:  '00009001',
+                    modelo:  '01',
+                    serie:   '01',
+                    parcela: 1,
+                    codFornecedor,
+                    codFormaDePag,
+                    valor: '100.00',
+                    juro: '0.00',
+                    desconto: '0.00',
+                    multa: '0.00',
+                } as never,
+                1,
+                transaction
+            );
+
+            const existe = await repo.ExisteDocumento
+            (
+                { numero: '00009001', modelo: '01', serie: '01' },
+                transaction
+            );
+
+            expect ( existe ).toBe ( true );
+        });
+    });
+
+    it ( 'ExisteDocumento retorna false quando não há conta com o numero/modelo/serie informados', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const existe = await repo.ExisteDocumento
+            (
+                { numero: '00009999', modelo: '01', serie: '01' },
+                transaction
+            );
+
+            expect ( existe ).toBe ( false );
+        });
+    });
+
     it ( 'Update altera os campos mutáveis dentro da transação', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
             const codFornecedor = await criarFornecedorDeTeste ( transaction );
-            const codFormaDepag = await criarFormaDePagamentoDeTeste ( transaction );
+            const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
             const outraForma    = await criarFormaDePagamentoDeTeste ( transaction );
 
             const id: ContaAPagarId = { numero: '00000002', modelo: '01', serie: '01', parcela: 1 };
 
             await repo.Create
             (
-                { ...id, codFornecedor, codFormaDepag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never,
+                { ...id, codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never,
                 1,
                 transaction
             );
@@ -74,7 +123,7 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
             const atualizada = await repo.Update
             (
                 id,
-                { codFornecedor, codFormaDepag: outraForma, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true } as never,
+                { codFornecedor, codFormaDePag: outraForma, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true } as never,
                 1,
                 transaction
             );
@@ -89,10 +138,10 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
         await withTestTransaction ( async ( transaction ) =>
         {
             const codFornecedor = await criarFornecedorDeTeste ( transaction );
-            const codFormaDepag = await criarFormaDePagamentoDeTeste ( transaction );
+            const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
             const id: ContaAPagarId = { numero: '00000003', modelo: '01', serie: '01', parcela: 1 };
 
-            await repo.Create ( { ...id, codFornecedor, codFormaDepag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...id, codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
 
             const dtBaixa = new Date ( '2026-01-15T00:00:00Z' );
             const baixada = await repo.RegistrarBaixa ( id, '100.00', dtBaixa, 1, transaction );
@@ -107,10 +156,10 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
         await withTestTransaction ( async ( transaction ) =>
         {
             const codFornecedor = await criarFornecedorDeTeste ( transaction );
-            const codFormaDepag = await criarFormaDePagamentoDeTeste ( transaction );
+            const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
             const id: ContaAPagarId = { numero: '00000004', modelo: '01', serie: '01', parcela: 1 };
 
-            await repo.Create ( { ...id, codFornecedor, codFormaDepag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...id, codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
 
             const cancelada = await repo.Cancelar ( id, 'Compra desfeita pelo fornecedor', 1, transaction );
 
@@ -124,14 +173,23 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
         await withTestTransaction ( async ( transaction ) =>
         {
             const codFornecedor = await criarFornecedorDeTeste ( transaction );
-            const codFormaDepag = await criarFormaDePagamentoDeTeste ( transaction );
+            const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
             const id: ContaAPagarId = { numero: '00000005', modelo: '01', serie: '01', parcela: 1 };
 
-            await repo.Create ( { ...id, codFornecedor, codFormaDepag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...id, codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
             await repo.Delete ( id, 1, transaction );
 
             const achada = await repo.FindById ( id, transaction );
             expect ( achada ).toBeNull();
+
+            const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
+                SELECT "isActive" FROM "ContasAPagar"
+                WHERE "numero" = ${ id.numero } AND "modelo" = ${ id.modelo }
+                AND   "serie"  = ${ id.serie }  AND "parcela" = ${ id.parcela }
+            `;
+
+            expect ( linhaCrua ).toBeDefined();
+            expect ( linhaCrua.isActive ).toBe ( false );
         });
     });
 
@@ -140,13 +198,13 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
         await withTestTransaction ( async ( transaction ) =>
         {
             const codFornecedor = await criarFornecedorDeTeste ( transaction );
-            const codFormaDepag = await criarFormaDePagamentoDeTeste ( transaction );
+            const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
 
             const primeira  = { numero: '00000006', modelo: '01', serie: '01', parcela: 1 };
             const segunda   = { numero: '00000007', modelo: '01', serie: '01', parcela: 1 };
 
-            await repo.Create ( { ...primeira, codFornecedor, codFormaDepag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
-            await repo.Create ( { ...segunda,  codFornecedor, codFormaDepag, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...primeira, codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...segunda,  codFornecedor, codFormaDePag, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
 
             const pagina = await repo.List ( 1, primeira, transaction );
 

@@ -49,8 +49,8 @@ describe ( 'ContasPagamento routes', () =>
     beforeAll ( async () =>
     {
         const [ pais ] = await sql < { codPais: number }[] >`
-            INSERT INTO "Paises" ( "pais", "sigla", "codUser" )
-            VALUES ( 'ROTACP', 'RC', 1 )
+            INSERT INTO "Paises" ( "pais", "sigla", "ddi", "moeda", "codUser" )
+            VALUES ( 'ROTACP', 'RC', '00', 'ZZZ', 1 )
             RETURNING "codPais"
         `;
         codPais = pais.codPais;
@@ -78,15 +78,19 @@ describe ( 'ContasPagamento routes', () =>
 
         const fornecedor = await new FornecedoresRepository().Create
         (
-            { codCidade, codCondDePag, fornecedor: 'Fornecedor Rota Contas Pagar' },
+            {
+                codCidade, codCondDePag, fornecedor: 'Fornecedor Rota Contas Pagar',
+                tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
+            },
             1
         );
         codFornecedor = fornecedor.codForn;
 
-        const forma = await new FormasPagamentoRepository().Create ( { formaDePag: 'Forma Rota Contas Pagar' }, 1 );
+        const forma = await new FormasPagamentoRepository().Create ( { formaDePag: 'Forma Rota Contas Pagar', prazoCompensacao: 0 }, 1 );
         codFormaDePag = forma.codFormaDePag;
 
-        const outraForma = await new FormasPagamentoRepository().Create ( { formaDePag: 'Outra Forma Rota Contas Pagar' }, 1 );
+        const outraForma = await new FormasPagamentoRepository().Create ( { formaDePag: 'Outra Forma Rota Contas Pagar', prazoCompensacao: 0 }, 1 );
         outraFormaDePag = outraForma.codFormaDePag;
     });
 
@@ -147,7 +151,7 @@ describe ( 'ContasPagamento routes', () =>
                 serie:         'Too big: expected string to have <=2 characters',
                 parcela:       'O código da parcela deve ser um número.',
                 codFornecedor: 'O código do fornecedor deve ser um número.',
-                codFormaDepag: 'O código da forma de pagamento deve ser um número.',
+                codFormaDePag: 'O código da forma de pagamento deve ser um número.',
                 juro:          'O valor do juro deve ser um decimal e positivo.',
                 desconto:      'O valor do desconto deve ser um decimal e positivo.',
                 multa:         'O valor da multa deve ser um decimal e positivo.',
@@ -162,7 +166,7 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000201', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor: 999999, codFormaDepag: codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor: 999999, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -175,7 +179,7 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000202', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDepag: 999999, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag: 999999, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -188,7 +192,7 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000203', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDepag: codFormaDePag, valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 201 );
@@ -207,14 +211,14 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000204', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDepag: codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const res = await request ( app )
             .put ( `${ BASE }/00000204/01/01/1` )
             .send ({
                 numero: '00000204', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDepag: outraFormaDePag, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
+                codFornecedor, codFormaDePag: outraFormaDePag, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
             });
 
         expect ( res.status ).toBe ( 200 );
@@ -233,7 +237,7 @@ describe ( 'ContasPagamento routes', () =>
             .put ( `${ BASE }/99999998/99/99/99` )
             .send ({
                 numero: '99999998', modelo: '99', serie: '99', parcela: 99,
-                codFornecedor, codFormaDepag: codFormaDePag, valor: '1.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
+                codFornecedor, codFormaDePag, valor: '1.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
             });
 
         expect ( res.status ).toBe ( 404 );
@@ -246,7 +250,7 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000205', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDepag: codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const res = await request ( app )
@@ -290,7 +294,7 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000206', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDepag: codFormaDePag, valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const res = await request ( app )
@@ -314,7 +318,7 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000207', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDepag: codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const del = await request ( app ).delete ( `${ BASE }/00000207/01/01/1` );

@@ -3,6 +3,7 @@ import { ContasPagamentoRepository } from './contas-pagamento.repository';
 import type { ContaAPagarId } from './contas-pagamento.repository';
 import { FornecedoresRepository } from '../fornecedores/fornecedores.repository';
 import { FormasPagamentoRepository } from '../formas-pagamento/formasPagamento.repository';
+import { ValidarDocumentoFiscalInexistente } from '../../shared/documento-fiscal/documentoFiscal.service';
 import type { CreateContasAPAgarInput, UpdateContasAPagarInput } from './contas-pagamento.schema';
 
 export class ContasPagamentoService
@@ -40,12 +41,18 @@ export class ContasPagamentoService
             throw new AppError ( 'Fornecedor informado não existe.', 400 );
         }
 
-        const forma = await this.formasRepo.FindById ( data.codFormaDepag );
+        const forma = await this.formasRepo.FindById ( data.codFormaDePag );
 
         if ( !forma )
         {
             throw new AppError ( 'Forma de pagamento informada não existe.', 400 );
         }
+
+        await ValidarDocumentoFiscalInexistente
+        (
+            { numero: data.numero, modelo: data.modelo, serie: data.serie },
+            ( chave ) => this.repo.ExisteDocumento ( chave )
+        );
 
         return this.repo.Create ( data, codUser );
     }
@@ -59,7 +66,7 @@ export class ContasPagamentoService
             throw new AppError ( 'Fornecedor informado não existe.', 400 );
         }
 
-        const forma = await this.formasRepo.FindById ( data.codFormaDepag );
+        const forma = await this.formasRepo.FindById ( data.codFormaDePag );
 
         if ( !forma )
         {
