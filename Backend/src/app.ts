@@ -23,6 +23,8 @@ import ProcedimentosRoutes      from './modules/procedimentos/procedimentos.rout
 import OrdensServicoRoutes      from './modules/ordens-servico/ordensServico.routes';
 import CargosRoutes             from './modules/cargos/cargos.routes';
 import FuncionariosRoutes       from './modules/funcionarios/funcionarios.routes';
+import ServicosRoutes           from './modules/servicos/servicos.routes';
+import PecasRoutes              from './modules/pecas/pecas.routes';
 
 const app = express();
 
@@ -60,6 +62,8 @@ app.use ( '/api/procedimentos',       ProcedimentosRoutes      );
 app.use ( '/api/ordens-servico',      OrdensServicoRoutes      );
 app.use ( '/api/cargos',              CargosRoutes             );
 app.use ( '/api/funcionarios',        FuncionariosRoutes       );
+app.use ( '/api/servicos',            ServicosRoutes           );
+app.use ( '/api/pecas',               PecasRoutes              );
 
 // 404 para rotas não mapeadas
 app.use 
