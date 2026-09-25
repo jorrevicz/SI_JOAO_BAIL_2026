@@ -121,8 +121,8 @@ Entidades e operações detalhadas em
 [Modelo de Domínio § Atendimento (Ordem de Serviço)](05-modelo-de-dominio.md#8-atendimento-ordem-de-serviço)
 (`OrdemDeServico`, `Aparelhos`, `Equipamentos`, `Procedimentos`, `ProcedimentosOdS` no
 Lote OS-A; `Cargos`, `Funcionarios`, `Servicos`, `Pecas`, `ServicosOdS`,
-`OrcamentoPecasOdS`, `SubstituirPecasOdS` — já criadas no banco, sem camada de
-aplicação — nos Lotes OS-B/OS-C).
+`OrcamentoPecasOdS`, `SubstituirPecasOdS` no Lote OS-B — backend concluído, frontend
+ainda pendente).
 
 > O esquema abaixo reflete a migration `add-ordem-de-servico-tables` (já aplicada ao
 > banco antes desta revisão da documentação) — ver nota de revisão na seção 8 do
@@ -189,13 +189,27 @@ de backend + frontend, consultas antes de escrita:
 
 ### Lote OS-B — Execução (serviços e peças) e Aprovação
 
-1. [ ] **Backend:** camada de aplicação para `Cargos`/`Funcionarios` (técnico
+1. [x] **Backend:** camada de aplicação para `Cargos`/`Funcionarios` (técnico
        responsável) e `Servicos`/`Pecas` (catálogos); linhas `ServicosOdS` e
        `OrcamentoPecasOdS`/`SubstituirPecasOdS` embutidas na OS.
-2. [ ] **Backend:** status (a definir — a migration atual não tem coluna de status;
-       decidir se é adicionada) e aprovação do cliente (`aprovado` em
-       `OrcamentoPecasOdS`).
+2. [x] **Backend:** `situacao` (máquina de estados — migration
+       `adicionar-situacao-ordem-de-servico`) e aprovação do cliente por item
+       (`aprovado` em `OrcamentoPecasOdS`, via `aprovarOrcamentoPeca()`/
+       `reprovarOrcamentoPeca()`).
 3. [ ] **Frontend:** tela de detalhes com linha de serviços/peças e aprovação.
+
+> **Backend concluído:** CRUDs em 4 camadas com testes TDD para `Cargos`, `Funcionarios`,
+> `Servicos` e `Pecas` (mesmo padrão dos demais cadastros de apoio). `registrarExecucaoOS()`
+> reconcilia `ServicosOdS`/`OrcamentoPecasOdS` por diferença de conjuntos (mesmo padrão de
+> `ProcedimentosOdS`); `aprovarOrcamentoPeca()`/`reprovarOrcamentoPeca()` decidem por item
+> (reprovar = soft delete da linha); `registrarSubstituicaoPecasOS()` é lançamento manual do
+> técnico, só aceito para peça orçada e aprovada, reconciliado pela mesma filosofia de
+> Parcelas × Condição de Pagamento. `situacao` progride automaticamente
+> (`Aberta` → `Em execução` → `Aguardando aprovação` ⇄ `Em execução`); `tipoOdS` foi
+> documentado como classificação livre da OS, não status — ver
+> [Modelo de Domínio § Atendimento](05-modelo-de-dominio.md#8-atendimento-ordem-de-serviço).
+>
+> **▶ Próximo passo:** frontend do Lote OS-B (tela de execução/aprovação da OS).
 
 ### Lote OS-C — Encerramento (cobrança) e Entrega
 

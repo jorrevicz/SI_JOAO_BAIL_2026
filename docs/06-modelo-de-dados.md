@@ -96,14 +96,14 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 | `Equipamentos` | `codEquipamento` | — | `equipamento`, `grupoUser` (opcional), `soEq`, `socketEq`, `memoriaRam`, `tipoOffice`, `placaMae`, `bios`, `capacidadeRam`, `possuiSSD`, `possuiHD`, `capacidadeArmz`, `usoArmz` — ficha técnica da máquina daquela OS |
 | `Procedimentos` | `codProcedimento` | — | `procedimento` VarChar(150) — catálogo de checagens padrão |
 | `ProcedimentosOdS` | (`numOdS`, `codProcedimento`) | → `OrdemDeServicos`, → `Procedimentos` | associativa N:N — `posicao` VarChar(8), `checagem` VarChar(8), `obsProcedimento` VarChar(244) opcional, `dthFim` — checklist respondido por OS |
-| `OrdemDeServicos` | `numOdS` CHAR(8) (natural) | `codCliente` → `Clientes`, `codAparelho` → `Aparelhos`, `codEquipamento` → `Equipamentos` | `atendente`, `solicitante`, `defeito` obrigatórios; `dtAtendimento`, `obsTecnica`, `historicoManutencao`, `entreguePara`, `dtExecucao`, `acessorio`, `obsBalcao` opcionais; `tipoOdS` |
-| `Cargos` | `codCargo` | — | `cargo` VarChar(15) — Lote OS-B, ainda sem camada de aplicação |
+| `OrdemDeServicos` | `numOdS` CHAR(8) (natural) | `codCliente` → `Clientes`, `codAparelho` → `Aparelhos`, `codEquipamento` → `Equipamentos` | `atendente`, `solicitante`, `defeito` obrigatórios; `dtAtendimento`, `obsTecnica`, `historicoManutencao`, `entreguePara`, `dtExecucao`, `acessorio`, `obsBalcao` opcionais; `tipoOdS` (classificação livre, ex.: "Garantia"); `situacao` VarChar(24) (máquina de estados — Lote OS-B, `DEFAULT 'Aberta'`, domínio fechado só em Zod, sem tabela de apoio) |
+| `Cargos` | `codCargo` | — | `cargo` VarChar(15) — Lote OS-B |
 | `Funcionarios` | `codFuncionario` | `codCidade` → `Cidades`, `codCargo` → `Cargos` | `funcionario`, `funcFone` — Lote OS-B |
 | `Servicos` | `codServico` | `codFuncionario` → `Funcionarios` | `servico`, `valor` — catálogo de serviços, Lote OS-B |
 | `Pecas` | `codPeca` | — | `peca` — catálogo simplificado de peças da OS, Lote OS-B |
 | `ServicosOdS` | (`codServico`, `numOdS`) | → `Servicos`, → `OrdemDeServicos` | associativa N:N — `qtdServico`, Lote OS-B |
-| `OrcamentoPecasOdS` | (`codPeca`, `numOdS`) | → `Pecas`, → `OrdemDeServicos` | associativa N:N — `vlrPv`, `aprovado`, Lote OS-B |
-| `SubstituirPecasOdS` | (`codPeca`, `numOdS`) | → `Pecas`, → `OrdemDeServicos` | associativa N:N — `qtdPeca`, `vlrUnitarioPeca`, Lote OS-B |
+| `OrcamentoPecasOdS` | (`codPeca`, `numOdS`) | → `Pecas`, → `OrdemDeServicos` | associativa N:N — `vlrPv`, `aprovado` (aprovação por item; reprovar = soft delete da linha), Lote OS-B |
+| `SubstituirPecasOdS` | (`codPeca`, `numOdS`) | → `Pecas`, → `OrdemDeServicos` | associativa N:N — `qtdPeca`, `vlrUnitarioPeca` (lançamento manual do técnico, só para peça orçada aprovada), Lote OS-B |
 
 ### Compras
 | Tabela | PK | FKs | Campos notáveis |

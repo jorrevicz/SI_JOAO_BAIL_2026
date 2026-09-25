@@ -110,7 +110,47 @@ compra e financeiro. Web API REST + SPA.
 > (`FormModal`/`FormSecao`/`FormCampo`, picker `Consulta` reaproveitado de `ClienteConsulta`,
 > reconciliação embutida de `CondicaoPagamentoForm`/`ParcelaForm`).
 >
-> **Próximo passo: Lote OS-B — Execução (serviços e peças) e Aprovação.**
+> **Lote OS-B — backend de Execução (serviços e peças) e Aprovação concluído:** CRUDs
+> em 4 camadas com testes TDD para `Cargos`, `Funcionarios`, `Servicos` e `Pecas`
+> (mesmo padrão dos demais cadastros de apoio). Migration `adicionar-situacao-ordem-de-servico`
+> acrescenta `situacao` (máquina de estados: `Aberta` → `Em execução` →
+> `Aguardando aprovação` ⇄ `Em execução`, estados finais reservados para o Lote OS-C) —
+> `tipoOdS` foi esclarecido na documentação como classificação livre da OS (não status).
+> `registrarExecucaoOS()` reconcilia `ServicosOdS`/`OrcamentoPecasOdS` por diferença de
+> conjuntos (mesmo padrão de `ProcedimentosOdS`); `aprovarOrcamentoPeca()`/
+> `reprovarOrcamentoPeca()` decidem por item (reprovar = soft delete da linha);
+> `registrarSubstituicaoPecasOS()` é lançamento manual do técnico, só aceito para peça
+> orçada e aprovada, reconciliado pela mesma filosofia de Parcelas × Condição de
+> Pagamento.
+>
+> **Fases de Diagnóstico e Execução reorganizadas (backend + frontend):** por decisão do
+> responsável pelo projeto, o orçamento de peças (`OrcamentoPecasOdS`) passou a nascer
+> junto do **diagnóstico** — é na inspeção que o técnico identifica o que precisa ser
+> trocado e já cota o valor — e as observações técnicas (`obsTecnica`) passaram a ser
+> registradas ao fim da **execução**, depois que o trabalho foi concluído (antes era o
+> inverso). `registrarDiagnosticoOS()` agora reconcilia `ProcedimentosOdS` **e**
+> `OrcamentoPecasOdS`; `registrarExecucaoOS()` reconcilia `ServicosOdS` e atualiza
+> `obsTecnica` (schema/service/repository e os 4 arquivos de teste do módulo
+> `ordens-servico` foram ajustados). **`DiagnosticoModal`** exibe, nessa ordem,
+> checklist de procedimentos → histórico de manutenção → orçamento de peças;
+> **`ExecucaoModal`** exibe serviços efetuados → peças substituídas (agora com tela
+> própria, ligada a `registrarSubstituicaoPecasOS()`, que já existia só no backend) →
+> observações técnicas. O registro de serviço efetuado ganhou consulta de técnico
+> (`TecnicoConsulta`, em `pages/funcionarios/`) que lista `Funcionarios` filtrados por
+> `Cargos.cargo = 'Técnico'` (comparação normalizada, sem acento/maiúsculas) — mesmo
+> padrão de `Consultar` + campos somente para verificação já usado em
+> `ProcedimentoOdSForm`/`ClienteConsulta`; o técnico não é persistido em `ServicosOdS`
+> (a tabela não tem essa coluna — ver [docs/05 §8](docs/05-modelo-de-dominio.md#servicosods-associativa-os--servico)),
+> é só conferência no ato do lançamento.
+>
+> **Ainda fora deste lote:** telas de cadastro (CRUD completo) de `Cargos`,
+> `Funcionarios`, `Servicos` e `Pecas` — só existem no backend; o frontend só tem o
+> picker `TecnicoConsulta` (somente leitura) necessário para a Execução. A UI de
+> aprovação/reprovação de orçamento de peças (`aprovarOrcamentoPeca()`/
+> `reprovarOrcamentoPeca()`) também ainda não tem tela própria.
+>
+> **Próximo passo: telas de cadastro de Cargos/Funcionarios/Servicos/Pecas e a UI de
+> aprovação/reprovação de orçamento de peças.**
 
 ## Fonte de verdade: leia `docs/` primeiro
 

@@ -175,13 +175,51 @@ Ativação comum: **clicar no item de menu** correspondente.
     (chave natural, não gerada pelo banco); duplicidade é rejeitada (409 PT — mesmo
     padrão de `Compras`/`ContasAPagar`/`ContasAReceber`).
   - **RN003 — Diagnóstico não é edição livre:** `registrarDiagnosticoOS()` é operação
-    dedicada (não passa pelo `Update` genérico) — atualiza `obsTecnica`,
-    `historicoManutencao`, preenche `dtAtendimento` (na primeira vez) e reconcilia a
-    checklist de `ProcedimentosOdS` por diferença de conjuntos (chave
-    `codProcedimento`), mesmo padrão de Condição de Pagamento × Parcelas.
-  - **Pós-condição:** consultar, abrir e registrar diagnóstico de ordens de serviço.
-- **Lotes OS-B/OS-C (execução, aprovação, encerramento, entrega, cancelamento):**
-  regras de negócio detalhadas quando cada lote for implementado — ver
+    dedicada (não passa pelo `Update` genérico) — atualiza `historicoManutencao`,
+    preenche `dtAtendimento` (na primeira vez), preenche a checagem (`posicao`,
+    `checagem`, `obsProcedimento`, `dthFim` — informados pelo técnico) de itens **já
+    existentes** na checklist de `ProcedimentosOdS` (ver RN009 — não adiciona, remove nem
+    reordena) e reconcilia, por diferença de conjuntos, o orçamento de peças
+    `OrcamentoPecasOdS` (chave `codPeca`) — o orçamento é cotado já na inspeção, junto do
+    diagnóstico; ao final recalcula `situacao` (`Aguardando aprovação` se houver peça
+    orçada ainda não decidida pelo cliente, `Em execução` caso contrário), mesmo padrão
+    de Condição de Pagamento × Parcelas.
+  - **RN009 — Estrutura da checklist é operação própria:** `definirProcedimentosOS()`
+    define quais procedimentos entram na checklist de uma OS e em que ordem
+    (`codProcedimento`/`ordem`), reconciliando por diferença de conjuntos (mesmo padrão
+    de Parcelas) — independente do diagnóstico, que apenas herda essa lista e nunca a
+    altera (não adiciona, remove nem reordena itens).
+  - **RN010 — Checagem negativa exige observação:** no diagnóstico, um item com
+    `checagem = false` só é aceito se `obsProcedimento` estiver preenchido — não é
+    possível marcar um procedimento como não confirmado sem justificar.
+  - **Pós-condição:** consultar, abrir, definir a estrutura da checklist e registrar
+    diagnóstico (incluindo orçamento de peças) de ordens de serviço.
+- **Lote OS-B (execução, aprovação):**
+  - **RN005 — `tipoOdS` não é status:** `tipoOdS` classifica a OS livremente (ex.:
+    "Garantia") e é definido uma única vez na abertura; `situacao` é a máquina de
+    estados do atendimento, avança sozinha conforme as operações abaixo são chamadas e
+    nunca é editável diretamente pelo formulário.
+  - **RN006 — Execução reconcilia serviços e registra as observações finais:**
+    `registrarExecucaoOS()` é operação dedicada que reconcilia, por diferença de
+    conjuntos (mesmo padrão de `ProcedimentosOdS`/Parcelas), `ServicosOdS` (chave
+    `codServico`) e atualiza `obsTecnica` — as observações técnicas registradas ao fim
+    do atendimento, depois que o trabalho foi concluído.
+  - **RN007 — Aprovação de orçamento é por item:** o cliente decide peça a peça, via
+    operações dedicadas `aprovarOrcamentoPeca()` (marca `aprovado = true`) e
+    `reprovarOrcamentoPeca()` (remove/soft delete a linha — a peça sai do orçamento
+    ativo); não há aprovação em bloco nem edição via `Update` genérico. Cada decisão
+    recalcula `situacao`.
+  - **RN008 — Substituição de peça exige orçamento aprovado:**
+    `registrarSubstituicaoPecasOS()` é lançamento manual do técnico, com os valores
+    reais aplicados (podem divergir do orçamento), reconciliado por diferença de
+    conjuntos (chave `codPeca`, mesma filosofia de Parcelas × Condição de Pagamento);
+    só aceita peça com `OrcamentoPecasOdS.aprovado = true` para aquela OS — caso
+    contrário, 409 PT.
+  - **Pós-condição:** gerenciar cadastros de apoio (`Cargos`, `Funcionarios`,
+    `Servicos`, `Pecas`), registrar execução de serviços/peças, aprovar/reprovar
+    orçamento de peças e registrar substituição efetiva de peças.
+- **Lote OS-C (encerramento, entrega, cancelamento):** regras de negócio detalhadas
+  quando o lote for implementado — ver
   [Roadmap](09-roadmap.md#fase-os--ordem-de-serviço-⭐-módulo-central-da-kaneko-informática).
 
 ### Gerenciar Compras

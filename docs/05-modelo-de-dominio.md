@@ -335,76 +335,180 @@ para a ordem de implementação (lotes OS-A/OS-B/OS-C).
   `editarProcedimento()`, `removerProcedimento()`
 
 ### ProcedimentosOdS *(checklist de checagens — associativa OS × Procedimento)*
-- **Atributos:** `numOdS`, `codProcedimento`, `posicao`, `checagem`, `obsProcedimento`,
-  `dthFim`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `numOdS`, `codProcedimento`, `ordem`, `posicao`, `checagem`,
+  `obsProcedimento`, `dthFim`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - Chave composta (`numOdS`, `codProcedimento`) — no máximo uma resposta por checagem do
-  catálogo em cada OS. `posicao` é a posição física da observação em relação ao
-  equipamento (ex.: "Embaixo"); `checagem` é o resultado (ex.: "SIM"/"NÃO");
-  `obsProcedimento` é opcional (detalhe da observação); `dthFim` é a data/hora em que
-  aquela checagem foi finalizada.
-- Gerenciada de forma embutida e atômica dentro do formulário de diagnóstico da OS (mesmo
-  padrão de Condição de Pagamento × Parcelas), respondida via `registrarDiagnosticoOS()`,
-  com reconciliação por diferença de conjuntos pela chave `codProcedimento` (mesmo padrão
-  de Parcelas: item ausente da lista enviada é removido, item novo é criado).
-- **Operações:** `adicionarProcedimentoOS()`, `editarProcedimentoOS()`,
-  `removerProcedimentoOS()`, `consultarProcedimentosOS()`
+  catálogo em cada OS. `ordem` é a sequência de execução da checklist (inteiro, obrigatório
+  desde a criação da linha). `posicao` (posição física da observação em relação ao
+  equipamento, ex.: "Embaixo"), `checagem` (booleano — confirmada ou não), `obsProcedimento`
+  (detalhe da observação, obrigatório quando `checagem = false`) e `dthFim` (data/hora em
+  que a checagem foi finalizada, informada pelo técnico) nascem **nulos** e só são
+  preenchidos no diagnóstico — a linha existe antes de ser checada.
+- **Duas operações distintas, com responsabilidades separadas (RN009):**
+  - `definirProcedimentosOS()` — gerencia a **estrutura** da checklist (quais
+    procedimentos entram na OS e em que ordem). É a única operação que adiciona, remove
+    ou reordena itens; reconcilia por diferença de conjuntos pela chave `codProcedimento`
+    (mesmo padrão de Parcelas), tocando só `codProcedimento`/`ordem` — nunca os campos de
+    checagem.
+  - `registrarDiagnosticoOS()` — **herda** a lista já definida e só preenche a checagem
+    (`posicao`, `checagem`, `obsProcedimento`, `dthFim`) de itens que já existem na
+    estrutura; rejeita (400) qualquer `codProcedimento` que não faça parte da checklist da
+    OS. Não adiciona, remove nem reordena (RN010: uma checagem com `checagem = false`
+    exige `obsProcedimento` preenchido).
+- **Operações:** `definirProcedimentosOS()`, `registrarDiagnosticoOS()`,
+  `consultarProcedimentosOS()`
 - **Liga-se a:** [OrdemDeServico](#ordemdeservico), [Procedimentos](#procedimentos-catálogo-de-checagens-padrão).
 
 ### OrdemDeServico
 - **Atributos:** `numOdS`, `codCliente`, `atendente`, `dtAtendimento`, `dtExecucao`,
   `codAparelho`, `acessorio`, `defeito`, `obsBalcao`, `obsTecnica`, `entreguePara`,
-  `tipoOdS`, `codEquipamento`, `historicoManutencao`, `solicitante`, `dtCriacao`,
-  `dtEdicao`, `codUser`, `isActive`
+  `tipoOdS`, `situacao`, `codEquipamento`, `historicoManutencao`, `solicitante`,
+  `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - `numOdS` — **chave primária natural** `CHAR(8)`, informada pelo requisitante na
   abertura (mesmo padrão de chave natural de `Compras`/`ContasAPagar`/`ContasAReceber`);
   o Postgres rejeita duplicidade (`23505` → 409 PT).
 - **Relacionamento:** referencia **Cliente** (`codCliente`), **Aparelho**
   (`codAparelho`) e **Equipamento** (`codEquipamento`); agrega
-  [ProcedimentosOdS](#procedimentosods-checklist-de-checagens---associativa-os--procedimento).
+  [ProcedimentosOdS](#procedimentosods-checklist-de-checagens---associativa-os--procedimento)
+  e, a partir do Lote OS-B, [ServicosOdS](#servicosods-associativa-os--servico),
+  [OrcamentoPecasOdS](#orcamentopecasods-associativa-os--peca---orçamento) e
+  [SubstituirPecasOdS](#substituirpecasods-associativa-os--peca---substituição-efetiva).
 - `atendente` (quem abriu a OS) e `solicitante` (quem solicitou o serviço, pode diferir
   do cliente cadastrado) são texto livre; `acessorio`, `obsBalcao`, `entreguePara` e
   `historicoManutencao` são opcionais.
+- **`tipoOdS` × `situacao` — não confundir:** `tipoOdS` (texto livre, ex.: "Garantia",
+  "Manutenção") **classifica** a OS por natureza do atendimento, é informado uma única
+  vez na abertura e nunca muda sozinho — não representa progresso. `situacao` é a
+  **máquina de estados** do atendimento (domínio fechado, validado em Zod, sem tabela de
+  apoio — mesmo estilo de "domínio fechado simples" usado em campos como `tipoPessoa`),
+  avança automaticamente conforme operações dedicadas são chamadas e nunca é setada
+  diretamente pelo formulário. Chegou no Lote OS-B (a migration original da Fase OS não
+  tinha essa coluna); valores possíveis: `Aberta` (default na abertura) → `Em execução`
+  (após o primeiro `registrarDiagnosticoOS()`, e enquanto não há peça orçada pendente) →
+  `Aguardando aprovação` (há ao menos uma linha de `OrcamentoPecasOdS` ativa com
+  `aprovado = false`) → de volta a `Em execução` quando toda peça orçada é aprovada ou
+  reprovada; os estados finais `Concluída`, `Entregue` e `Cancelada` são reservados para
+  o encerramento/entrega do Lote OS-C.
 - **Abertura (`abrirOS()`):** cria o cabeçalho e, na mesma transação (RNF06), os
   registros de [Aparelhos](#aparelhos-unidade-física-recebida-do-cliente) e
   [Equipamentos](#equipamentos-ficha-técnica-de-hardwaresoftware-da-máquina) daquela
   unidade — os três nascem ou não nascem juntos. Preenche `codCliente`, `atendente`,
-  `acessorio`, `defeito`, `obsBalcao`, `tipoOdS`, `solicitante`; `dtAtendimento`,
-  `dtExecucao`, `obsTecnica` e `entreguePara` começam nulos.
-- **Diagnóstico (`registrarDiagnosticoOS()`):** operação dedicada (não passa pelo
-  `Update`) que define/atualiza `obsTecnica` e `historicoManutencao`, preenche
-  `dtAtendimento` (data do primeiro diagnóstico, se ainda nula) e reconcilia a lista de
+  `acessorio`, `defeito`, `obsBalcao`, `tipoOdS`, `solicitante`; `situacao` nasce
+  `Aberta`; `dtAtendimento`, `dtExecucao`, `obsTecnica` e `entreguePara` começam nulos.
+- **Estrutura da checklist (`definirProcedimentosOS()` — RN009):** operação dedicada e
+  separada do diagnóstico que define quais
   [ProcedimentosOdS](#procedimentosods-checklist-de-checagens---associativa-os--procedimento)
-  enviada.
-- **Ainda fora do Lote OS-A** (ver [Roadmap](09-roadmap.md#fase-os--ordem-de-serviço-⭐-módulo-central-da-kaneko-informática)):
-  não há `status` (máquina de estados), `valorTotal`, `condicaoDePagamento`,
-  `garantiaDias`, execução de serviços/peças, aprovação do cliente, encerramento
-  (geração de Conta a Receber), registro de entrega nem cancelamento formal — essas
-  tabelas já existem no banco (ver abaixo) mas ainda sem camada de aplicação.
+  entram na OS e em que `ordem`, reconciliando por diferença de conjuntos (chave
+  `codProcedimento`) — nunca toca em campos de checagem. É pré-requisito do diagnóstico:
+  um `codProcedimento` só pode ser checado depois de estar na estrutura.
+- **Diagnóstico (`registrarDiagnosticoOS()`):** operação dedicada (não passa pelo
+  `Update`) que define/atualiza `historicoManutencao`, preenche `dtAtendimento` (data do
+  primeiro diagnóstico, se ainda nula) e preenche a checagem (`posicao`, `checagem`,
+  `obsProcedimento`, `dthFim`) de itens já presentes na checklist herdada de
+  `definirProcedimentosOS()` (RN009/RN010 — rejeita `codProcedimento` fora da estrutura;
+  `checagem = false` exige `obsProcedimento`) **e** reconcilia o orçamento de peças
+  pendente de aprovação ([OrcamentoPecasOdS](#orcamentopecasods-associativa-os--peca---orçamento),
+  chave `codPeca`, por diferença de conjuntos) — o orçamento nasce junto do diagnóstico,
+  pois é na inspeção que o técnico identifica o que precisa ser trocado e já cota o valor
+  para o cliente aprovar. Na primeira chamada (enquanto `situacao = 'Aberta'`), avança a
+  OS para `Em execução`; ao final, recalcula `situacao` (`Aguardando aprovação` se restar
+  peça orçada não decidida, `Em execução` caso contrário).
+- **Execução (`registrarExecucaoOS()` — Lote OS-B):** operação dedicada que reconcilia,
+  por diferença de conjuntos (mesmo padrão de `ProcedimentosOdS`/Parcelas), os serviços
+  prestados ([ServicosOdS](#servicosods-associativa-os--servico), chave `codServico`) e
+  atualiza `obsTecnica` — as observações técnicas finais do atendimento, registradas ao
+  fim da execução, depois que o trabalho foi concluído (não mais no diagnóstico).
+- **Aprovação por item (Lote OS-B):** `aprovarOrcamentoPeca()` marca
+  `OrcamentoPecasOdS.aprovado = true` para aquela peça; `reprovarOrcamentoPeca()` remove
+  (soft delete) a linha — o cliente recusou aquele item. As duas recalculam `situacao` em
+  seguida.
+- **Substituição de peças (`registrarSubstituicaoPecasOS()` — Lote OS-B):** lançamento
+  manual do técnico com os valores reais aplicados (podem divergir do orçamento — preço
+  mudou, quantidade diferente), reconciliando
+  [SubstituirPecasOdS](#substituirpecasods-associativa-os--peca---substituição-efetiva)
+  por diferença de conjuntos (mesma filosofia de lista embutida e atômica de Parcelas ×
+  Condição de Pagamento). Só é permitido substituir peça cujo orçamento para aquela OS
+  tenha sido aprovado (`OrcamentoPecasOdS.aprovado = true`) — caso contrário, 409 PT.
+- **Ainda fora do Lote OS-B** (ver [Roadmap](09-roadmap.md#fase-os--ordem-de-serviço-⭐-módulo-central-da-kaneko-informática)):
+  não há `valorTotal`, `condicaoDePagamento`, `garantiaDias`, encerramento (geração de
+  Conta a Receber), registro de entrega nem cancelamento formal — chegam no Lote OS-C.
 - **Operações do Lote OS-A:** `consultarOrdensServico()`, `abrirOS()`,
-  `registrarDiagnosticoOS()`, `consultarClientes()`.
+  `definirProcedimentosOS()`, `registrarDiagnosticoOS()`, `consultarClientes()`.
+- **Operações do Lote OS-B:** `registrarExecucaoOS()`, `aprovarOrcamentoPeca()`,
+  `reprovarOrcamentoPeca()`, `registrarSubstituicaoPecasOS()`.
 - **Liga-se a:** [Clientes](#clientes), [Aparelhos](#aparelhos-unidade-física-recebida-do-cliente),
   [Equipamentos](#equipamentos-ficha-técnica-de-hardwaresoftware-da-máquina),
-  [Procedimentos](#procedimentos-catálogo-de-checagens-padrão) (via ProcedimentosOdS).
+  [Procedimentos](#procedimentos-catálogo-de-checagens-padrão) (via ProcedimentosOdS),
+  [Servicos](#servicos-catálogo-de-serviços) (via ServicosOdS),
+  [Pecas](#pecas-catálogo-de-peças-da-os) (via OrcamentoPecasOdS/SubstituirPecasOdS).
 
-### Entidades do Lote OS-B (execução) — já no banco, sem camada de aplicação
+### Cargos *(cadastro de apoio de cargos internos)*
+- **Atributos:** `codCargo`, `cargo`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- Cadastro de apoio simples (mesmo padrão de `Categorias`/`Procedimentos`).
+- **Operações:** `consultarCargos()`, `adicionarCargo()`, `editarCargo()`, `removerCargo()`
+- **Liga-se a:** [Funcionarios](#funcionarios-recursos-humanos-não-login).
 
-Criadas pela mesma migration inicial da Fase OS; a documentação de operações/regras de
-negócio destas entidades é adiada para o Lote OS-B, quando ganham service/controller/rotas:
+### Funcionarios *(recursos humanos, não login)*
+- **Atributos:** `codFuncionario`, `codCidade` → `Cidades`, `codCargo` → `Cargos`,
+  `funcionario`, `funcFone`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- Substitui `Users` como referência de técnico responsável nas linhas de serviço —
+  recursos humanos (quem presta o serviço), não login/autenticação (`Users` continua
+  sendo a entidade de acesso ao sistema).
+- **Operações:** `consultarFuncionarios()`, `adicionarFuncionario()`,
+  `editarFuncionario()`, `removerFuncionario()`
+- **Liga-se a:** [Cidades](#cidades), [Cargos](#cargos-cadastro-de-apoio-de-cargos-internos),
+  [Servicos](#servicos-catálogo-de-serviços).
 
-- **Cargos** — `codCargo`, `cargo`, auditoria. Cadastro de apoio de cargos internos.
-- **Funcionarios** — `codFuncionario`, `codCidade` → `Cidades`, `codCargo` → `Cargos`,
-  `funcionario`, `funcFone`, auditoria. Substitui `Users` como referência de técnico
-  responsável nas linhas de serviço (recursos humanos, não login).
-- **Servicos** — `codServico`, `servico`, `valor`, `codFuncionario` → `Funcionarios`,
-  auditoria. Catálogo de serviços com preço fixo.
-- **Pecas** — `codPeca`, `peca`, auditoria. Catálogo de peças específico da OS
-  (mais simples que `Produtos`, que continua sendo o catálogo de revenda).
-- **ServicosOdS** *(associativa OS × Servico)* — `codServico`, `numOdS`, `qtdServico`,
-  auditoria. Serviços efetivamente executados na OS.
-- **OrcamentoPecasOdS** *(associativa OS × Peca)* — `codPeca`, `numOdS`, `vlrPv`,
-  `aprovado`, auditoria. Orçamento de peças pendente de aprovação do cliente.
-- **SubstituirPecasOdS** *(associativa OS × Peca)* — `codPeca`, `numOdS`, `qtdPeca`,
-  `vlrUnitarioPeca`, auditoria. Peças efetivamente substituídas após aprovação.
+### Servicos *(catálogo de serviços)*
+- **Atributos:** `codServico`, `servico`, `valor`, `codFuncionario` → `Funcionarios`,
+  `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- Catálogo de serviços com preço fixo por linha de catálogo (não varia por OS — ao
+  contrário do orçamento de peças, que é cotado por atendimento).
+- **Operações:** `consultarServicos()`, `adicionarServico()`, `editarServico()`,
+  `removerServico()`
+- **Liga-se a:** [Funcionarios](#funcionarios-recursos-humanos-não-login),
+  [OrdemDeServico](#ordemdeservico) (via ServicosOdS).
+
+### Pecas *(catálogo de peças da OS)*
+- **Atributos:** `codPeca`, `peca`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- Cadastro de apoio simples — mais enxuto que `Produtos`, que continua sendo o catálogo
+  de revenda; `Pecas` existe só para dar nome/identidade à peça orçada/substituída numa OS.
+- **Operações:** `consultarPecas()`, `adicionarPeca()`, `editarPeca()`, `removerPeca()`
+- **Liga-se a:** [OrdemDeServico](#ordemdeservico) (via OrcamentoPecasOdS/SubstituirPecasOdS).
+
+### ServicosOdS *(associativa OS × Servico)*
+- **Atributos:** `codServico`, `numOdS`, `qtdServico`, `dtCriacao`, `dtEdicao`,
+  `codUser`, `isActive`
+- Chave composta (`codServico`, `numOdS`) — serviços efetivamente executados na OS.
+  Gerenciada de forma embutida e atômica dentro de `registrarExecucaoOS()`, reconciliada
+  por diferença de conjuntos pela chave `codServico` (mesmo padrão de ProcedimentosOdS).
+- **Liga-se a:** [Servicos](#servicos-catálogo-de-serviços), [OrdemDeServico](#ordemdeservico).
+
+### OrcamentoPecasOdS *(associativa OS × Peca — orçamento)*
+- **Atributos:** `codPeca`, `numOdS`, `vlrPv`, `aprovado`, `dtCriacao`, `dtEdicao`,
+  `codUser`, `isActive`
+- Chave composta (`codPeca`, `numOdS`) — orçamento de peças pendente de aprovação do
+  cliente; `aprovado` nasce `false`. Gerenciada de forma embutida e atômica dentro de
+  `registrarDiagnosticoOS()` (reconciliação por diferença de conjuntos pela chave
+  `codPeca`) — nasce junto do diagnóstico, não da execução. A decisão do cliente é
+  **por item**, via operação dedicada
+  (`aprovarOrcamentoPeca()`/`reprovarOrcamentoPeca()`) — não passa pelo `Update`
+  genérico nem por uma aprovação em bloco. Reprovar remove (soft delete) a linha: o
+  vocabulário de remoção já usado no resto do sistema representa a recusa do item.
+- **Liga-se a:** [Pecas](#pecas-catálogo-de-peças-da-os), [OrdemDeServico](#ordemdeservico).
+
+### SubstituirPecasOdS *(associativa OS × Peca — substituição efetiva)*
+- **Atributos:** `codPeca`, `numOdS`, `qtdPeca`, `vlrUnitarioPeca`, `dtCriacao`,
+  `dtEdicao`, `codUser`, `isActive`
+- Chave composta (`codPeca`, `numOdS`) — peças efetivamente substituídas, com os valores
+  reais aplicados pelo técnico (podem divergir do orçamento em `OrcamentoPecasOdS` — ex.:
+  preço mudou, quantidade diferente do previsto). Lançamento **manual** do técnico (não
+  gerado automaticamente na aprovação), gerenciado de forma embutida e atômica dentro de
+  `registrarSubstituicaoPecasOS()`, reconciliado por diferença de conjuntos pela chave
+  `codPeca` (mesma filosofia de lista de Parcelas × Condição de Pagamento). Só aceita
+  peça cujo orçamento tenha sido aprovado (`OrcamentoPecasOdS.aprovado = true`) para
+  aquela OS.
+- **Liga-se a:** [Pecas](#pecas-catálogo-de-peças-da-os), [OrdemDeServico](#ordemdeservico).
 
 ---
 
