@@ -32,10 +32,34 @@ export interface ProcedimentoOdS
 {
   numOdS:          string;
   codProcedimento: number;
-  posicao:         string;
-  checagem:        string;
+  ordem:           number;
+  posicao:         string | null;
+  checagem:        boolean | null;
   obsProcedimento: string | null;
-  dthFim:          string;
+  dthFim:          string | null;
+}
+
+export interface ServicoOdS
+{
+  numOdS:     string;
+  codServico: number;
+  qtdServico: number;
+}
+
+export interface OrcamentoPecaOdS
+{
+  numOdS:   string;
+  codPeca:  number;
+  vlrPv:    string;
+  aprovado: boolean;
+}
+
+export interface SubstituirPecaOdS
+{
+  numOdS:          string;
+  codPeca:         number;
+  qtdPeca:         number;
+  vlrUnitarioPeca: number;
 }
 
 export interface OrdemServico
@@ -63,9 +87,12 @@ export interface OrdemServico
 
 export interface OrdemServicoDetalhe extends OrdemServico
 {
-  aparelho:     Aparelho;
-  equipamento:  Equipamento;
-  procedimentos: ProcedimentoOdS[];
+  aparelho:          Aparelho;
+  equipamento:       Equipamento;
+  procedimentos:     ProcedimentoOdS[];
+  servicos:          ServicoOdS[];
+  orcamentoPecas:    OrcamentoPecaOdS[];
+  substituicaoPecas: SubstituirPecaOdS[];
 }
 
 export interface AparelhoInput
@@ -108,20 +135,61 @@ export interface AbrirOrdemServicoInput
   equipamento: EquipamentoInput;
 }
 
+export interface ProcedimentoEstruturaOdSInput
+{
+  codProcedimento: number;
+  ordem:           number;
+}
+
+export interface DefinirProcedimentosInput
+{
+  procedimentos: ProcedimentoEstruturaOdSInput[];
+}
+
 export interface ProcedimentoOdSInput
 {
   codProcedimento: number;
   posicao:         string;
-  checagem:        string;
+  checagem:        boolean;
+  dthFim:          string;
   obsProcedimento?: string | null;
-  dthFim?:         string;
+}
+
+export interface OrcamentoPecaOdSInput
+{
+  codPeca: number;
+  vlrPv:   string;
 }
 
 export interface RegistrarDiagnosticoInput
 {
-  obsTecnica?:          string | null;
   historicoManutencao?: string | null;
   procedimentos:        ProcedimentoOdSInput[];
+  orcamentoPecas:       OrcamentoPecaOdSInput[];
+}
+
+export interface ServicoOdSInput
+{
+  codServico: number;
+  qtdServico: number;
+}
+
+export interface RegistrarExecucaoInput
+{
+  servicos:    ServicoOdSInput[];
+  obsTecnica?: string | null;
+}
+
+export interface SubstituirPecaOdSInput
+{
+  codPeca:         number;
+  qtdPeca:         number;
+  vlrUnitarioPeca: number;
+}
+
+export interface RegistrarSubstituicaoPecasInput
+{
+  pecas: SubstituirPecaOdSInput[];
 }
 
 export const ordensServicoService = {
@@ -143,10 +211,31 @@ export const ordensServicoService = {
     .post < OrdemServicoDetalhe > ( '/api/ordens-servico', dados )
     .then ( ( resposta ) => resposta.data ),
 
+  definirProcedimentos: (
+    numOdS: string,
+    dados:  DefinirProcedimentosInput
+  ) => api
+    .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/procedimentos`, dados )
+    .then ( ( resposta ) => resposta.data ),
+
   registrarDiagnostico: (
     numOdS: string,
     dados:  RegistrarDiagnosticoInput
   ) => api
     .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/diagnostico`, dados )
+    .then ( ( resposta ) => resposta.data ),
+
+  registrarExecucao: (
+    numOdS: string,
+    dados:  RegistrarExecucaoInput
+  ) => api
+    .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/execucao`, dados )
+    .then ( ( resposta ) => resposta.data ),
+
+  registrarSubstituicaoPecas: (
+    numOdS: string,
+    dados:  RegistrarSubstituicaoPecasInput
+  ) => api
+    .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/substituicao-pecas`, dados )
     .then ( ( resposta ) => resposta.data ),
 };

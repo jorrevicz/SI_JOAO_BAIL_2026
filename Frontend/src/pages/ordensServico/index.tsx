@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -20,6 +21,7 @@ import {
 import { InfoBlock } from '../../components/tabela/style';
 import OrdemServicoForm from './OrdemServicoForm';
 import DiagnosticoModal from './DiagnosticoModal';
+import ExecucaoModal from './ExecucaoModal';
 import { ClienteConsulta } from '../clientes/ClienteConsulta';
 
 const columnHelper = createColumnHelper < OrdemServico >();
@@ -27,9 +29,11 @@ const columnHelper = createColumnHelper < OrdemServico >();
 export default function OrdensServicoPage ()
 {
   'use no memo';
+  const navigate = useNavigate();
   const [ dados, setDados ]       = useState < OrdemServico[] > ([]);
   const [ abrindo, setAbrindo ]   = useState ( false );
   const [ diagnosticando, setDiagnosticando ] = useState < OrdemServico | null > ( null );
+  const [ executando, setExecutando ] = useState < OrdemServico | null > ( null );
   const [ clienteFiltro, setClienteFiltro ]   = useState < Cliente | null > ( null );
   const [ consultandoCliente, setConsultandoCliente ] = useState ( false );
   const [ erro, setErro ]         = useState ( '' );
@@ -88,9 +92,21 @@ export default function OrdensServicoPage ()
         <GrupoBotoes>
           <Botao
             $variante="secundario"
+            onClick={ ( evento ) => { evento.stopPropagation(); navigate ( `/procedimentos-os?numOdS=${ row.original.numOdS }` ); } }
+          >
+            Procedimentos
+          </Botao>
+          <Botao
+            $variante="secundario"
             onClick={ ( evento ) => { evento.stopPropagation(); setDiagnosticando ( row.original ); } }
           >
             Diagnóstico
+          </Botao>
+          <Botao
+            $variante="secundario"
+            onClick={ ( evento ) => { evento.stopPropagation(); setExecutando ( row.original ); } }
+          >
+            Execução
           </Botao>
         </GrupoBotoes>
       ),
@@ -228,6 +244,18 @@ export default function OrdensServicoPage ()
             carregar();
           }}
           onCancelar={ () => setDiagnosticando ( null ) }
+        />
+      )}
+
+      { executando !== null && (
+        <ExecucaoModal
+          os={ executando }
+          onSalvo={ () =>
+          {
+            setExecutando ( null );
+            carregar();
+          }}
+          onCancelar={ () => setExecutando ( null ) }
         />
       )}
 

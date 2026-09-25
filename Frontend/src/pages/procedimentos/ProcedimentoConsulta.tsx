@@ -29,22 +29,22 @@ import
 } from './style';
 import { TrSelecionavel } from '../../components/tabela/style';
 import { useTabelaOrdenada } from '../../hooks/tabela';
+import { CaixaSelecao } from '../../components/caixaSelecao';
 import ProcedimentoForm from './ProcedimentoForm';
 
 interface Props
 {
-    onSelecionar: ( oProcedimento: Procedimento ) => void;
-    onCancelar:   () => void;
+    onSelecionarVarios: ( procedimentos: Procedimento[] ) => void;
+    onCancelar:          () => void;
 }
 
 const columnHelper = createColumnHelper < Procedimento > ( );
 
-export function ProcedimentoConsulta ( { onSelecionar, onCancelar }: Props )
+export function ProcedimentoConsulta ( { onSelecionarVarios, onCancelar }: Props )
 {
     'use no memo';
     const [ dados, setDados ]             = useState < Procedimento[] > ( [] );
-    const [ selecionado, setSel ]         = useState ( false );
-    const [ procedimentoSel, setProcSel ] = useState < Procedimento | null > ( null );
+    const [ selecionados, setSelecionados ] = useState < Set < number > > ( new Set() );
     const [ edit, setEdit ]               = useState < Partial < Procedimento > | null > ( null );
     const [ erro, setErro ]               = useState ( '' );
     const { sorting, setSorting }         = useTabelaOrdenada ( 'procedimento' );
@@ -59,21 +59,36 @@ export function ProcedimentoConsulta ( { onSelecionar, onCancelar }: Props )
         Carregar();
     }, [ ] );
 
-    const ToggleSel = ( oProcedimento: Procedimento ) =>
+    const ToggleSel = ( codProcedimento: number ) =>
     {
-        if ( oProcedimento )
+        setSelecionados ( ( anterior ) =>
         {
-            setProcSel ( oProcedimento );
-            setSel ( true );
-        }
-        else
-        {
-            setProcSel ( null );
-            setSel ( false );
-        }
+            const copia = new Set ( anterior );
+            if ( copia.has ( codProcedimento ) )
+            {
+                copia.delete ( codProcedimento );
+            }
+            else
+            {
+                copia.add ( codProcedimento );
+            }
+            return copia;
+        } );
     };
 
     const columns = [
+        columnHelper.display ( {
+            id:     'selecao',
+            header: '',
+            cell: ( { row } ) => (
+                <span onClick={ ( evento ) => evento.stopPropagation() }>
+                    <CaixaSelecao
+                        value={ selecionados.has ( row.original.codProcedimento ) }
+                        onChange={ () => ToggleSel ( row.original.codProcedimento ) }
+                    />
+                </span>
+            ),
+        } ),
         columnHelper.accessor ( 'codProcedimento', { header: 'Código' } ),
         columnHelper.accessor ( 'procedimento', { header: 'Procedimento' } ),
         columnHelper.accessor ( 'isActive', { header: 'Status' } ),
@@ -109,6 +124,10 @@ export function ProcedimentoConsulta ( { onSelecionar, onCancelar }: Props )
         }
     );
 
+    const linhasFiltradas = table.getFilteredRowModel().rows;
+    const todosFiltradosSelecionados = linhasFiltradas.length > 0 &&
+        linhasFiltradas.every ( ( row ) => selecionados.has ( row.original.codProcedimento ) );
+
     return (
         <>
             <ModalOverlay onClick={ onCancelar }>
@@ -117,7 +136,7 @@ export function ProcedimentoConsulta ( { onSelecionar, onCancelar }: Props )
                     style={ { maxWidth: '700px', width: '95vw' } }
                 >
                     <Toolbar>
-                        <h3>Selecionar Procedimento</h3>
+                        <h3>Selecionar Procedimentos</h3>
                         <Botao onClick={ () => setEdit ( {} ) }>Novo Procedimento</Botao>
                     </Toolbar>
 
@@ -127,6 +146,20 @@ export function ProcedimentoConsulta ( { onSelecionar, onCancelar }: Props )
                         onChange={ ( evento ) => setGlobalFilter ( evento.target.value ) }
                         autoFocus
                     />
+
+                    <GrupoBotoes style={ { marginBottom: '0.75rem' } }>
+                        <Botao
+                            type="button"
+                            $variante="secundario"
+                            onClick={ () => setSelecionados (
+                                todosFiltradosSelecionados
+                                    ? new Set()
+                                    : new Set ( table.getFilteredRowModel().rows.map ( ( row ) => row.original.codProcedimento ) )
+                            ) }
+                        >
+                            { todosFiltradosSelecionados ? 'Limpar seleção' : 'Selecionar todos' }
+                        </Botao>
+                    </GrupoBotoes>
 
                     { erro && <Alerta role='alert'>{ erro }</Alerta> }
 
@@ -163,8 +196,8 @@ export function ProcedimentoConsulta ( { onSelecionar, onCancelar }: Props )
                                     table.getRowModel().rows.map ( ( row ) => (
                                         <TrSelecionavel
                                             key={ row.id }
-                                            onClick={ () => ( ToggleSel ( row.original ) ) }
-                                            $selecionado={ procedimentoSel?.codProcedimento === row.original.codProcedimento }
+                                            onClick={ () => ( ToggleSel ( row.original.codProcedimento ) ) }
+                                            $selecionado={ selecionados.has ( row.original.codProcedimento ) }
                                         >
                                             {
                                                 row.getVisibleCells().map ( ( cell ) => (
@@ -213,10 +246,14 @@ export function ProcedimentoConsulta ( { onSelecionar, onCancelar }: Props )
                             </Botao>
                             <Botao
                                 type="button"
-                                disabled={ !selecionado }
-                                onClick={ () => procedimentoSel && onSelecionar ( procedimentoSel ) }
+                                disabled={ selecionados.size === 0 }
+                                onClick={ () => onSelecionarVarios (
+                                    table.getFilteredRowModel().rows
+                                        .map ( ( row ) => row.original )
+                                        .filter ( ( procedimento ) => selecionados.has ( procedimento.codProcedimento ) )
+                                ) }
                             >
-                                Selecionar
+                                { selecionados.size > 0 ? `Adicionar (${ selecionados.size })` : 'Adicionar' }
                             </Botao>
                         </AcoesBotoes>
                     </RodapeTabela>
