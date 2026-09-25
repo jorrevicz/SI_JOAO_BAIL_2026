@@ -21,6 +21,8 @@ import ContasPagamentoRoutes    from './modules/contas-pagamento/contasPagamento
 import ContasReceberRoutes      from './modules/contas-receber/contasReceber.routes';
 import ProcedimentosRoutes      from './modules/procedimentos/procedimentos.routes';
 import OrdensServicoRoutes      from './modules/ordens-servico/ordensServico.routes';
+import CargosRoutes             from './modules/cargos/cargos.routes';
+import FuncionariosRoutes       from './modules/funcionarios/funcionarios.routes';
 
 const app = express();
 
@@ -56,6 +58,8 @@ app.use ( '/api/contas-pagamento',    ContasPagamentoRoutes    );
 app.use ( '/api/contas-receber',      ContasReceberRoutes      );
 app.use ( '/api/procedimentos',       ProcedimentosRoutes      );
 app.use ( '/api/ordens-servico',      OrdensServicoRoutes      );
+app.use ( '/api/cargos',              CargosRoutes             );
+app.use ( '/api/funcionarios',        FuncionariosRoutes       );
 
 // 404 para rotas não mapeadas
 app.use 
