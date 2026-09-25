@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../../app';
 import sql from '../../lib/db';
@@ -10,19 +10,51 @@ function nomeUnico ( prefixo: string ): string
     return `${ prefixo } ${ Date.now() }${ Math.floor ( Math.random() * 1000 ) }`;
 }
 
-async function obterDuasCategorias (): Promise < number[] >
-{
-    const resposta = await request ( app ).get ( '/api/categorias' );
-
-    return resposta.body
-        .slice ( 0, 2 )
-        .map ( ( categoria: { codCategoria: number } ) => categoria.codCategoria );
-}
-
 describe ( 'Produtos routes', () =>
 {
+    // O banco de teste começa vazio (ver src/db/testReset.ts, rodado no `pretest`), então
+    // este arquivo não pode mais pegar as "duas primeiras" categorias do seed — ele cria
+    // as próprias, mesmo padrão de funcionarios/servicos/contasPagamento (fixtures de
+    // apoio criadas em beforeAll). Sem isso, o filtro por `codCategoria` também correria o
+    // risco de herdar produtos de outros testes vinculados à mesma categoria.
+    let primeiraCategoria: number;
+    let segundaCategoria:  number;
+
+    // Produtos e categorias criados pelos testes, para apagar em afterAll.
+    const codigosProdutoCriados:   number[] = [];
+    const codigosCategoriaCriados: number[] = [];
+
+    beforeAll ( async () =>
+    {
+        // "categoria" não aceita dígitos (regex do schema) — nomeUnico() embute
+        // timestamp/aleatório, então não serve aqui; o banco já começa vazio a cada
+        // execução (testReset.ts no `pretest`), então nomes fixos não colidem.
+        const primeira = await request ( app )
+            .post ( '/api/categorias' )
+            .send ( { categoria: 'CATEGORIA PRODUTOS TESTE A' } );
+        const segunda = await request ( app )
+            .post ( '/api/categorias' )
+            .send ( { categoria: 'CATEGORIA PRODUTOS TESTE B' } );
+
+        primeiraCategoria = primeira.body.codCategoria;
+        segundaCategoria  = segunda.body.codCategoria;
+
+        codigosCategoriaCriados.push ( primeiraCategoria, segundaCategoria );
+    });
+
     afterAll ( async () =>
     {
+        if ( codigosProdutoCriados.length > 0 )
+        {
+            await sql`DELETE FROM "ProdutoCategoria" WHERE "codProduto" IN ${ sql ( codigosProdutoCriados ) }`;
+            await sql`DELETE FROM "Produtos" WHERE "codProd" IN ${ sql ( codigosProdutoCriados ) }`;
+        }
+
+        if ( codigosCategoriaCriados.length > 0 )
+        {
+            await sql`DELETE FROM "Categorias" WHERE "codCategoria" IN ${ sql ( codigosCategoriaCriados ) }`;
+        }
+
         await sql.end();
     });
 
@@ -48,19 +80,15 @@ describe ( 'Produtos routes', () =>
 
     it ( 'POST /api/produtos com nome muito longo retorna 400', async () =>
     {
-        const [ codCategoria ] = await obterDuasCategorias();
-
         const res = await request ( app )
             .post ( '/api/produtos' )
-            .send ( { produto: 'A'.repeat ( 101 ), categorias: [ { codCategoria } ] } );
+            .send ( { produto: 'A'.repeat ( 101 ), categorias: [ { codCategoria: primeiraCategoria } ] } );
 
         expect ( res.status ).toBe ( 400 );
     });
 
     it ( 'POST /api/produtos cria produto e vínculos de categoria atomicamente', async () =>
     {
-        const [ primeira, segunda ] = await obterDuasCategorias();
-
         const res = await request ( app )
             .post ( '/api/produtos' )
             .send
@@ -71,11 +99,12 @@ describe ( 'Produtos routes', () =>
                 pesoLiq:    0.9,
                 estoque:    0,
                 custo:      0,
-                categorias: [ { codCategoria: primeira }, { codCategoria: segunda } ],
+                categorias: [ { codCategoria: primeiraCategoria }, { codCategoria: segundaCategoria } ],
             });
 
         expect ( res.status ).toBe ( 201 );
         expect ( res.body.codProd ).toBeDefined();
+        codigosProdutoCriados.push ( res.body.codProd );
 
         const vinculosRes = await request ( app )
             .get ( `/api/produto-categorias?codProduto=${ res.body.codProd }` );
@@ -86,8 +115,6 @@ describe ( 'Produtos routes', () =>
 
     it ( 'POST /api/produtos com peso bruto zero-preenchido retorna 400', async () =>
     {
-        const [ codCategoria ] = await obterDuasCategorias();
-
         const res = await request ( app )
             .post ( '/api/produtos' )
             .send
@@ -98,7 +125,7 @@ describe ( 'Produtos routes', () =>
                 pesoLiq:    0.9,
                 estoque:    0,
                 custo:      0,
-                categorias: [ { codCategoria } ],
+                categorias: [ { codCategoria: primeiraCategoria } ],
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -107,8 +134,6 @@ describe ( 'Produtos routes', () =>
 
     it ( 'POST /api/produtos com peso líquido zero-preenchido retorna 400', async () =>
     {
-        const [ codCategoria ] = await obterDuasCategorias();
-
         const res = await request ( app )
             .post ( '/api/produtos' )
             .send
@@ -119,7 +144,7 @@ describe ( 'Produtos routes', () =>
                 pesoLiq:    0,
                 estoque:    0,
                 custo:      0,
-                categorias: [ { codCategoria } ],
+                categorias: [ { codCategoria: primeiraCategoria } ],
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -148,8 +173,6 @@ describe ( 'Produtos routes', () =>
 
     it ( 'POST /api/produtos com categoria repetida retorna 400, não 500', async () =>
     {
-        const [ codCategoria ] = await obterDuasCategorias();
-
         const res = await request ( app )
             .post ( '/api/produtos' )
             .send
@@ -160,7 +183,7 @@ describe ( 'Produtos routes', () =>
                 pesoLiq:    0.9,
                 estoque:    0,
                 custo:      0,
-                categorias: [ { codCategoria }, { codCategoria } ],
+                categorias: [ { codCategoria: primeiraCategoria }, { codCategoria: primeiraCategoria } ],
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -188,8 +211,6 @@ describe ( 'Produtos routes', () =>
 
     it ( 'PUT /api/produtos/:id reconcilia a lista de categorias', async () =>
     {
-        const [ primeira, segunda ] = await obterDuasCategorias();
-
         const criadoRes = await request ( app )
             .post ( '/api/produtos' )
             .send
@@ -200,11 +221,12 @@ describe ( 'Produtos routes', () =>
                 pesoLiq:    0.9,
                 estoque:    0,
                 custo:      0,
-                categorias: [ { codCategoria: primeira } ],
+                categorias: [ { codCategoria: primeiraCategoria } ],
             });
 
         expect ( criadoRes.status ).toBe ( 201 );
         const codProd = criadoRes.body.codProd;
+        codigosProdutoCriados.push ( codProd );
 
         // Troca a categoria: a primeira sai, a segunda entra
         const atualizadoRes = await request ( app )
@@ -216,7 +238,7 @@ describe ( 'Produtos routes', () =>
                 pesoBruto:  1,
                 pesoLiq:    0.9,
                 isActive:   true,
-                categorias: [ { codCategoria: segunda } ],
+                categorias: [ { codCategoria: segundaCategoria } ],
             });
 
         expect ( atualizadoRes.status ).toBe ( 200 );
@@ -225,13 +247,11 @@ describe ( 'Produtos routes', () =>
             .get ( `/api/produto-categorias?codProduto=${ codProd }` );
 
         expect ( vinculosRes.body ).toHaveLength ( 1 );
-        expect ( vinculosRes.body[ 0 ].codCategoria ).toBe ( segunda );
+        expect ( vinculosRes.body[ 0 ].codCategoria ).toBe ( segundaCategoria );
     });
 
     it ( 'GET /api/produtos?codCategoria=N filtra pela associativa', async () =>
     {
-        const [ primeira ] = await obterDuasCategorias();
-
         const criadoRes = await request ( app )
             .post ( '/api/produtos' )
             .send
@@ -242,11 +262,14 @@ describe ( 'Produtos routes', () =>
                 pesoLiq:    0.9,
                 estoque:    0,
                 custo:      0,
-                categorias: [ { codCategoria: primeira } ],
+                categorias: [ { codCategoria: primeiraCategoria } ],
             });
 
+        expect ( criadoRes.status ).toBe ( 201 );
+        codigosProdutoCriados.push ( criadoRes.body.codProd );
+
         const filtradosRes = await request ( app )
-            .get ( `/api/produtos?codCategoria=${ primeira }&limit=100` );
+            .get ( `/api/produtos?codCategoria=${ primeiraCategoria }&limit=100` );
 
         expect ( filtradosRes.status ).toBe ( 200 );
         expect ( filtradosRes.body.map ( ( produto: { codProd: number } ) => produto.codProd ) )
@@ -261,8 +284,9 @@ describe ( 'Produtos routes', () =>
 
         expect ( categoriaRes.status ).toBe ( 201 );
         const codCategoria = categoriaRes.body.codCategoria;
+        codigosCategoriaCriados.push ( codCategoria );
 
-        await request ( app )
+        const produtoRes = await request ( app )
             .post ( '/api/produtos' )
             .send
             ({
@@ -274,6 +298,9 @@ describe ( 'Produtos routes', () =>
                 custo:      0,
                 categorias: [ { codCategoria } ],
             });
+
+        expect ( produtoRes.status ).toBe ( 201 );
+        codigosProdutoCriados.push ( produtoRes.body.codProd );
 
         const res = await request ( app ).delete ( `/api/categorias/${ codCategoria }` );
 
