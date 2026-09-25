@@ -17,8 +17,8 @@ import TransportadorasRoutes from './modules/transportadoras/transportadoras.rou
 import CondicoesPagamentoRoutes from './modules/condicoes-pagamento/condicoesPagamento.routes';
 import FormasPagamentoRoutes    from './modules/formas-pagamento/formasPagamento.routes';
 import ParcelasRoutes           from './modules/parcelas/parcelas.routes';
-import ContasPagamentoRoutes    from './modules/contas-pagamento/contas-pagamento.routes';
-import ContasReceberRoutes      from './modules/contas-receber/contas-receber.routes';
+import ContasPagamentoRoutes    from './modules/contas-pagamento/contasPagamento.routes';
+import ContasReceberRoutes      from './modules/contas-receber/contasReceber.routes';
 import ProcedimentosRoutes      from './modules/procedimentos/procedimentos.routes';
 import OrdensServicoRoutes      from './modules/ordens-servico/ordensServico.routes';
 
