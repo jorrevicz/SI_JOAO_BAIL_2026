@@ -732,6 +732,101 @@ async function seedContasAPagar(): Promise < void >
   }
 }
 
+// ============================================================
+// T-051 — Seed de recursos humanos e execução de OS
+// Ordem: Cargos → Funcionarios → Servicos → Pecas
+// ============================================================
+
+async function seedRecursosHumanos(): Promise < void >
+{
+  const [ cidadeSP ] = await sql`SELECT "codCidade" FROM "Cidades" WHERE "cidade" = 'SÃO PAULO' LIMIT 1`;
+
+  if ( !cidadeSP )
+  {
+    throw new Error ( 'Cidade de referência não encontrada — rode seedGeografico primeiro.' );
+  }
+
+  // Cargos
+  const CARGOS = [ 'TÉCNICO', 'ATENDENTE', 'GERENTE' ];
+  const codCargoMap: Record < string, number > = {};
+  for ( const cargo of CARGOS )
+  {
+    const existing = await sql`SELECT "codCargo" FROM "Cargos" WHERE "cargo" = ${ cargo } LIMIT 1`;
+    if ( existing.length > 0 )
+    {
+      codCargoMap [ cargo ] = existing [ 0 ].codCargo;
+    }
+    else
+    {
+      const [ inserted ] = await sql`
+        INSERT INTO "Cargos" ( "cargo" )
+        VALUES ( ${ cargo } )
+        RETURNING "codCargo"
+      `;
+      codCargoMap [ cargo ] = inserted.codCargo;
+    }
+  }
+
+  // Funcionários
+  const FUNCIONARIOS = [
+    { funcionario: 'ROBERTO ALVES SILVA', funcFone: '5511988881111', cargo: 'TÉCNICO' },
+    { funcionario: 'MARIANA COSTA FERREIRA', funcFone: '5511988882222', cargo: 'TÉCNICO' },
+    { funcionario: 'JULIANA PEREIRA DIAS', funcFone: '5511988883333', cargo: 'ATENDENTE' },
+  ];
+  const codFuncionarioMap: Record < string, number > = {};
+  for ( const funcionario of FUNCIONARIOS )
+  {
+    const existing = await sql`
+      SELECT "codFuncionario" FROM "Funcionarios" WHERE "funcionario" = ${ funcionario.funcionario } LIMIT 1
+    `;
+    if ( existing.length > 0 )
+    {
+      codFuncionarioMap [ funcionario.funcionario ] = existing [ 0 ].codFuncionario;
+    }
+    else
+    {
+      const [ inserted ] = await sql`
+        INSERT INTO "Funcionarios" ( "codCidade", "codCargo", "funcionario", "funcFone" )
+        VALUES ( ${ cidadeSP.codCidade }, ${ codCargoMap [ funcionario.cargo ] }, ${ funcionario.funcionario }, ${ funcionario.funcFone } )
+        RETURNING "codFuncionario"
+      `;
+      codFuncionarioMap [ funcionario.funcionario ] = inserted.codFuncionario;
+    }
+  }
+
+  // Serviços
+  const SERVICOS = [
+    { servico: 'FORMATAÇÃO E INSTALAÇÃO DE SISTEMA OPERACIONAL', valor: '120.00', funcionario: 'ROBERTO ALVES SILVA' },
+    { servico: 'TROCA DE TELA DE NOTEBOOK', valor: '180.00', funcionario: 'ROBERTO ALVES SILVA' },
+    { servico: 'LIMPEZA INTERNA E TROCA DE PASTA TÉRMICA', valor: '90.00', funcionario: 'MARIANA COSTA FERREIRA' },
+  ];
+  for ( const servico of SERVICOS )
+  {
+    const existing = await sql`SELECT "codServico" FROM "Servicos" WHERE "servico" = ${ servico.servico } LIMIT 1`;
+    if ( existing.length === 0 )
+    {
+      await sql`
+        INSERT INTO "Servicos" ( "servico", "valor", "codFuncionario" )
+        VALUES ( ${ servico.servico }, ${ servico.valor }, ${ codFuncionarioMap [ servico.funcionario ] } )
+      `;
+    }
+  }
+
+  // Peças
+  const PECAS = [ 'TELA NOTEBOOK 15.6"', 'BATERIA DE NOTEBOOK', 'MEMÓRIA RAM 8GB DDR4', 'PASTA TÉRMICA' ];
+  for ( const peca of PECAS )
+  {
+    const existing = await sql`SELECT "codPeca" FROM "Pecas" WHERE "peca" = ${ peca } LIMIT 1`;
+    if ( existing.length === 0 )
+    {
+      await sql`
+        INSERT INTO "Pecas" ( "peca" )
+        VALUES ( ${ peca } )
+      `;
+    }
+  }
+}
+
 async function main()
 {
   console.log ( 'Iniciando seed...' );
@@ -759,6 +854,10 @@ async function main()
   console.log ( '  Contas a Pagar...' );
   await seedContasAPagar();
   console.log ( '  -> 2 contas a pagar.' );
+
+  console.log ( '  Recursos Humanos (Cargos, Funcionários, Serviços, Peças)...' );
+  await seedRecursosHumanos();
+  console.log ( '  -> 3 cargos, 3 funcionários, 3 serviços, 4 peças.' );
 
   console.log ( 'Seed concluído.' );
 }

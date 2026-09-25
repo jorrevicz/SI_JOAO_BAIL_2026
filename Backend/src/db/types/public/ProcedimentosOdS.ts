@@ -10,13 +10,13 @@ export default interface ProcedimentosOdS {
 
   codProcedimento: ProcedimentosCodProcedimento;
 
-  posicao: string;
+  posicao: string | null;
 
-  checagem: string;
+  checagem: boolean | null;
 
   obsProcedimento: string | null;
 
-  dthFim: Date;
+  dthFim: Date | null;
 
   dtCriacao: Date;
 
@@ -25,6 +25,8 @@ export default interface ProcedimentosOdS {
   codUser: number | null;
 
   isActive: boolean;
+
+  ordem: number;
 }
 
 /** Represents the initializer for the table public.ProcedimentosOdS */
@@ -33,14 +35,13 @@ export interface ProcedimentosOdSInitializer {
 
   codProcedimento: ProcedimentosCodProcedimento;
 
-  posicao: string;
+  posicao?: string | null;
 
-  checagem: string;
+  checagem?: boolean | null;
 
   obsProcedimento?: string | null;
 
-  /** Default value: CURRENT_TIMESTAMP */
-  dthFim?: Date;
+  dthFim?: Date | null;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -52,6 +53,8 @@ export interface ProcedimentosOdSInitializer {
 
   /** Default value: true */
   isActive?: boolean;
+
+  ordem: number;
 }
 
 /** Represents the mutator for the table public.ProcedimentosOdS */
@@ -60,13 +63,13 @@ export interface ProcedimentosOdSMutator {
 
   codProcedimento?: ProcedimentosCodProcedimento;
 
-  posicao?: string;
+  posicao?: string | null;
 
-  checagem?: string;
+  checagem?: boolean | null;
 
   obsProcedimento?: string | null;
 
-  dthFim?: Date;
+  dthFim?: Date | null;
 
   dtCriacao?: Date;
 
@@ -75,4 +78,6 @@ export interface ProcedimentosOdSMutator {
   codUser?: number | null;
 
   isActive?: boolean;
+
+  ordem?: number;
 }

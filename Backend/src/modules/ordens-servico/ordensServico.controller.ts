@@ -76,6 +76,32 @@ export class OrdensServicoController
         }
     };
 
+    DefinirProcedimentosController = async (
+        req:  Request,
+        res:  Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            res
+                .status ( 200 )
+                .json
+                (
+                    await this.service.DefinirProcedimentosOS
+                    (
+                        String ( req.params.numOdS ),
+                        req.body,
+                        req.codUser!
+                    )
+                );
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    };
+
     RegistrarDiagnosticoController = async (
         req:  Request,
         res:  Response,
@@ -89,6 +115,110 @@ export class OrdensServicoController
                 .json
                 (
                     await this.service.RegistrarDiagnostico
+                    (
+                        String ( req.params.numOdS ),
+                        req.body,
+                        req.codUser!
+                    )
+                );
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    };
+
+    RegistrarExecucaoController = async (
+        req:  Request,
+        res:  Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            res
+                .status ( 200 )
+                .json
+                (
+                    await this.service.RegistrarExecucao
+                    (
+                        String ( req.params.numOdS ),
+                        req.body,
+                        req.codUser!
+                    )
+                );
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    };
+
+    AprovarOrcamentoPecaController = async (
+        req:  Request,
+        res:  Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            res
+                .status ( 200 )
+                .json
+                (
+                    await this.service.AprovarOrcamentoPeca
+                    (
+                        String ( req.params.numOdS ),
+                        Number ( req.params.codPeca ),
+                        req.codUser!
+                    )
+                );
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    };
+
+    ReprovarOrcamentoPecaController = async (
+        req:  Request,
+        res:  Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            res
+                .status ( 200 )
+                .json
+                (
+                    await this.service.ReprovarOrcamentoPeca
+                    (
+                        String ( req.params.numOdS ),
+                        Number ( req.params.codPeca ),
+                        req.codUser!
+                    )
+                );
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    };
+
+    RegistrarSubstituicaoPecasController = async (
+        req:  Request,
+        res:  Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            res
+                .status ( 200 )
+                .json
+                (
+                    await this.service.RegistrarSubstituicaoPecas
                     (
                         String ( req.params.numOdS ),
                         req.body,

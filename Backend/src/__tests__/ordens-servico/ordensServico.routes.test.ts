@@ -51,7 +51,40 @@ describe ( 'Ordens de Serviço routes', () =>
     {
         const res = await request ( app )
             .patch ( '/api/ordens-servico/ZZ999999/diagnostico' )
-            .send ( { obsTecnica: 'Teste', procedimentos: [] } );
+            .send ( { historicoManutencao: 'Teste', procedimentos: [], orcamentoPecas: [] } );
         expect ( res.status ).toBe ( 404 );
+    });
+
+    it ( 'PATCH /api/ordens-servico/:numOdS/procedimentos em OS inexistente retorna 404', async () =>
+    {
+        const res = await request ( app )
+            .patch ( '/api/ordens-servico/ZZ999999/procedimentos' )
+            .send ( { procedimentos: [] } );
+        expect ( res.status ).toBe ( 404 );
+    });
+
+    it ( 'PATCH /api/ordens-servico/:numOdS/procedimentos com ordem repetida retorna 400 com mensagem PT', async () =>
+    {
+        const res = await request ( app )
+            .patch ( '/api/ordens-servico/ZZ999999/procedimentos' )
+            .send ( { procedimentos: [ { codProcedimento: 1, ordem: 1 }, { codProcedimento: 2, ordem: 1 } ] } );
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toEqual
+        ( { procedimentos: 'A lista de procedimentos não pode repetir a mesma ordem.' } );
+    });
+
+    it ( 'PATCH /api/ordens-servico/:numOdS/diagnostico com checagem=false sem observação retorna 400 com mensagem PT', async () =>
+    {
+        const res = await request ( app )
+            .patch ( '/api/ordens-servico/ZZ999999/diagnostico' )
+            .send
+            ({
+                historicoManutencao: null,
+                procedimentos: [ { codProcedimento: 1, posicao: 'Embaixo', checagem: false, dthFim: '2026-01-01T10:00:00Z' } ],
+                orcamentoPecas: [],
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toEqual
+        ( { procedimentos: 'Observação é obrigatória quando a checagem não é confirmada.' } );
     });
 });

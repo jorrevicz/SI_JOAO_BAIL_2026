@@ -121,10 +121,46 @@ describe ( 'OrdensServicoRepository (rollback)', () =>
             );
 
             const diagnosticada = await repo.RegistrarDiagnostico
-            ( 'OS000002', { obsTecnica: 'Placa-mãe queimada' }, 1, transaction );
+            ( 'OS000002', { historicoManutencao: 'Já trocou a bateria antes' }, 1, transaction );
 
-            expect ( diagnosticada?.obsTecnica ).toBe ( 'Placa-mãe queimada' );
+            expect ( diagnosticada?.historicoManutencao ).toBe ( 'Já trocou a bateria antes' );
             expect ( diagnosticada?.dtAtendimento ).not.toBeNull();
+        });
+    });
+
+    it ( 'AtualizarObsTecnica atualiza a observação técnica sem alterar dtAtendimento', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const cliente = await CriarClienteDeTeste ( transaction );
+            const aparelho = await aparelhosRepo.Create
+            ( { modelo: 'Inspiron 15', voltagem: 'Bivolt', garantia: '12 meses' }, 1, transaction );
+            const equipamento = await equipamentosRepo.Create
+            (
+                {
+                    equipamento: 'Notebook Dell', soEq: 'Win11', socketEq: 'BGA', memoriaRam: '8GB',
+                    tipoOffice: '2021', placaMae: 'Dell', bios: '1.2.0', capacidadeRam: '8GB',
+                    possuiSSD: true, possuiHD: false, capacidadeArmz: '256GB', usoArmz: '50%',
+                },
+                1,
+                transaction
+            );
+            await repo.Create
+            (
+                {
+                    numOdS: 'OS000003', codCliente: cliente.codCliente, atendente: 'Ana',
+                    defeito: 'Não liga', tipoOdS: 'Garantia',
+                    codAparelho: aparelho.codAparelho, codEquipamento: equipamento.codEquipamento,
+                },
+                1,
+                transaction
+            );
+
+            const atualizada = await repo.AtualizarObsTecnica
+            ( 'OS000003', 'Placa-mãe trocada', 1, transaction );
+
+            expect ( atualizada?.obsTecnica ).toBe ( 'Placa-mãe trocada' );
+            expect ( atualizada?.dtAtendimento ).toBeNull();
         });
     });
 });

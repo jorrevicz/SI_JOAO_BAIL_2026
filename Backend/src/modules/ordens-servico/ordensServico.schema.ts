@@ -98,6 +98,48 @@ const equipamentoSchema = z.object
     }
 );
 
+/**
+ * Estrutura da checklist de uma OS: só define QUAIS procedimentos entram e em que
+ * ORDEM (RN009). Não carrega dados de checagem — quem preenche isso é
+ * `registrarDiagnosticoOS()`, sobre uma linha já existente.
+ */
+export const procedimentoEstruturaOdSSchema = z.object
+(
+    {
+        codProcedimento: z
+            .coerce.number ( { message: 'O procedimento é obrigatório.' } )
+            .int()
+            .positive(),
+        ordem: z
+            .coerce.number ( { message: 'A ordem é obrigatória.' } )
+            .int()
+            .positive(),
+    }
+);
+
+export const definirProcedimentosSchema = z.object
+(
+    {
+        procedimentos: z
+            .array ( procedimentoEstruturaOdSSchema )
+            .default ( [] )
+            .refine
+            (
+                ( itens ) => new Set ( itens.map ( ( item ) => item.codProcedimento ) ).size === itens.length,
+                'A lista de procedimentos não pode repetir o mesmo procedimento.'
+            )
+            .refine
+            (
+                ( itens ) => new Set ( itens.map ( ( item ) => item.ordem ) ).size === itens.length,
+                'A lista de procedimentos não pode repetir a mesma ordem.'
+            ),
+    }
+);
+
+/**
+ * Checagem de um procedimento já presente na checklist da OS (RN009/RN010) —
+ * preenchida no diagnóstico, nunca adiciona nem remove itens da lista.
+ */
 export const procedimentoOdSSchema = z.object
 (
     {
@@ -111,18 +153,22 @@ export const procedimentoOdSSchema = z.object
             .min ( 1, 'Informe a posição.' )
             .max ( 8, 'A posição deve ter no máximo 8 caracteres.' ),
         checagem: z
-            .string ( { message: 'A checagem é obrigatória.' } )
-            .trim()
-            .min ( 1, 'Informe o resultado da checagem.' )
-            .max ( 8, 'A checagem deve ter no máximo 8 caracteres.' ),
+            .boolean ( { message: 'A checagem é obrigatória.' } ),
+        dthFim: z
+            .coerce.date ( { message: 'A data/hora da checagem é obrigatória.' } ),
         obsProcedimento: z
             .string()
             .trim()
             .max ( 244 )
             .nullish(),
-        dthFim: z
-            .coerce.date ( { message: 'A data/hora da checagem é inválida.' } )
-            .optional(),
+    }
+)
+.refine
+(
+    ( item ) => item.checagem === true || ( item.obsProcedimento?.trim().length ?? 0 ) > 0,
+    {
+        message: 'Observação é obrigatória quando a checagem não é confirmada.',
+        path: [ 'obsProcedimento' ],
     }
 );
 
@@ -172,14 +218,23 @@ export const abrirOrdemServicoSchema = z.object
     }
 );
 
+export const orcamentoPecaOdSSchema = z.object
+(
+    {
+        codPeca: z
+            .coerce.number ( { message: 'A peça é obrigatória.' } )
+            .int()
+            .positive(),
+        vlrPv: z
+            .coerce.string ( { message: 'O valor de venda deve ser uma string decimal.' } )
+            .regex ( /^[0-9]+\.[0-9]{2}$/, 'O valor de venda deve ser um decimal (ex: 89.90).' )
+            .refine ( ( valor ) => Number ( valor ) > 0, 'O valor de venda deve ser maior que zero.' ),
+    }
+);
+
 export const registrarDiagnosticoSchema = z.object
 (
     {
-        obsTecnica: z
-            .string()
-            .trim()
-            .max ( 244 )
-            .nullish(),
         historicoManutencao: z
             .string()
             .trim()
@@ -188,9 +243,73 @@ export const registrarDiagnosticoSchema = z.object
         procedimentos: z
             .array ( procedimentoOdSSchema )
             .default ( [] ),
+        orcamentoPecas: z
+            .array ( orcamentoPecaOdSSchema )
+            .default ( [] ),
     }
 );
 
-export type AbrirOrdemServicoInput   = z.infer < typeof abrirOrdemServicoSchema >;
+export const servicoOdSSchema = z.object
+(
+    {
+        codServico: z
+            .coerce.number ( { message: 'O serviço é obrigatório.' } )
+            .int()
+            .positive(),
+        qtdServico: z
+            .coerce.number ( { message: 'A quantidade é obrigatória.' } )
+            .int()
+            .positive ( 'A quantidade deve ser maior que zero.' ),
+    }
+);
+
+export const registrarExecucaoSchema = z.object
+(
+    {
+        servicos: z
+            .array ( servicoOdSSchema )
+            .default ( [] ),
+        obsTecnica: z
+            .string()
+            .trim()
+            .max ( 244 )
+            .nullish(),
+    }
+);
+
+export const substituirPecaOdSSchema = z.object
+(
+    {
+        codPeca: z
+            .coerce.number ( { message: 'A peça é obrigatória.' } )
+            .int()
+            .positive(),
+        qtdPeca: z
+            .coerce.number ( { message: 'A quantidade é obrigatória.' } )
+            .int()
+            .positive ( 'A quantidade deve ser maior que zero.' ),
+        vlrUnitarioPeca: z
+            .coerce.number ( { message: 'O valor unitário é obrigatório.' } )
+            .positive ( 'O valor unitário deve ser maior que zero.' ),
+    }
+);
+
+export const registrarSubstituicaoPecasSchema = z.object
+(
+    {
+        pecas: z
+            .array ( substituirPecaOdSSchema )
+            .default ( [] ),
+    }
+);
+
+export type AbrirOrdemServicoInput    = z.infer < typeof abrirOrdemServicoSchema >;
 export type RegistrarDiagnosticoInput = z.infer < typeof registrarDiagnosticoSchema >;
-export type ProcedimentoOdSItem      = z.infer < typeof procedimentoOdSSchema >;
+export type ProcedimentoOdSItem       = z.infer < typeof procedimentoOdSSchema >;
+export type DefinirProcedimentosInput   = z.infer < typeof definirProcedimentosSchema >;
+export type ProcedimentoEstruturaOdSItem = z.infer < typeof procedimentoEstruturaOdSSchema >;
+export type RegistrarExecucaoInput    = z.infer < typeof registrarExecucaoSchema >;
+export type ServicoOdSItem            = z.infer < typeof servicoOdSSchema >;
+export type OrcamentoPecaOdSItem      = z.infer < typeof orcamentoPecaOdSSchema >;
+export type RegistrarSubstituicaoPecasInput = z.infer < typeof registrarSubstituicaoPecasSchema >;
+export type SubstituirPecaOdSItem     = z.infer < typeof substituirPecaOdSSchema >;

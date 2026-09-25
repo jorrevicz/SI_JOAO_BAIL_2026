@@ -1,14 +1,11 @@
 import type postgres from 'postgres';
 import sql from '../../lib/db';
 import type ProcedimentosOdS from '../../db/types/public/ProcedimentosOdS';
-
-export type ProcedimentoOdSInput = {
-    codProcedimento: number;
-    posicao:         string;
-    checagem:        string;
-    obsProcedimento?: string | null;
-    dthFim?:         Date;
-};
+import type
+{
+    ProcedimentoEstruturaOdSItem,
+    ProcedimentoOdSItem,
+} from '../ordens-servico/ordensServico.schema';
 
 export class ProcedimentosOdSRepository
 {
@@ -25,14 +22,18 @@ export class ProcedimentosOdSRepository
             FROM "ProcedimentosOdS"
             WHERE "numOdS" = ${ numOdS }
             AND "isActive" = true
-            ORDER BY "codProcedimento"
+            ORDER BY "ordem"
         `;
     };
 
-    async Create
+    /**
+     * Cria a linha só com a estrutura (procedimento + ordem) — os campos de checagem
+     * nascem nulos, preenchidos depois via `UpdateChecagem` (RN009).
+     */
+    async CreateEstrutura
     (
         numOdS: string,
-        item:   ProcedimentoOdSInput,
+        item:   ProcedimentoEstruturaOdSItem,
         codUser: number,
         transaction?: postgres.TransactionSql
 
@@ -44,20 +45,14 @@ export class ProcedimentosOdSRepository
             (
                 "numOdS",
                 "codProcedimento",
-                "posicao",
-                "checagem",
-                "obsProcedimento",
-                "dthFim",
+                "ordem",
                 "codUser"
             )
             VALUES
             (
                 ${ numOdS },
                 ${ item.codProcedimento },
-                ${ item.posicao },
-                ${ item.checagem },
-                ${ item.obsProcedimento ?? null },
-                ${ item.dthFim ?? sql`DEFAULT` },
+                ${ item.ordem },
                 ${ codUser }
             )
             RETURNING *
@@ -66,11 +61,44 @@ export class ProcedimentosOdSRepository
         return row;
     };
 
-    async Update
+    /**
+     * Atualiza só a posição da linha na ordem da checklist — não mexe em dados de
+     * checagem (RN009).
+     */
+    async UpdateOrdem
     (
         numOdS: string,
         codProcedimento: number,
-        item:   ProcedimentoOdSInput,
+        ordem: number,
+        codUser: number,
+        transaction?: postgres.TransactionSql
+
+    ): Promise < ProcedimentosOdS | null >
+    {
+        const client = transaction ?? sql;
+        const [ row ] = await client < ProcedimentosOdS[] >`
+            UPDATE "ProcedimentosOdS"
+            SET "ordem"    = ${ ordem },
+                "codUser"  = ${ codUser },
+                "dtEdicao" = CURRENT_TIMESTAMP
+            WHERE "numOdS"        = ${ numOdS }
+            AND "codProcedimento" = ${ codProcedimento }
+            AND "isActive"        = true
+            RETURNING *
+        `;
+
+        return row ?? null;
+    };
+
+    /**
+     * Preenche os campos de checagem de uma linha já existente na estrutura — não
+     * mexe em `ordem` (RN003/RN010).
+     */
+    async UpdateChecagem
+    (
+        numOdS: string,
+        codProcedimento: number,
+        item:   ProcedimentoOdSItem,
         codUser: number,
         transaction?: postgres.TransactionSql
 
@@ -82,7 +110,7 @@ export class ProcedimentosOdSRepository
             SET "posicao"         = ${ item.posicao },
                 "checagem"        = ${ item.checagem },
                 "obsProcedimento" = ${ item.obsProcedimento ?? null },
-                "dthFim"          = ${ item.dthFim ?? new Date() },
+                "dthFim"          = ${ item.dthFim },
                 "codUser"         = ${ codUser },
                 "dtEdicao"        = CURRENT_TIMESTAMP
             WHERE "numOdS"          = ${ numOdS }

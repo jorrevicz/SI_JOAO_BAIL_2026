@@ -16,7 +16,6 @@ export type CreateOrdemServicoRow = {
 };
 
 export type RegistrarDiagnosticoRow = {
-    obsTecnica?:          string | null;
     historicoManutencao?: string | null;
 };
 
@@ -118,13 +117,58 @@ export class OrdensServicoRepository
         const client = transaction ?? sql;
         const [ row ] = await client < OrdemDeServicos[] >`
             UPDATE "OrdemDeServicos"
-            SET "obsTecnica"          = ${ dados.obsTecnica ?? null },
-                "historicoManutencao" = ${ dados.historicoManutencao ?? null },
+            SET "historicoManutencao" = ${ dados.historicoManutencao ?? null },
                 "dtAtendimento"       = COALESCE ( "dtAtendimento", CURRENT_TIMESTAMP ),
                 "codUser"             = ${ codUser },
                 "dtEdicao"            = CURRENT_TIMESTAMP
             WHERE "numOdS"   = ${ numOdS }
             AND "isActive"   = true
+            RETURNING *
+        `;
+
+        return row ?? null;
+    };
+
+    async AtualizarObsTecnica
+    (
+        numOdS: string,
+        obsTecnica: string | null | undefined,
+        codUser: number,
+        transaction?: postgres.TransactionSql
+
+    ): Promise < OrdemDeServicos | null >
+    {
+        const client = transaction ?? sql;
+        const [ row ] = await client < OrdemDeServicos[] >`
+            UPDATE "OrdemDeServicos"
+            SET "obsTecnica" = ${ obsTecnica ?? null },
+                "codUser"    = ${ codUser },
+                "dtEdicao"   = CURRENT_TIMESTAMP
+            WHERE "numOdS"   = ${ numOdS }
+            AND "isActive"   = true
+            RETURNING *
+        `;
+
+        return row ?? null;
+    };
+
+    async AtualizarSituacao
+    (
+        numOdS: string,
+        situacao: string,
+        codUser: number,
+        transaction?: postgres.TransactionSql
+
+    ): Promise < OrdemDeServicos | null >
+    {
+        const client = transaction ?? sql;
+        const [ row ] = await client < OrdemDeServicos[] >`
+            UPDATE "OrdemDeServicos"
+            SET "situacao"  = ${ situacao },
+                "codUser"   = ${ codUser },
+                "dtEdicao"  = CURRENT_TIMESTAMP
+            WHERE "numOdS"  = ${ numOdS }
+            AND "isActive"  = true
             RETURNING *
         `;
 

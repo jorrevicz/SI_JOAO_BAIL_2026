@@ -47,6 +47,8 @@ export default interface OrdemDeServicos {
   codUser: number | null;
 
   isActive: boolean;
+
+  situacao: string;
 }
 
 /** Represents the initializer for the table public.OrdemDeServicos */
@@ -91,6 +93,9 @@ export interface OrdemDeServicosInitializer {
 
   /** Default value: true */
   isActive?: boolean;
+
+  /** Default value: 'Aberta'::character varying */
+  situacao?: string;
 }
 
 /** Represents the mutator for the table public.OrdemDeServicos */
@@ -132,4 +137,6 @@ export interface OrdemDeServicosMutator {
   codUser?: number | null;
 
   isActive?: boolean;
+
+  situacao?: string;
 }

@@ -16,6 +16,8 @@ function MakeOsRepo
         FindById:               vi.fn(),
         Create:                 vi.fn(),
         RegistrarDiagnostico:   vi.fn(),
+        AtualizarObsTecnica:    vi.fn(),
+        AtualizarSituacao:      vi.fn(),
         ...over,
     };
 }
@@ -38,10 +40,27 @@ function MakeProcedimentosOdSRepo
 )
 {
     return {
-        ListByOS: vi.fn(),
+        ListByOS:       vi.fn(),
+        CreateEstrutura: vi.fn(),
+        UpdateOrdem:     vi.fn(),
+        UpdateChecagem:  vi.fn(),
+        Delete:          vi.fn(),
+        ...over,
+    };
+}
+
+function MakeOdSLinhaRepo
+(
+    over: Partial < Record < string, ReturnType < typeof vi.fn > > > = {}
+)
+{
+    return {
+        ListByOS: vi.fn().mockResolvedValue ( [] ),
+        FindOne:  vi.fn(),
         Create:   vi.fn(),
         Update:   vi.fn(),
         Delete:   vi.fn(),
+        Aprovar:  vi.fn(),
         ...over,
     };
 }
@@ -78,6 +97,11 @@ describe ( 'OrdensServicoService', () =>
     let procedimentosRepo:  ReturnType < typeof MakeSimpleRepo >;
     let procedimentosOdSRepo: ReturnType < typeof MakeProcedimentosOdSRepo >;
     let clientesRepo:       ReturnType < typeof MakeSimpleRepo >;
+    let servicosRepo:          ReturnType < typeof MakeSimpleRepo >;
+    let servicosOdSRepo:        ReturnType < typeof MakeOdSLinhaRepo >;
+    let pecasRepo:              ReturnType < typeof MakeSimpleRepo >;
+    let orcamentoPecasOdSRepo:  ReturnType < typeof MakeOdSLinhaRepo >;
+    let substituirPecasOdSRepo: ReturnType < typeof MakeOdSLinhaRepo >;
     let service:            OrdensServicoService;
 
     beforeEach ( () =>
@@ -88,6 +112,11 @@ describe ( 'OrdensServicoService', () =>
         procedimentosRepo    = MakeSimpleRepo();
         procedimentosOdSRepo = MakeProcedimentosOdSRepo();
         clientesRepo         = MakeSimpleRepo();
+        servicosRepo          = MakeSimpleRepo();
+        servicosOdSRepo        = MakeOdSLinhaRepo();
+        pecasRepo              = MakeSimpleRepo();
+        orcamentoPecasOdSRepo  = MakeOdSLinhaRepo();
+        substituirPecasOdSRepo = MakeOdSLinhaRepo();
 
         service = new OrdensServicoService
         (
@@ -97,6 +126,11 @@ describe ( 'OrdensServicoService', () =>
             procedimentosRepo as never,
             procedimentosOdSRepo as never,
             clientesRepo as never,
+            servicosRepo as never,
+            servicosOdSRepo as never,
+            pecasRepo as never,
+            orcamentoPecasOdSRepo as never,
+            substituirPecasOdSRepo as never,
         );
     });
 
@@ -165,85 +199,307 @@ describe ( 'OrdensServicoService', () =>
         expect ( resultado ).toMatchObject ( { numOdS: 'OS000001' } );
     });
 
-    it ( 'RegistrarDiagnostico lança 404 quando a OS não existe', async () =>
+    it ( 'DefinirProcedimentosOS lança 404 quando a OS não existe', async () =>
     {
-        repo.RegistrarDiagnostico.mockResolvedValue ( null );
+        repo.FindById.mockResolvedValue ( null );
 
         await expect (
-            service.RegistrarDiagnostico ( 'OS999999', { obsTecnica: 'x', historicoManutencao: null, procedimentos: [] }, 1 )
+            service.DefinirProcedimentosOS ( 'OS999999', { procedimentos: [] }, 1 )
         ).rejects.toMatchObject ( { status: 404 } );
     });
 
-    it ( 'RegistrarDiagnostico remove checagem ausente da lista enviada', async () =>
+    it ( 'DefinirProcedimentosOS lança 400 quando codProcedimento informado não existe', async () =>
     {
-        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 'OS000001' } );
-        procedimentosOdSRepo.ListByOS.mockResolvedValue
-        ([
-            { numOdS: 'OS000001', codProcedimento: 1, posicao: 'Embaixo', checagem: 'SIM' },
-        ]);
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001' } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        procedimentosRepo.FindById.mockResolvedValue ( null );
+
+        await expect (
+            service.DefinirProcedimentosOS
+            (
+                'OS000001',
+                { procedimentos: [ { codProcedimento: 99, ordem: 1 } ] },
+                1
+            )
+        ).rejects.toMatchObject ( { status: 400 } );
+
+        expect ( procedimentosOdSRepo.CreateEstrutura ).not.toHaveBeenCalled();
+    });
+
+    it ( 'DefinirProcedimentosOS cria a estrutura de um procedimento novo na lista', async () =>
+    {
         repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', codAparelho: 1, codEquipamento: 2 } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        procedimentosRepo.FindById.mockResolvedValue ( { codProcedimento: 1 } );
         aparelhosRepo.FindById.mockResolvedValue ( {} );
         equipamentosRepo.FindById.mockResolvedValue ( {} );
 
-        await service.RegistrarDiagnostico ( 'OS000001', { obsTecnica: null, historicoManutencao: null, procedimentos: [] }, 1 );
+        const item = { codProcedimento: 1, ordem: 1 };
+
+        await service.DefinirProcedimentosOS ( 'OS000001', { procedimentos: [ item ] }, 1 );
+
+        expect ( procedimentosOdSRepo.CreateEstrutura ).toHaveBeenCalledWith ( 'OS000001', item, 1, {} );
+        expect ( procedimentosOdSRepo.UpdateOrdem ).not.toHaveBeenCalled();
+    });
+
+    it ( 'DefinirProcedimentosOS atualiza a ordem de um procedimento já presente na lista', async () =>
+    {
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', codAparelho: 1, codEquipamento: 2 } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue
+        ([
+            { numOdS: 'OS000001', codProcedimento: 1, ordem: 2 },
+        ]);
+        procedimentosRepo.FindById.mockResolvedValue ( { codProcedimento: 1 } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+
+        await service.DefinirProcedimentosOS ( 'OS000001', { procedimentos: [ { codProcedimento: 1, ordem: 1 } ] }, 1 );
+
+        expect ( procedimentosOdSRepo.UpdateOrdem ).toHaveBeenCalledWith ( 'OS000001', 1, 1, 1, {} );
+        expect ( procedimentosOdSRepo.CreateEstrutura ).not.toHaveBeenCalled();
+    });
+
+    it ( 'DefinirProcedimentosOS remove (soft delete) procedimento ausente da lista enviada', async () =>
+    {
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', codAparelho: 1, codEquipamento: 2 } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue
+        ([
+            { numOdS: 'OS000001', codProcedimento: 1, ordem: 1 },
+        ]);
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+
+        await service.DefinirProcedimentosOS ( 'OS000001', { procedimentos: [] }, 1 );
 
         expect ( procedimentosOdSRepo.Delete ).toHaveBeenCalledWith ( 'OS000001', 1, 1, {} );
         expect ( procedimentosRepo.FindById ).not.toHaveBeenCalled();
     });
 
-    it ( 'RegistrarDiagnostico lança 400 quando codProcedimento informado não existe', async () =>
+    it ( 'RegistrarDiagnostico lança 404 quando a OS não existe', async () =>
+    {
+        repo.RegistrarDiagnostico.mockResolvedValue ( null );
+
+        await expect (
+            service.RegistrarDiagnostico ( 'OS999999', { historicoManutencao: null, procedimentos: [], orcamentoPecas: [] }, 1 )
+        ).rejects.toMatchObject ( { status: 404 } );
+    });
+
+    it ( 'RegistrarDiagnostico lança 400 quando o procedimento não faz parte da checklist', async () =>
     {
         repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 'OS000001' } );
         procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
-        procedimentosRepo.FindById.mockResolvedValue ( null );
+
+        const item = { codProcedimento: 99, posicao: 'Embaixo', checagem: true, dthFim: new Date ( '2026-01-01' ) };
 
         await expect (
             service.RegistrarDiagnostico
             (
                 'OS000001',
-                { obsTecnica: null, historicoManutencao: null, procedimentos: [ { codProcedimento: 99, posicao: 'Embaixo', checagem: 'SIM' } ] },
+                { historicoManutencao: null, procedimentos: [ item ], orcamentoPecas: [] },
                 1
             )
         ).rejects.toMatchObject ( { status: 400 } );
 
-        expect ( procedimentosOdSRepo.Create ).not.toHaveBeenCalled();
+        expect ( procedimentosOdSRepo.UpdateChecagem ).not.toHaveBeenCalled();
     });
 
-    it ( 'RegistrarDiagnostico cria nova checagem quando codProcedimento ainda não respondido', async () =>
-    {
-        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 'OS000001' } );
-        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
-        procedimentosRepo.FindById.mockResolvedValue ( { codProcedimento: 1 } );
-        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', codAparelho: 1, codEquipamento: 2 } );
-        aparelhosRepo.FindById.mockResolvedValue ( {} );
-        equipamentosRepo.FindById.mockResolvedValue ( {} );
-
-        const item = { codProcedimento: 1, posicao: 'Embaixo', checagem: 'SIM' };
-
-        await service.RegistrarDiagnostico ( 'OS000001', { obsTecnica: null, historicoManutencao: null, procedimentos: [ item ] }, 1 );
-
-        expect ( procedimentosOdSRepo.Create ).toHaveBeenCalledWith ( 'OS000001', item, 1, {} );
-        expect ( procedimentosOdSRepo.Update ).not.toHaveBeenCalled();
-    });
-
-    it ( 'RegistrarDiagnostico atualiza checagem já respondida para o mesmo codProcedimento', async () =>
+    it ( 'RegistrarDiagnostico preenche a checagem de um procedimento já presente na checklist', async () =>
     {
         repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 'OS000001' } );
         procedimentosOdSRepo.ListByOS.mockResolvedValue
         ([
-            { numOdS: 'OS000001', codProcedimento: 1, posicao: 'Embaixo', checagem: 'NÃO' },
+            { numOdS: 'OS000001', codProcedimento: 1, ordem: 1, posicao: null, checagem: null },
         ]);
-        procedimentosRepo.FindById.mockResolvedValue ( { codProcedimento: 1 } );
         repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', codAparelho: 1, codEquipamento: 2 } );
         aparelhosRepo.FindById.mockResolvedValue ( {} );
         equipamentosRepo.FindById.mockResolvedValue ( {} );
 
-        const item = { codProcedimento: 1, posicao: 'Embaixo', checagem: 'SIM' };
+        const item = { codProcedimento: 1, posicao: 'Embaixo', checagem: true, dthFim: new Date ( '2026-01-01' ) };
 
-        await service.RegistrarDiagnostico ( 'OS000001', { obsTecnica: null, historicoManutencao: null, procedimentos: [ item ] }, 1 );
+        await service.RegistrarDiagnostico ( 'OS000001', { historicoManutencao: null, procedimentos: [ item ], orcamentoPecas: [] }, 1 );
 
-        expect ( procedimentosOdSRepo.Update ).toHaveBeenCalledWith ( 'OS000001', 1, item, 1, {} );
-        expect ( procedimentosOdSRepo.Create ).not.toHaveBeenCalled();
+        expect ( procedimentosOdSRepo.UpdateChecagem ).toHaveBeenCalledWith ( 'OS000001', 1, item, 1, {} );
+        expect ( procedimentosOdSRepo.CreateEstrutura ).not.toHaveBeenCalled();
         expect ( procedimentosOdSRepo.Delete ).not.toHaveBeenCalled();
+    });
+
+    it ( 'RegistrarDiagnostico avança a situação de Aberta para Em execução na primeira chamada', async () =>
+    {
+        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Aberta' } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        orcamentoPecasOdSRepo.ListByOS.mockResolvedValue ( [] );
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', codAparelho: 1, codEquipamento: 2, situacao: 'Em execução' } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+
+        await service.RegistrarDiagnostico ( 'OS000001', { historicoManutencao: null, procedimentos: [], orcamentoPecas: [] }, 1 );
+
+        expect ( repo.AtualizarSituacao ).toHaveBeenCalledWith ( 'OS000001', 'Em execução', 1, {} );
+    });
+
+    it ( 'RegistrarDiagnostico reconcilia o orçamento de peças por diferença de conjuntos', async () =>
+    {
+        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Em execução' } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        orcamentoPecasOdSRepo.ListByOS
+            .mockResolvedValueOnce ( [ { numOdS: 'OS000001', codPeca: 9, vlrPv: '10.00' } ] )
+            .mockResolvedValueOnce ( [ { codPeca: 5, aprovado: false } ] );
+        pecasRepo.FindById.mockResolvedValue ( { codPeca: 5 } );
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', codAparelho: 1, codEquipamento: 2, situacao: 'Em execução' } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+
+        await service.RegistrarDiagnostico
+        (
+            'OS000001',
+            { historicoManutencao: null, procedimentos: [], orcamentoPecas: [ { codPeca: 5, vlrPv: '89.90' } ] },
+            1
+        );
+
+        expect ( orcamentoPecasOdSRepo.Delete ).toHaveBeenCalledWith ( 'OS000001', 9, 1, {} );
+        expect ( orcamentoPecasOdSRepo.Create ).toHaveBeenCalledWith ( 'OS000001', { codPeca: 5, vlrPv: '89.90' }, 1, {} );
+    });
+
+    it ( 'RegistrarDiagnostico lança 400 quando codPeca informado não existe', async () =>
+    {
+        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 'OS000001' } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        orcamentoPecasOdSRepo.ListByOS.mockResolvedValue ( [] );
+        pecasRepo.FindById.mockResolvedValue ( null );
+
+        await expect (
+            service.RegistrarDiagnostico
+            (
+                'OS000001',
+                { historicoManutencao: null, procedimentos: [], orcamentoPecas: [ { codPeca: 99, vlrPv: '89.90' } ] },
+                1
+            )
+        ).rejects.toMatchObject ( { status: 400 } );
+
+        expect ( orcamentoPecasOdSRepo.Create ).not.toHaveBeenCalled();
+    });
+
+    it ( 'RegistrarDiagnostico coloca a OS em Aguardando aprovação quando há peça orçada pendente', async () =>
+    {
+        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Em execução' } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        pecasRepo.FindById.mockResolvedValue ( { codPeca: 5 } );
+        orcamentoPecasOdSRepo.ListByOS
+            .mockResolvedValueOnce ( [] )
+            .mockResolvedValueOnce ( [ { codPeca: 5, aprovado: false } ] );
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Em execução' } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+
+        await service.RegistrarDiagnostico ( 'OS000001', { historicoManutencao: null, procedimentos: [], orcamentoPecas: [ { codPeca: 5, vlrPv: '89.90' } ] }, 1 );
+
+        expect ( repo.AtualizarSituacao ).toHaveBeenCalledWith ( 'OS000001', 'Aguardando aprovação', 1, {} );
+    });
+
+    it ( 'RegistrarExecucao reconcilia serviços e atualiza as observações técnicas', async () =>
+    {
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Em execução' } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        servicosOdSRepo.ListByOS.mockResolvedValue ( [ { numOdS: 'OS000001', codServico: 9, qtdServico: 1 } ] );
+        servicosRepo.FindById.mockResolvedValue ( { codServico: 1 } );
+        repo.AtualizarObsTecnica.mockResolvedValue ( { numOdS: 'OS000001' } );
+
+        await service.RegistrarExecucao
+        (
+            'OS000001',
+            { servicos: [ { codServico: 1, qtdServico: 2 } ], obsTecnica: 'Placa-mãe trocada' },
+            1
+        );
+
+        expect ( servicosOdSRepo.Delete ).toHaveBeenCalledWith ( 'OS000001', 9, 1, {} );
+        expect ( servicosOdSRepo.Create ).toHaveBeenCalledWith ( 'OS000001', { codServico: 1, qtdServico: 2 }, 1, {} );
+        expect ( repo.AtualizarObsTecnica ).toHaveBeenCalledWith ( 'OS000001', 'Placa-mãe trocada', 1, {} );
+    });
+
+    it ( 'RegistrarExecucao lança 400 quando o serviço informado não existe', async () =>
+    {
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Em execução' } );
+        servicosRepo.FindById.mockResolvedValue ( null );
+
+        await expect (
+            service.RegistrarExecucao ( 'OS000001', { servicos: [ { codServico: 99, qtdServico: 1 } ], obsTecnica: null }, 1 )
+        ).rejects.toMatchObject ( { status: 400 } );
+
+        expect ( servicosOdSRepo.Create ).not.toHaveBeenCalled();
+    });
+
+    it ( 'AprovarOrcamentoPeca lança 404 quando o item não existe para a OS', async () =>
+    {
+        orcamentoPecasOdSRepo.Aprovar.mockResolvedValue ( null );
+
+        await expect ( service.AprovarOrcamentoPeca ( 'OS000001', 5, 1 ) ).rejects.toMatchObject ( { status: 404 } );
+    });
+
+    it ( 'AprovarOrcamentoPeca aprova o item e recalcula a situação', async () =>
+    {
+        orcamentoPecasOdSRepo.Aprovar.mockResolvedValue ( { codPeca: 5, aprovado: true } );
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Aguardando aprovação' } );
+        orcamentoPecasOdSRepo.ListByOS.mockResolvedValue ( [ { codPeca: 5, aprovado: true } ] );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+
+        await service.AprovarOrcamentoPeca ( 'OS000001', 5, 1 );
+
+        expect ( repo.AtualizarSituacao ).toHaveBeenCalledWith ( 'OS000001', 'Em execução', 1, {} );
+    });
+
+    it ( 'ReprovarOrcamentoPeca lança 404 quando o item não existe para a OS', async () =>
+    {
+        orcamentoPecasOdSRepo.FindOne.mockResolvedValue ( null );
+
+        await expect ( service.ReprovarOrcamentoPeca ( 'OS000001', 5, 1 ) ).rejects.toMatchObject ( { status: 404 } );
+
+        expect ( orcamentoPecasOdSRepo.Delete ).not.toHaveBeenCalled();
+    });
+
+    it ( 'ReprovarOrcamentoPeca remove (soft delete) o item do orçamento', async () =>
+    {
+        orcamentoPecasOdSRepo.FindOne.mockResolvedValue ( { codPeca: 5, aprovado: false } );
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Aguardando aprovação' } );
+        orcamentoPecasOdSRepo.ListByOS.mockResolvedValue ( [] );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+
+        await service.ReprovarOrcamentoPeca ( 'OS000001', 5, 1 );
+
+        expect ( orcamentoPecasOdSRepo.Delete ).toHaveBeenCalledWith ( 'OS000001', 5, 1, {} );
+        expect ( repo.AtualizarSituacao ).toHaveBeenCalledWith ( 'OS000001', 'Em execução', 1, {} );
+    });
+
+    it ( 'RegistrarSubstituicaoPecas lança 409 quando a peça não tem orçamento aprovado', async () =>
+    {
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Em execução' } );
+        pecasRepo.FindById.mockResolvedValue ( { codPeca: 5 } );
+        orcamentoPecasOdSRepo.FindOne.mockResolvedValue ( { codPeca: 5, aprovado: false } );
+
+        await expect (
+            service.RegistrarSubstituicaoPecas ( 'OS000001', { pecas: [ { codPeca: 5, qtdPeca: 1, vlrUnitarioPeca: 90 } ] }, 1 )
+        ).rejects.toMatchObject ( { status: 409 } );
+
+        expect ( substituirPecasOdSRepo.Create ).not.toHaveBeenCalled();
+    });
+
+    it ( 'RegistrarSubstituicaoPecas registra a peça quando o orçamento está aprovado', async () =>
+    {
+        repo.FindById.mockResolvedValue ( { numOdS: 'OS000001', situacao: 'Em execução' } );
+        pecasRepo.FindById.mockResolvedValue ( { codPeca: 5 } );
+        orcamentoPecasOdSRepo.FindOne.mockResolvedValue ( { codPeca: 5, aprovado: true } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+
+        const item = { codPeca: 5, qtdPeca: 1, vlrUnitarioPeca: 95 };
+        await service.RegistrarSubstituicaoPecas ( 'OS000001', { pecas: [ item ] }, 1 );
+
+        expect ( substituirPecasOdSRepo.Create ).toHaveBeenCalledWith ( 'OS000001', item, 1, {} );
     });
 });
