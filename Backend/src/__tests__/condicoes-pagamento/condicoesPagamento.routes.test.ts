@@ -1,11 +1,41 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../../app';
 import sql from '../../lib/db';
 
+const FORMA_DE_PAG_TESTE = { formaDePag: 'Boleto Teste CondPag', prazoCompensacao: 1 };
+
 describe ( 'CondicoesPagamento routes', () =>
 {
-    afterAll ( async () => { await sql.end(); } );
+    // A condição de pagamento não tem forma de pagamento própria — cada parcela aponta
+    // para uma FormaDePagamento. Como o banco de teste agora começa vazio (ver
+    // src/db/testReset.ts, rodado no `pretest`), este arquivo não pode mais pegar a
+    // "primeira" forma de pagamento do seed: ele cria a própria, mesmo padrão de
+    // funcionarios/servicos/contasPagamento (fixtures de apoio criadas em beforeAll).
+    let codFormaDePag: number;
+
+    // Toda condição de pagamento criada pelos testes, para apagar em afterAll — as
+    // parcelas (FK RESTRICT para CondicaoDePagamento) são apagadas primeiro.
+    const codigosCondicaoCriados: number[] = [];
+
+    beforeAll ( async () =>
+    {
+        const formaDePag = await request ( app ).post ( '/api/formas-pagamento' ).send ( FORMA_DE_PAG_TESTE );
+        codFormaDePag = formaDePag.body.codFormaDePag;
+    });
+
+    afterAll ( async () =>
+    {
+        if ( codigosCondicaoCriados.length > 0 )
+        {
+            await sql`DELETE FROM "Parcelas" WHERE "codCondDePag" IN ${ sql ( codigosCondicaoCriados ) }`;
+            await sql`DELETE FROM "CondicaoDePagamento" WHERE "codCondDePag" IN ${ sql ( codigosCondicaoCriados ) }`;
+        }
+
+        await sql`DELETE FROM "FormaDePagamento" WHERE "codFormaDePag" = ${ codFormaDePag }`;
+
+        await sql.end();
+    });
 
     it ( 'GET /api/condicoes-pagamento retorna 200 e um array', async () =>
     {
@@ -57,9 +87,6 @@ describe ( 'CondicoesPagamento routes', () =>
     // RN006 — soma dos percentuais deve ser 100%
     it ( 'POST /api/condicoes-pagamento com soma de percentuais ≠ 100 retorna 400 (RN006)', async () =>
     {
-        const formasRes = await request ( app ).get ( '/api/formas-pagamento' );
-        const codFormaDePag = formasRes.body[ 0 ].codFormaDePag;
-
         const res = await request ( app )
             .post ( '/api/condicoes-pagamento' )
             .send ({
@@ -79,9 +106,6 @@ describe ( 'CondicoesPagamento routes', () =>
     // RN004 — dias estritamente crescentes
     it ( 'POST /api/condicoes-pagamento com numDias repetidos retorna 400 (RN004)', async () =>
     {
-        const formasRes = await request ( app ).get ( '/api/formas-pagamento' );
-        const codFormaDePag = formasRes.body[ 0 ].codFormaDePag;
-
         const res = await request ( app )
             .post ( '/api/condicoes-pagamento' )
             .send ({
@@ -101,9 +125,6 @@ describe ( 'CondicoesPagamento routes', () =>
     // RN005 — numDias mínimo é 1 (0 não permitido)
     it ( 'POST /api/condicoes-pagamento com numDias = 0 retorna 400 (RN005)', async () =>
     {
-        const formasRes = await request ( app ).get ( '/api/formas-pagamento' );
-        const codFormaDePag = formasRes.body[ 0 ].codFormaDePag;
-
         const res = await request ( app )
             .post ( '/api/condicoes-pagamento' )
             .send ({
@@ -118,9 +139,6 @@ describe ( 'CondicoesPagamento routes', () =>
 
     it ( 'POST /api/condicoes-pagamento com parcelas cria condição e parcelas atomicamente', async () =>
     {
-        const formasRes = await request ( app ).get ( '/api/formas-pagamento' );
-        const codFormaDePag = formasRes.body[ 0 ].codFormaDePag;
-
         const res = await request ( app )
             .post ( '/api/condicoes-pagamento' )
             .send ({
@@ -135,6 +153,7 @@ describe ( 'CondicoesPagamento routes', () =>
 
         expect ( res.status ).toBe ( 201 );
         expect ( res.body.codCondDePag ).toBeDefined();
+        codigosCondicaoCriados.push ( res.body.codCondDePag );
 
         const parcelasRes = await request ( app )
             .get ( `/api/parcelas?codCondDePag=${ res.body.codCondDePag }` );
@@ -165,9 +184,6 @@ describe ( 'CondicoesPagamento routes', () =>
 
     it ( 'PUT /api/condicoes-pagamento/:id reconcilia parcelas', async () =>
     {
-        const formasRes = await request ( app ).get ( '/api/formas-pagamento' );
-        const codFormaDePag = formasRes.body[ 0 ].codFormaDePag;
-
         const criadaRes = await request ( app )
             .post ( '/api/condicoes-pagamento' )
             .send ({
@@ -179,6 +195,7 @@ describe ( 'CondicoesPagamento routes', () =>
 
         expect ( criadaRes.status ).toBe ( 201 );
         const codCondDePag = criadaRes.body.codCondDePag;
+        codigosCondicaoCriados.push ( codCondDePag );
 
         const parcelasAntes = await request ( app )
             .get ( `/api/parcelas?codCondDePag=${ codCondDePag }` );

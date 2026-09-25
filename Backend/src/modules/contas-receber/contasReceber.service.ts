@@ -1,11 +1,11 @@
 import { AppError } from '../../shared/errors/AppError';
-import { ContasReceberRepository } from './contas-receber.repository';
-import type { ContaAReceberId } from './contas-receber.repository';
+import { ContasReceberRepository } from './contasReceber.repository';
+import type { ContaAReceberId } from './contasReceber.repository';
 import { ClientesRepository } from '../clientes/clientes.repository';
 import { FormasPagamentoRepository } from '../formas-pagamento/formasPagamento.repository';
 import { ValidarDocumentoFiscalInexistente } from '../../shared/documento-fiscal/documentoFiscal.service';
 import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
-import type { CreateContasAReceberInput, UpdateContasAReceberInput } from './contas-receber.schema';
+import type { CreateContasAReceberInput, UpdateContasAReceberInput } from './contasReceber.schema';
 
 export class ContasReceberService
 {

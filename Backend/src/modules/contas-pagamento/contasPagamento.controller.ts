@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
-import { ContasReceberService } from './contas-receber.service';
-import type { ContaAReceberId } from './contas-receber.repository';
+import { ContasPagamentoService } from './contasPagamento.service';
+import type { ContaAPagarId } from './contasPagamento.repository';
 import { documentoFiscalSchema } from '../../shared/documento-fiscal/documentoFiscal.schema';
 
-function ExtrairId ( req: Request ): ContaAReceberId
+function ExtrairId ( req: Request ): ContaAPagarId
 {
     return {
         numero:  String ( req.params.numero ),
@@ -13,11 +13,11 @@ function ExtrairId ( req: Request ): ContaAReceberId
     };
 }
 
-export class ContasReceberController
+export class ContasPagamentoController
 {
     constructor
     (
-        private readonly service: ContasReceberService = new ContasReceberService()
+        private readonly service: ContasPagamentoService = new ContasPagamentoService()
     ) {}
 
     ListContasController = async (
@@ -136,7 +136,7 @@ export class ContasReceberController
         }
     }
 
-    RegistrarPagamentoRecebidoController = async (
+    RegistrarBaixaController = async (
         req: Request,
         res: Response,
         next: NextFunction
@@ -146,12 +146,11 @@ export class ContasReceberController
         {
             res.status ( 200 ).json
             (
-                await this.service.RegistrarPagamentoRecebido
+                await this.service.RegistrarBaixa
                 (
                     ExtrairId ( req ),
                     req.body.valorBaixa,
                     req.body.dtBaixa,
-                    req.body.dtPagamento,
                     req.codUser!
                 )
             );

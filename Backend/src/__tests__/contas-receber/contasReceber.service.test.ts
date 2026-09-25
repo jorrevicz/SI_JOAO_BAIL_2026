@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ContasReceberService } from '../../modules/contas-receber/contas-receber.service';
-import type { ContaAReceberId } from '../../modules/contas-receber/contas-receber.repository';
+import { ContasReceberService } from '../../modules/contas-receber/contasReceber.service';
+import type { ContaAReceberId } from '../../modules/contas-receber/contasReceber.repository';
 
 const ID_TESTE: ContaAReceberId = { numero: '00000001', modelo: '01', serie: '01', parcela: 1 };
 

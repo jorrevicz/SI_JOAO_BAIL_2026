@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ContasPagamentoService } from '../../modules/contas-pagamento/contas-pagamento.service';
-import type { ContaAPagarId } from '../../modules/contas-pagamento/contas-pagamento.repository';
+import { ContasPagamentoService } from '../../modules/contas-pagamento/contasPagamento.service';
+import type { ContaAPagarId } from '../../modules/contas-pagamento/contasPagamento.repository';
 
 const ID_TESTE: ContaAPagarId = { numero: '00000001', modelo: '01', serie: '01', parcela: 1 };
 

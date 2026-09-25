@@ -1,11 +1,11 @@
 import { AppError } from '../../shared/errors/AppError';
-import { ContasPagamentoRepository } from './contas-pagamento.repository';
-import type { ContaAPagarId } from './contas-pagamento.repository';
+import { ContasPagamentoRepository } from './contasPagamento.repository';
+import type { ContaAPagarId } from './contasPagamento.repository';
 import { FornecedoresRepository } from '../fornecedores/fornecedores.repository';
 import { FormasPagamentoRepository } from '../formas-pagamento/formasPagamento.repository';
 import { ValidarDocumentoFiscalInexistente } from '../../shared/documento-fiscal/documentoFiscal.service';
 import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
-import type { CreateContasAPAgarInput, UpdateContasAPagarInput } from './contas-pagamento.schema';
+import type { CreateContasAPAgarInput, UpdateContasAPagarInput } from './contasPagamento.schema';
 
 export class ContasPagamentoService
 {

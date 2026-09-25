@@ -3,7 +3,7 @@ import sql from '../../lib/db';
 import withTestTransaction from '../helpers/db-helper';
 import { criarFornecedorDeTeste } from '../helpers/fixtures';
 import { FormasPagamentoRepository } from '../../modules/formas-pagamento/formasPagamento.repository';
-import { ContasPagamentoRepository } from '../../modules/contas-pagamento/contas-pagamento.repository';
+import { ContasPagamentoRepository } from '../../modules/contas-pagamento/contasPagamento.repository';
 
 const repoFormas = new FormasPagamentoRepository();
 const repoContasPagar = new ContasPagamentoRepository();

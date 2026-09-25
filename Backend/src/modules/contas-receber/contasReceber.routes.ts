@@ -6,8 +6,8 @@ import
     updateContasAReceberSchema,
     registrarPagamentoRecebidoSchema,
     cancelarContaReceberSchema,
-} from './contas-receber.schema';
-import { ContasReceberController } from './contas-receber.controller';
+} from './contasReceber.schema';
+import { ContasReceberController } from './contasReceber.controller';
 
 const ContasReceberRouter = Router();
 const controller = new ContasReceberController();

@@ -2,8 +2,8 @@ import { describe, it, expect, afterAll } from 'vitest';
 import sql from '../../lib/db';
 import withTestTransaction from '../helpers/db-helper';
 import { criarFornecedorDeTeste, criarFormaDePagamentoDeTeste } from '../helpers/fixtures';
-import { ContasPagamentoRepository } from '../../modules/contas-pagamento/contas-pagamento.repository';
-import type { ContaAPagarId } from '../../modules/contas-pagamento/contas-pagamento.repository';
+import { ContasPagamentoRepository } from '../../modules/contas-pagamento/contasPagamento.repository';
+import type { ContaAPagarId } from '../../modules/contas-pagamento/contasPagamento.repository';
 
 const repo = new ContasPagamentoRepository();
 

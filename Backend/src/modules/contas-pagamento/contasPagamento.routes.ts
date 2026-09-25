@@ -6,8 +6,8 @@ import
     updateContasaPagarSchema,
     registrarBaixaContaPagarSchema,
     cancelarContaPagarSchema,
-} from './contas-pagamento.schema';
-import { ContasPagamentoController } from './contas-pagamento.controller';
+} from './contasPagamento.schema';
+import { ContasPagamentoController } from './contasPagamento.controller';
 
 const ContasPagamentoRouter = Router();
 const controller = new ContasPagamentoController();

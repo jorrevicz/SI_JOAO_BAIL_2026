@@ -1,10 +1,10 @@
 import type postgres from 'postgres';
 import sql from '../../lib/db';
-import type ContasAReceber from '../../db/types/public/ContasAReceber';
+import type ContasAPagar from '../../db/types/public/ContasAPagar';
 import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
-import type { CreateContasAReceberInput, UpdateContasAReceberInput } from './contas-receber.schema';
+import type { CreateContasAPAgarInput, UpdateContasAPagarInput } from './contasPagamento.schema';
 
-export interface ContaAReceberId
+export interface ContaAPagarId
 {
     numero:  string;
     modelo:  string;
@@ -12,22 +12,22 @@ export interface ContaAReceberId
     parcela: number;
 }
 
-export class ContasReceberRepository
+export class ContasPagamentoRepository
 {
     async List
     (
         limit: number,
-        afterCursor?: ContaAReceberId,
+        afterCursor?: ContaAPagarId,
         transaction?: postgres.TransactionSql
-    ): Promise < ContasAReceber[] >
+    ): Promise < ContasAPagar[] >
     {
         const client = transaction ?? sql;
 
         if ( afterCursor )
         {
-            return client < ContasAReceber[] >`
+            return client < ContasAPagar[] >`
                 SELECT *
-                FROM   "ContasAReceber"
+                FROM   "ContasAPagar"
                 WHERE  "isActive" = true
                 AND    ( "numero", "modelo", "serie", "parcela" ) >
                        ( ${ afterCursor.numero }, ${ afterCursor.modelo }, ${ afterCursor.serie }, ${ afterCursor.parcela } )
@@ -36,9 +36,9 @@ export class ContasReceberRepository
             `;
         }
 
-        return client < ContasAReceber[] >`
+        return client < ContasAPagar[] >`
             SELECT *
-            FROM   "ContasAReceber"
+            FROM   "ContasAPagar"
             WHERE  "isActive" = true
             ORDER BY "numero", "modelo", "serie", "parcela"
             LIMIT  ${ limit }
@@ -47,14 +47,14 @@ export class ContasReceberRepository
 
     async FindById
     (
-        id: ContaAReceberId,
+        id: ContaAPagarId,
         transaction?: postgres.TransactionSql
-    ): Promise < ContasAReceber | null >
+    ): Promise < ContasAPagar | null >
     {
         const client = transaction ?? sql;
-        const [ row ] = await client < ContasAReceber[] >`
+        const [ row ] = await client < ContasAPagar[] >`
             SELECT *
-            FROM   "ContasAReceber"
+            FROM   "ContasAPagar"
             WHERE  "numero"  = ${ id.numero }
             AND    "modelo"  = ${ id.modelo }
             AND    "serie"   = ${ id.serie }
@@ -74,7 +74,7 @@ export class ContasReceberRepository
         const client = transaction ?? sql;
         const [ row ] = await client`
             SELECT 1
-            FROM   "ContasAReceber"
+            FROM   "ContasAPagar"
             WHERE  "numero" = ${ chave.numero }
             AND    "modelo" = ${ chave.modelo }
             AND    "serie"  = ${ chave.serie }
@@ -87,20 +87,20 @@ export class ContasReceberRepository
 
     async Create
     (
-        conta: CreateContasAReceberInput,
+        conta: CreateContasAPAgarInput,
         codUser: number,
         transaction?: postgres.TransactionSql
-    ): Promise < ContasAReceber >
+    ): Promise < ContasAPagar >
     {
         const client = transaction ?? sql;
-        const [ row ] = await client < ContasAReceber[] >`
-            INSERT INTO "ContasAReceber"
+        const [ row ] = await client < ContasAPagar[] >`
+            INSERT INTO "ContasAPagar"
             (
                 "numero",
                 "modelo",
                 "serie",
                 "parcela",
-                "codCliente",
+                "codFornecedor",
                 "codFormaDePag",
                 "dtEmissao",
                 "dtVencimento",
@@ -116,7 +116,7 @@ export class ContasReceberRepository
                 ${ conta.modelo },
                 ${ conta.serie },
                 ${ conta.parcela },
-                ${ conta.codCliente },
+                ${ conta.codFornecedor },
                 ${ conta.codFormaDePag },
                 ${ conta.dtEmissao ?? null },
                 ${ conta.dtVencimento ?? null },
@@ -134,16 +134,16 @@ export class ContasReceberRepository
 
     async Update
     (
-        id: ContaAReceberId,
-        conta: UpdateContasAReceberInput,
+        id: ContaAPagarId,
+        conta: UpdateContasAPagarInput,
         codUser: number,
         transaction?: postgres.TransactionSql
-    ): Promise < ContasAReceber | null >
+    ): Promise < ContasAPagar | null >
     {
         const client = transaction ?? sql;
-        const [ row ] = await client < ContasAReceber[] >`
-            UPDATE "ContasAReceber"
-            SET    "codCliente"    = ${ conta.codCliente },
+        const [ row ] = await client < ContasAPagar[] >`
+            UPDATE "ContasAPagar"
+            SET    "codFornecedor" = ${ conta.codFornecedor },
                    "codFormaDePag" = ${ conta.codFormaDePag },
                    "dtEmissao"     = ${ conta.dtEmissao ?? null },
                    "dtVencimento"  = ${ conta.dtVencimento ?? null },
@@ -165,24 +165,22 @@ export class ContasReceberRepository
         return row ?? null;
     }
 
-    async RegistrarPagamentoRecebido
+    async RegistrarBaixa
     (
-        id: ContaAReceberId,
+        id: ContaAPagarId,
         valorBaixa: string,
         dtBaixa: Date,
-        dtPagamento: Date,
         codUser: number,
         transaction?: postgres.TransactionSql
-    ): Promise < ContasAReceber | null >
+    ): Promise < ContasAPagar | null >
     {
         const client = transaction ?? sql;
-        const [ row ] = await client < ContasAReceber[] >`
-            UPDATE "ContasAReceber"
-            SET    "valorBaixa"  = ${ valorBaixa },
-                   "dtBaixa"     = ${ dtBaixa },
-                   "dtPagamento" = ${ dtPagamento },
-                   "codUser"     = ${ codUser },
-                   "dtEdicao"    = CURRENT_TIMESTAMP
+        const [ row ] = await client < ContasAPagar[] >`
+            UPDATE "ContasAPagar"
+            SET    "valorBaixa" = ${ valorBaixa },
+                   "dtBaixa"    = ${ dtBaixa },
+                   "codUser"    = ${ codUser },
+                   "dtEdicao"   = CURRENT_TIMESTAMP
             WHERE  "numero"  = ${ id.numero }
             AND    "modelo"  = ${ id.modelo }
             AND    "serie"   = ${ id.serie }
@@ -196,15 +194,15 @@ export class ContasReceberRepository
 
     async Cancelar
     (
-        id: ContaAReceberId,
+        id: ContaAPagarId,
         justificativaCancelamento: string,
         codUser: number,
         transaction?: postgres.TransactionSql
-    ): Promise < ContasAReceber | null >
+    ): Promise < ContasAPagar | null >
     {
         const client = transaction ?? sql;
-        const [ row ] = await client < ContasAReceber[] >`
-            UPDATE "ContasAReceber"
+        const [ row ] = await client < ContasAPagar[] >`
+            UPDATE "ContasAPagar"
             SET    "justificativaCancelamento" = ${ justificativaCancelamento },
                    "codUser"                   = ${ codUser },
                    "dtEdicao"                  = CURRENT_TIMESTAMP
@@ -221,14 +219,14 @@ export class ContasReceberRepository
 
     async Delete
     (
-        id: ContaAReceberId,
+        id: ContaAPagarId,
         codUser: number,
         transaction?: postgres.TransactionSql
-    ): Promise < ContaAReceberId | null >
+    ): Promise < ContaAPagarId | null >
     {
         const client = transaction ?? sql;
-        const [ row ] = await client < ContaAReceberId[] >`
-            UPDATE "ContasAReceber"
+        const [ row ] = await client < ContaAPagarId[] >`
+            UPDATE "ContasAPagar"
             SET    "isActive" = false,
                    "codUser"  = ${ codUser },
                    "dtEdicao" = CURRENT_TIMESTAMP

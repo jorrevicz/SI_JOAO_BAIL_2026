@@ -2,8 +2,8 @@ import { describe, it, expect, afterAll } from 'vitest';
 import sql from '../../lib/db';
 import withTestTransaction from '../helpers/db-helper';
 import { criarClienteDeTeste, criarFormaDePagamentoDeTeste } from '../helpers/fixtures';
-import { ContasReceberRepository } from '../../modules/contas-receber/contas-receber.repository';
-import type { ContaAReceberId } from '../../modules/contas-receber/contas-receber.repository';
+import { ContasReceberRepository } from '../../modules/contas-receber/contasReceber.repository';
+import type { ContaAReceberId } from '../../modules/contas-receber/contasReceber.repository';
 
 const repo = new ContasReceberRepository();
 
