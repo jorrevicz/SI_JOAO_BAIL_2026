@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { useTabelaOrdenada } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
+import { InfoBlock } from '../../components/tabela/style';
 import { estadosService, type Estado } from '../../services/estados';
 import {
   Toolbar, GrupoBotoes, Botao, InputBusca,
@@ -64,11 +65,11 @@ export function EstadosPage ()
     columnHelper.accessor ( 'uf', { header: 'UF' } ),
     columnHelper.accessor (
       'dtCriacao',
-      { header: 'Criação', cell: ( info ) => formatarData ( info.getValue() ) }
+      { header: 'Criação', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor (
       'dtEdicao',
-      { header: 'Edição', cell: ( info ) => formatarData ( info.getValue() ) }
+      { header: 'Edição', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor ( 'codUser', { header: 'Código Usuário', cell: ( info ) => info.getValue() ?? '-' } ),
     columnHelper.accessor ( 'isActive', { header: 'Status' } ),

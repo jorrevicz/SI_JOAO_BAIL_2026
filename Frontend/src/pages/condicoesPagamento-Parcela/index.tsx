@@ -112,11 +112,11 @@ export default function CondicoesPagamentoPage ()
     ),
     columnHelper.accessor (
       'dtCriacao',
-      { header: 'Criação', cell: ( info ) => formatarData ( info.getValue() ) }
+      { header: 'Criação', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor (
           'dtEdicao',
-          { header: 'Edição', cell: ( info ) => formatarData ( info.getValue() ) }
+          { header: 'Edição', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor ( 'codUser', { header: 'Código Usuário', cell: ( info ) => info.getValue() ?? '-' } ),
     columnHelper.accessor ( 'isActive', { header: 'Status' } ),

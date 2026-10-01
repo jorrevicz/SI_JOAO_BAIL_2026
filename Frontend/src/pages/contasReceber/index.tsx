@@ -10,7 +10,7 @@ import {
   type PaginationState,
 } from '@tanstack/react-table';
 import { useTabelaOrdenada } from '../../hooks/tabela';
-import { formatarData } from '../../utils/formatters';
+import { formatarData, formatarDataHora } from '../../utils/formatters';
 import { contasReceberService, type ContaAReceber, type ContaAReceberId } from '../../services/contasReceber';
 import {
   Toolbar, GrupoBotoes, Botao, InputBusca,
@@ -78,11 +78,11 @@ export default function ContasReceberPage ()
     columnHelper.accessor ( 'codFormaDePag', { header: () => <>Código<br/>Forma de Pagamento</> } ),
     columnHelper.accessor (
       'dtEmissao',
-      { header: 'Emissão', cell: ( info ) => info.getValue() ? formatarData ( info.getValue()! ) : '—' }
+      { header: 'Emissão', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarDataHora ( info.getValue()! ) : '—' }</InfoBlock> }
     ),
     columnHelper.accessor (
       'dtVencimento',
-      { header: 'Vencimento', cell: ( info ) => info.getValue() ? formatarData ( info.getValue()! ) : '—' }
+      { header: 'Vencimento', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarDataHora ( info.getValue()! ) : '—' }</InfoBlock> }
     ),
     columnHelper.accessor ( 'valor', { header: 'Valor' } ),
     columnHelper.accessor ( 'juro', { header: 'Juro' } ),
@@ -91,11 +91,11 @@ export default function ContasReceberPage ()
     columnHelper.accessor ( 'valorBaixa', { header: 'Valor Recebido', cell: ( info ) => info.getValue() ?? '—' } ),
     columnHelper.accessor (
       'dtBaixa',
-      { header: 'Data da Baixa', cell: ( info ) => info.getValue() ? formatarData ( info.getValue()! ) : '—' }
+      { header: 'Data da Baixa', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '—' }</InfoBlock> }
     ),
     columnHelper.accessor (
       'dtPagamento',
-      { header: 'Data do Pagamento', cell: ( info ) => info.getValue() ? formatarData ( info.getValue()! ) : '—' }
+      { header: 'Data do Pagamento', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '—' }</InfoBlock> }
     ),
     columnHelper.accessor (
       'justificativaCancelamento',
@@ -108,11 +108,11 @@ export default function ContasReceberPage ()
     ),
     columnHelper.accessor (
       'dtCriacao',
-      { header: 'Criação', cell: ( info ) => formatarData ( info.getValue() ) }
+      { header: 'Criação', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor (
       'dtEdicao',
-      { header: 'Edição', cell: ( info ) => formatarData ( info.getValue() ) }
+      { header: 'Edição', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor ( 'codUser', { header: 'Código Usuário', cell: ( info ) => info.getValue() ?? '-' } ),
     columnHelper.accessor ( 'isActive', { header: 'Status' } ),

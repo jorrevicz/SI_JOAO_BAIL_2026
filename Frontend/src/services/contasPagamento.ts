@@ -39,8 +39,8 @@ export interface CreateContaAPagarInput
   parcela:       number;
   codFornecedor: number;
   codFormaDePag: number;
-  dtEmissao?:    string;
-  dtVencimento?: string;
+  dtEmissao:     string;
+  dtVencimento:  string;
   valor:         string;
   juro:          string;
   desconto:      string;

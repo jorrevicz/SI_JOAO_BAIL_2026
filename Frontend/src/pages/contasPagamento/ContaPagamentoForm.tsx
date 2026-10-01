@@ -13,6 +13,7 @@ import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { FornecedorConsulta } from '../fornecedores/FornecedorConsulta';
 import { FormaPagamentoConsulta } from '../formasPagamento/FormaPagamentoConsulta';
+import { paraDataHoraInputUtc, fimDoDiaUtc, doInputUtcParaIso } from '../../utils/formatters';
 
 interface Props
 {
@@ -30,8 +31,11 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
     parcela:       inicial.parcela       ?? 1,
     codFornecedor: inicial.codFornecedor ?? 0,
     codFormaDePag: inicial.codFormaDePag ?? 0,
-    dtEmissao:     inicial.dtEmissao     ? inicial.dtEmissao.slice ( 0, 10 )    : undefined,
-    dtVencimento:  inicial.dtVencimento  ? inicial.dtVencimento.slice ( 0, 10 ) : undefined,
+    // Ao criar (sem inicial.dtEmissao), a emissão nasce com a data/hora atual (UTC) e o
+    // vencimento com o fim do dia de hoje (UTC) — RN005: vencimento estritamente
+    // posterior à emissão, mesmo no mesmo dia (ver contasPagamento.schema.ts).
+    dtEmissao:     inicial.dtEmissao     ? inicial.dtEmissao.slice ( 0, 16 )    : paraDataHoraInputUtc ( new Date() ),
+    dtVencimento:  inicial.dtVencimento  ? inicial.dtVencimento.slice ( 0, 16 ) : paraDataHoraInputUtc ( fimDoDiaUtc ( new Date() ) ),
     valor:         inicial.valor         ?? '',
     juro:          inicial.juro          ?? '0.00',
     desconto:      inicial.desconto      ?? '0.00',
@@ -50,6 +54,11 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
   const [ salvando, setSalvando ]     = useState ( false );
 
   const editando = !!( inicial.numero && inicial.modelo && inicial.serie && inicial.parcela );
+
+  // Conta já baixada ou cancelada não pode mais ter seus valores alterados.
+  const contaBaixada    = !!inicial.dtBaixa;
+  const contaCancelada  = !!inicial.justificativaCancelamento;
+  const edicaoBloqueada = editando && ( contaBaixada || contaCancelada );
 
   // A chave (numero/modelo/serie) precisa ser validada — formato e inexistência prévia —
   // antes de liberar a edição dos demais campos (ver docs/02-arquitetura.md).
@@ -137,8 +146,8 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
       parcela:       form.parcela,
       codFornecedor: form.codFornecedor,
       codFormaDePag: form.codFormaDePag,
-      dtEmissao:     form.dtEmissao    || undefined,
-      dtVencimento:  form.dtVencimento || undefined,
+      dtEmissao:     doInputUtcParaIso ( form.dtEmissao ),
+      dtVencimento:  doInputUtcParaIso ( form.dtVencimento ),
       valor:         Number ( form.valor ).toFixed ( 2 ),
       juro:          Number ( form.juro ).toFixed ( 2 ),
       desconto:      Number ( form.desconto ).toFixed ( 2 ),
@@ -182,7 +191,11 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
     <>
       <FormModal
         titulo={ editando ? 'Editar conta a pagar' : 'Nova conta a pagar' }
-        erro={ erro }
+        erro={ erro || ( edicaoBloqueada
+          ? contaCancelada
+            ? 'Conta cancelada — não é possível alterar seus valores.'
+            : 'Conta já baixada — não é possível alterar seus valores.'
+          : '' ) }
         onFechar={ onCancelar }
         onSubmit={ submit }
       >
@@ -262,7 +275,7 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
               type="button"
               $variante="secundario"
               onClick={ () => setConsultandoForn ( true ) }
-              disabled={ !editando && !chaveValidada }
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
             >
               Consultar
             </Botao>
@@ -283,7 +296,7 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
               type="button"
               $variante="secundario"
               onClick={ () => setConsultandoFormaPag ( true ) }
-              disabled={ !editando && !chaveValidada }
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
             >
               Consultar
             </Botao>
@@ -299,23 +312,26 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Data de emissão" colunas={ 3 } htmlFor="dtEmissao" erro={ errosCampo.dtEmissao }>
+          <FormCampo label="Data e hora de emissão (UTC)" obrigatorio colunas={ 3 } htmlFor="dtEmissao" erro={ errosCampo.dtEmissao }>
             <input
               id="dtEmissao"
-              type="date"
-              value={ form.dtEmissao ?? '' }
-              onChange={ ( evento ) => setForm ( { ...form, dtEmissao: evento.target.value || undefined } ) }
-              disabled={ !editando && !chaveValidada }
+              type="datetime-local"
+              value={ form.dtEmissao }
+              onChange={ ( evento ) => setForm ( { ...form, dtEmissao: evento.target.value } ) }
+              required
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
           </FormCampo>
 
-          <FormCampo label="Data de vencimento" colunas={ 3 } htmlFor="dtVencimento" erro={ errosCampo.dtVencimento }>
+          <FormCampo label="Data e hora de vencimento (UTC)" obrigatorio colunas={ 3 } htmlFor="dtVencimento" erro={ errosCampo.dtVencimento }>
             <input
               id="dtVencimento"
-              type="date"
-              value={ form.dtVencimento ?? '' }
-              onChange={ ( evento ) => setForm ( { ...form, dtVencimento: evento.target.value || undefined } ) }
-              disabled={ !editando && !chaveValidada }
+              type="datetime-local"
+              value={ form.dtVencimento }
+              onChange={ ( evento ) => setForm ( { ...form, dtVencimento: evento.target.value } ) }
+              min={ form.dtEmissao || undefined }
+              required
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
           </FormCampo>
         </FormSecao>
@@ -331,7 +347,7 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
               onChange={ ( evento ) => setForm ( { ...form, valor: evento.target.value } ) }
               placeholder="0.00"
               required
-              disabled={ !editando && !chaveValidada }
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
           </FormCampo>
 
@@ -344,7 +360,7 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
               value={ form.juro }
               onChange={ ( evento ) => setForm ( { ...form, juro: evento.target.value } ) }
               placeholder="0.00"
-              disabled={ !editando && !chaveValidada }
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
           </FormCampo>
 
@@ -357,7 +373,7 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
               value={ form.desconto }
               onChange={ ( evento ) => setForm ( { ...form, desconto: evento.target.value } ) }
               placeholder="0.00"
-              disabled={ !editando && !chaveValidada }
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
           </FormCampo>
 
@@ -370,7 +386,7 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
               value={ form.multa }
               onChange={ ( evento ) => setForm ( { ...form, multa: evento.target.value } ) }
               placeholder="0.00"
-              disabled={ !editando && !chaveValidada }
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
           </FormCampo>
         </FormSecao>
@@ -380,6 +396,7 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
             <CaixaSelecao
               value={ form.isActive }
               onChange={ ( evento ) => setForm ( { ...form, isActive: evento } ) }
+              desabilitado={ edicaoBloqueada }
             />
           </FormCampo>
         </FormSecao>
@@ -388,7 +405,7 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
           <Botao type="button" $variante="secundario" onClick={ onCancelar }>
             Cancelar
           </Botao>
-          <Botao type="submit" disabled={ salvando || ( !editando && !chaveValidada ) }>
+          <Botao type="submit" disabled={ salvando || ( !editando && !chaveValidada ) || edicaoBloqueada }>
             { salvando ? 'Salvando…' : 'Salvar' }
           </Botao>
         </FormAcoes>
