@@ -175,10 +175,6 @@ export const procedimentoOdSSchema = z.object
 export const abrirOrdemServicoSchema = z.object
 (
     {
-        numOdS: z
-            .string ( { message: 'O número da OS é obrigatório.' } )
-            .trim()
-            .length ( 8, 'O número da OS deve ter 8 caracteres.' ),
         codCliente: z
             .coerce.number ( { message: 'O cliente é obrigatório.' } )
             .int()

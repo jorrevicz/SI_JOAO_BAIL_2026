@@ -62,7 +62,7 @@ async function CriarOSEServicoDeTeste ( transaction: Parameters < typeof osRepo.
     const os = await osRepo.Create
     (
         {
-            numOdS: `OS${ Date.now() % 1000000 }`, codCliente: cliente.codCliente, atendente: 'Ana',
+            codCliente: cliente.codCliente, atendente: 'Ana',
             defeito: 'Não liga', tipoOdS: 'Garantia',
             codAparelho: aparelho.codAparelho, codEquipamento: equipamento.codEquipamento,
         },

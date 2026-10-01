@@ -162,7 +162,7 @@ describe ( 'OrdensServicoService', () =>
         await expect (
             service.AbrirOS (
                 {
-                    numOdS: 'OS000001', codCliente: 99, atendente: 'Ana', defeito: 'Não liga',
+                    codCliente: 99, atendente: 'Ana', defeito: 'Não liga',
                     tipoOdS: 'Garantia', aparelho, equipamento,
                 } as never,
                 1
@@ -182,7 +182,7 @@ describe ( 'OrdensServicoService', () =>
 
         const resultado = await service.AbrirOS (
             {
-                numOdS: 'OS000001', codCliente: 1, atendente: 'Ana', defeito: 'Não liga',
+                codCliente: 1, atendente: 'Ana', defeito: 'Não liga',
                 tipoOdS: 'Garantia', aparelho, equipamento,
             } as never,
             1
@@ -192,7 +192,7 @@ describe ( 'OrdensServicoService', () =>
         expect ( equipamentosRepo.Create ).toHaveBeenCalledWith ( equipamento, 1, {} );
         expect ( repo.Create ).toHaveBeenCalledWith
         (
-            expect.objectContaining ( { numOdS: 'OS000001', codAparelho: 10, codEquipamento: 20 } ),
+            expect.objectContaining ( { codAparelho: 10, codEquipamento: 20 } ),
             1,
             {}
         );

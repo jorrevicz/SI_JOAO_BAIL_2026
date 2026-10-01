@@ -3,14 +3,16 @@ import request from 'supertest';
 import app from '../../app';
 import sql from '../../lib/db';
 
-// Rotas reais (sem rollback). Identificadores fixos, limpos antes e depois do ciclo
-// completo de execução/aprovação/substituição de peças de uma OS (Lote OS-B).
+// Rotas reais (sem rollback). Identificadores fixos para os cadastros de apoio,
+// limpos antes e depois do ciclo completo de execução/aprovação/substituição de
+// peças de uma OS (Lote OS-B). O `numOdS` é gerado pelo banco a cada execução —
+// não há mais valor fixo a limpar antes da criação.
 const PAIS_TESTE   = { pais: 'Teste', sigla: 'TE', ddi: '902', moeda: 'BRL' };
 const CARGO_TESTE  = { cargo: 'Téc. ExecTst' };
-const NUM_ODS      = 'OSEXEC01';
 
 describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', () =>
 {
+    let numOdS:         string;
     let codCidade:      number;
     let codCargo:       number;
     let codCliente:     number;
@@ -21,10 +23,6 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
 
     beforeAll ( async () =>
     {
-        await sql`DELETE FROM "SubstituirPecasOdS" WHERE "numOdS" = ${ NUM_ODS }`;
-        await sql`DELETE FROM "OrcamentoPecasOdS" WHERE "numOdS" = ${ NUM_ODS }`;
-        await sql`DELETE FROM "ServicosOdS" WHERE "numOdS" = ${ NUM_ODS }`;
-        await sql`DELETE FROM "OrdemDeServicos" WHERE "numOdS" = ${ NUM_ODS }`;
         await sql`DELETE FROM "Servicos" WHERE "servico" = 'Formatação ExecTst'`;
         await sql`DELETE FROM "Pecas" WHERE "peca" IN ( 'Placa ExecTst', 'Placa ExecTst Rep' )`;
         await sql`DELETE FROM "Funcionarios" WHERE "funcFone" = '19933333333'`;
@@ -66,11 +64,11 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
         codPecaReprovada = pecaReprovada.body.codPeca;
         codCliente     = cliente.body.codCliente;
 
-        await request ( app )
+        const ordemServico = await request ( app )
             .post ( '/api/ordens-servico' )
             .send
             ({
-                numOdS: NUM_ODS, codCliente, atendente: 'Ana', defeito: 'Não liga', tipoOdS: 'Garantia',
+                codCliente, atendente: 'Ana', defeito: 'Não liga', tipoOdS: 'Garantia',
                 aparelho: { modelo: 'Inspiron 15', voltagem: 'Bivolt', garantia: '12 meses' },
                 equipamento: {
                     equipamento: 'Notebook Dell', soEq: 'Win11', socketEq: 'BGA', memoriaRam: '8GB',
@@ -78,14 +76,16 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
                     possuiSSD: true, possuiHD: false, capacidadeArmz: '256GB', usoArmz: '50%',
                 },
             });
+
+        numOdS = ordemServico.body.numOdS;
     });
 
     afterAll ( async () =>
     {
-        await sql`DELETE FROM "SubstituirPecasOdS" WHERE "numOdS" = ${ NUM_ODS }`;
-        await sql`DELETE FROM "OrcamentoPecasOdS" WHERE "numOdS" = ${ NUM_ODS }`;
-        await sql`DELETE FROM "ServicosOdS" WHERE "numOdS" = ${ NUM_ODS }`;
-        await sql`DELETE FROM "OrdemDeServicos" WHERE "numOdS" = ${ NUM_ODS }`;
+        await sql`DELETE FROM "SubstituirPecasOdS" WHERE "numOdS" = ${ numOdS }`;
+        await sql`DELETE FROM "OrcamentoPecasOdS" WHERE "numOdS" = ${ numOdS }`;
+        await sql`DELETE FROM "ServicosOdS" WHERE "numOdS" = ${ numOdS }`;
+        await sql`DELETE FROM "OrdemDeServicos" WHERE "numOdS" = ${ numOdS }`;
         await sql`DELETE FROM "Servicos" WHERE "codServico" = ${ codServico }`;
         await sql`DELETE FROM "Pecas" WHERE "codPeca" IN ( ${ codPeca }, ${ codPecaReprovada } )`;
         await sql`DELETE FROM "Clientes" WHERE "codCliente" = ${ codCliente }`;
@@ -98,7 +98,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
 
     it ( 'a OS nasce com situacao=Aberta', async () =>
     {
-        const res = await request ( app ).get ( `/api/ordens-servico/${ NUM_ODS }` );
+        const res = await request ( app ).get ( `/api/ordens-servico/${ numOdS }` );
         expect ( res.status ).toBe ( 200 );
         expect ( res.body.situacao ).toBe ( 'Aberta' );
     });
@@ -106,7 +106,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
     it ( 'PATCH .../diagnostico reconcilia o orçamento de peças e avança a situação', async () =>
     {
         const res = await request ( app )
-            .patch ( `/api/ordens-servico/${ NUM_ODS }/diagnostico` )
+            .patch ( `/api/ordens-servico/${ numOdS }/diagnostico` )
             .send
             ({
                 historicoManutencao: null,
@@ -123,7 +123,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
     it ( 'PATCH .../orcamento-pecas/:codPeca/reprovar remove o item do orçamento ativo', async () =>
     {
         const res = await request ( app )
-            .patch ( `/api/ordens-servico/${ NUM_ODS }/orcamento-pecas/${ codPecaReprovada }/reprovar` );
+            .patch ( `/api/ordens-servico/${ numOdS }/orcamento-pecas/${ codPecaReprovada }/reprovar` );
 
         expect ( res.status ).toBe ( 200 );
         expect ( res.body.orcamentoPecas ).toHaveLength ( 1 );
@@ -133,7 +133,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
     it ( 'PATCH .../substituicao-pecas bloqueia peça sem orçamento aprovado (409)', async () =>
     {
         const res = await request ( app )
-            .patch ( `/api/ordens-servico/${ NUM_ODS }/substituicao-pecas` )
+            .patch ( `/api/ordens-servico/${ numOdS }/substituicao-pecas` )
             .send ( { pecas: [ { codPeca, qtdPeca: 1, vlrUnitarioPeca: 90 } ] } );
 
         expect ( res.status ).toBe ( 409 );
@@ -142,7 +142,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
     it ( 'PATCH .../orcamento-pecas/:codPeca/aprovar aprova o item e volta a Em execução', async () =>
     {
         const res = await request ( app )
-            .patch ( `/api/ordens-servico/${ NUM_ODS }/orcamento-pecas/${ codPeca }/aprovar` );
+            .patch ( `/api/ordens-servico/${ numOdS }/orcamento-pecas/${ codPeca }/aprovar` );
 
         expect ( res.status ).toBe ( 200 );
         expect ( res.body.orcamentoPecas[ 0 ].aprovado ).toBe ( true );
@@ -152,7 +152,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
     it ( 'PATCH .../execucao reconcilia serviços e registra as observações técnicas', async () =>
     {
         const res = await request ( app )
-            .patch ( `/api/ordens-servico/${ NUM_ODS }/execucao` )
+            .patch ( `/api/ordens-servico/${ numOdS }/execucao` )
             .send ( { servicos: [ { codServico, qtdServico: 1 } ], obsTecnica: 'Placa-mãe trocada' } );
 
         expect ( res.status ).toBe ( 200 );
@@ -163,7 +163,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
     it ( 'PATCH .../substituicao-pecas registra a peça já aprovada', async () =>
     {
         const res = await request ( app )
-            .patch ( `/api/ordens-servico/${ NUM_ODS }/substituicao-pecas` )
+            .patch ( `/api/ordens-servico/${ numOdS }/substituicao-pecas` )
             .send ( { pecas: [ { codPeca, qtdPeca: 1, vlrUnitarioPeca: 95 } ] } );
 
         expect ( res.status ).toBe ( 200 );

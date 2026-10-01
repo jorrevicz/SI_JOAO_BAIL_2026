@@ -120,7 +120,6 @@ export class OrdensServicoService
             const os = await this.repo.Create
             (
                 {
-                    numOdS:         data.numOdS,
                     codCliente:     data.codCliente,
                     atendente:      data.atendente,
                     acessorio:      data.acessorio,

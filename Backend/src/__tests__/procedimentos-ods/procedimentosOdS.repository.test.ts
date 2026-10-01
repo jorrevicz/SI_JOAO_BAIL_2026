@@ -25,7 +25,6 @@ const procedimentosRepo = new ProcedimentosRepository();
 
 async function CriarOSDeTeste
 (
-    numOdS: string,
     transaction: Parameters < typeof osRepo.Create >[ 2 ]
 )
 {
@@ -68,7 +67,7 @@ async function CriarOSDeTeste
     return osRepo.Create
     (
         {
-            numOdS, codCliente: cliente.codCliente, atendente: 'Ana',
+            codCliente: cliente.codCliente, atendente: 'Ana',
             defeito: 'Não liga', tipoOdS: 'Garantia',
             codAparelho: aparelho.codAparelho, codEquipamento: equipamento.codEquipamento,
         },
@@ -88,11 +87,11 @@ describe ( 'ProcedimentosOdSRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            await CriarOSDeTeste ( 'OS100001', transaction );
+            const os = await CriarOSDeTeste ( transaction );
             const procedimento = await procedimentosRepo.Create ( { procedimento: 'Testar bateria' }, 1, transaction );
 
             const linha = await procedimentosOdSRepo.CreateEstrutura
-            ( 'OS100001', { codProcedimento: procedimento.codProcedimento, ordem: 1 }, 1, transaction );
+            ( os.numOdS, { codProcedimento: procedimento.codProcedimento, ordem: 1 }, 1, transaction );
 
             expect ( linha.ordem ).toBe ( 1 );
             expect ( linha.posicao ).toBeNull();
@@ -105,14 +104,14 @@ describe ( 'ProcedimentosOdSRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            await CriarOSDeTeste ( 'OS100002', transaction );
+            const os = await CriarOSDeTeste ( transaction );
             const primeiro  = await procedimentosRepo.Create ( { procedimento: 'Testar bateria' }, 1, transaction );
             const segundo   = await procedimentosRepo.Create ( { procedimento: 'Limpar cooler' }, 1, transaction );
 
-            await procedimentosOdSRepo.CreateEstrutura ( 'OS100002', { codProcedimento: segundo.codProcedimento, ordem: 2 }, 1, transaction );
-            await procedimentosOdSRepo.CreateEstrutura ( 'OS100002', { codProcedimento: primeiro.codProcedimento, ordem: 1 }, 1, transaction );
+            await procedimentosOdSRepo.CreateEstrutura ( os.numOdS, { codProcedimento: segundo.codProcedimento, ordem: 2 }, 1, transaction );
+            await procedimentosOdSRepo.CreateEstrutura ( os.numOdS, { codProcedimento: primeiro.codProcedimento, ordem: 1 }, 1, transaction );
 
-            const lista = await procedimentosOdSRepo.ListByOS ( 'OS100002', transaction );
+            const lista = await procedimentosOdSRepo.ListByOS ( os.numOdS, transaction );
 
             expect ( lista.map ( ( item ) => item.codProcedimento ) ).toEqual
             ( [ primeiro.codProcedimento, segundo.codProcedimento ] );
@@ -123,12 +122,12 @@ describe ( 'ProcedimentosOdSRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            await CriarOSDeTeste ( 'OS100003', transaction );
+            const os = await CriarOSDeTeste ( transaction );
             const procedimento = await procedimentosRepo.Create ( { procedimento: 'Testar bateria' }, 1, transaction );
-            await procedimentosOdSRepo.CreateEstrutura ( 'OS100003', { codProcedimento: procedimento.codProcedimento, ordem: 1 }, 1, transaction );
+            await procedimentosOdSRepo.CreateEstrutura ( os.numOdS, { codProcedimento: procedimento.codProcedimento, ordem: 1 }, 1, transaction );
 
             const atualizada = await procedimentosOdSRepo.UpdateOrdem
-            ( 'OS100003', procedimento.codProcedimento, 3, 1, transaction );
+            ( os.numOdS, procedimento.codProcedimento, 3, 1, transaction );
 
             expect ( atualizada?.ordem ).toBe ( 3 );
             expect ( atualizada?.checagem ).toBeNull();
@@ -139,14 +138,14 @@ describe ( 'ProcedimentosOdSRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            await CriarOSDeTeste ( 'OS100004', transaction );
+            const os = await CriarOSDeTeste ( transaction );
             const procedimento = await procedimentosRepo.Create ( { procedimento: 'Testar bateria' }, 1, transaction );
-            await procedimentosOdSRepo.CreateEstrutura ( 'OS100004', { codProcedimento: procedimento.codProcedimento, ordem: 5 }, 1, transaction );
+            await procedimentosOdSRepo.CreateEstrutura ( os.numOdS, { codProcedimento: procedimento.codProcedimento, ordem: 5 }, 1, transaction );
 
             const dthFim = new Date ( '2026-01-10T10:00:00Z' );
             const atualizada = await procedimentosOdSRepo.UpdateChecagem
             (
-                'OS100004',
+                os.numOdS,
                 procedimento.codProcedimento,
                 { codProcedimento: procedimento.codProcedimento, posicao: 'Embaixo', checagem: true, dthFim, obsProcedimento: null },
                 1,
@@ -164,13 +163,13 @@ describe ( 'ProcedimentosOdSRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            await CriarOSDeTeste ( 'OS100005', transaction );
+            const os = await CriarOSDeTeste ( transaction );
             const procedimento = await procedimentosRepo.Create ( { procedimento: 'Testar bateria' }, 1, transaction );
-            await procedimentosOdSRepo.CreateEstrutura ( 'OS100005', { codProcedimento: procedimento.codProcedimento, ordem: 1 }, 1, transaction );
+            await procedimentosOdSRepo.CreateEstrutura ( os.numOdS, { codProcedimento: procedimento.codProcedimento, ordem: 1 }, 1, transaction );
 
-            await procedimentosOdSRepo.Delete ( 'OS100005', procedimento.codProcedimento, 1, transaction );
+            await procedimentosOdSRepo.Delete ( os.numOdS, procedimento.codProcedimento, 1, transaction );
 
-            const lista = await procedimentosOdSRepo.ListByOS ( 'OS100005', transaction );
+            const lista = await procedimentosOdSRepo.ListByOS ( os.numOdS, transaction );
             expect ( lista ).toEqual ( [] );
         });
     });

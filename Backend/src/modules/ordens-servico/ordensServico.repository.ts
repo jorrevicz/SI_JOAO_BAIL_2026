@@ -3,7 +3,6 @@ import sql from '../../lib/db';
 import type OrdemDeServicos from '../../db/types/public/OrdemDeServicos';
 
 export type CreateOrdemServicoRow = {
-    numOdS:      string;
     codCliente:  number;
     atendente:   string;
     acessorio?:  string | null;
@@ -36,7 +35,7 @@ export class OrdensServicoRepository
             SELECT *
             FROM "OrdemDeServicos"
             WHERE "isActive" = true
-            AND "numOdS" > ${ afterId }
+            ${ afterId ? client`AND "numOdS" > ${ afterId }` : client`` }
             ${ codCliente ? client`AND "codCliente" = ${ codCliente }` : client`` }
             ORDER BY "numOdS"
             LIMIT ${ limit }
@@ -73,7 +72,6 @@ export class OrdensServicoRepository
         const [ row ] = await client < OrdemDeServicos[] >`
             INSERT INTO "OrdemDeServicos"
             (
-                "numOdS",
                 "codCliente",
                 "atendente",
                 "acessorio",
@@ -87,7 +85,6 @@ export class OrdensServicoRepository
             )
             VALUES
             (
-                ${ os.numOdS },
                 ${ os.codCliente },
                 ${ os.atendente },
                 ${ os.acessorio ?? null },

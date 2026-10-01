@@ -76,7 +76,7 @@ describe ( 'OrdensServicoRepository (rollback)', () =>
             const os = await repo.Create
             (
                 {
-                    numOdS: 'OS000001', codCliente: cliente.codCliente, atendente: 'Ana',
+                    codCliente: cliente.codCliente, atendente: 'Ana',
                     defeito: 'Não liga', tipoOdS: 'Garantia',
                     codAparelho: aparelho.codAparelho, codEquipamento: equipamento.codEquipamento,
                 },
@@ -84,9 +84,9 @@ describe ( 'OrdensServicoRepository (rollback)', () =>
                 transaction
             );
 
-            expect ( os.numOdS ).toBe ( 'OS000001' );
+            expect ( os.numOdS ).toBeTruthy();
 
-            const achada = await repo.FindById ( 'OS000001', transaction );
+            const achada = await repo.FindById ( os.numOdS, transaction );
             expect ( achada?.defeito ).toBe ( 'Não liga' );
             expect ( achada?.dtAtendimento ).toBeNull();
         });
@@ -109,10 +109,10 @@ describe ( 'OrdensServicoRepository (rollback)', () =>
                 1,
                 transaction
             );
-            await repo.Create
+            const criada = await repo.Create
             (
                 {
-                    numOdS: 'OS000002', codCliente: cliente.codCliente, atendente: 'Ana',
+                    codCliente: cliente.codCliente, atendente: 'Ana',
                     defeito: 'Não liga', tipoOdS: 'Garantia',
                     codAparelho: aparelho.codAparelho, codEquipamento: equipamento.codEquipamento,
                 },
@@ -121,7 +121,7 @@ describe ( 'OrdensServicoRepository (rollback)', () =>
             );
 
             const diagnosticada = await repo.RegistrarDiagnostico
-            ( 'OS000002', { historicoManutencao: 'Já trocou a bateria antes' }, 1, transaction );
+            ( criada.numOdS, { historicoManutencao: 'Já trocou a bateria antes' }, 1, transaction );
 
             expect ( diagnosticada?.historicoManutencao ).toBe ( 'Já trocou a bateria antes' );
             expect ( diagnosticada?.dtAtendimento ).not.toBeNull();
@@ -145,10 +145,10 @@ describe ( 'OrdensServicoRepository (rollback)', () =>
                 1,
                 transaction
             );
-            await repo.Create
+            const criada = await repo.Create
             (
                 {
-                    numOdS: 'OS000003', codCliente: cliente.codCliente, atendente: 'Ana',
+                    codCliente: cliente.codCliente, atendente: 'Ana',
                     defeito: 'Não liga', tipoOdS: 'Garantia',
                     codAparelho: aparelho.codAparelho, codEquipamento: equipamento.codEquipamento,
                 },
@@ -157,7 +157,7 @@ describe ( 'OrdensServicoRepository (rollback)', () =>
             );
 
             const atualizada = await repo.AtualizarObsTecnica
-            ( 'OS000003', 'Placa-mãe trocada', 1, transaction );
+            ( criada.numOdS, 'Placa-mãe trocada', 1, transaction );
 
             expect ( atualizada?.obsTecnica ).toBe ( 'Placa-mãe trocada' );
             expect ( atualizada?.dtAtendimento ).toBeNull();

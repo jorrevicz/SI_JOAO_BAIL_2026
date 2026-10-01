@@ -53,7 +53,8 @@ export default interface OrdemDeServicos {
 
 /** Represents the initializer for the table public.OrdemDeServicos */
 export interface OrdemDeServicosInitializer {
-  numOdS: OrdemDeServicosNumOdS;
+  /** Default value: gen_random_uuid() */
+  numOdS?: OrdemDeServicosNumOdS;
 
   codCliente: ClientesCodCliente;
 
