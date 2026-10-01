@@ -7,6 +7,12 @@ import { FormasPagamentoRepository } from '../../modules/formas-pagamento/formas
 
 const BASE = '/api/contas-pagamento';
 
+// Datas válidas padrão usadas nos payloads (vencimento após a emissão).
+const DT_EMISSAO_ENVIO    = '2026-01-01';
+const DT_VENCIMENTO_ENVIO = '2026-01-10';
+const DT_EMISSAO_ISO      = '2026-01-01T00:00:00.000Z';
+const DT_VENCIMENTO_ISO   = '2026-01-10T00:00:00.000Z';
+
 function EsperarConta
 (
     overrides: Record < string, unknown >
@@ -148,7 +154,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000210', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '10.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '10.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const res = await request ( app )
@@ -175,6 +182,8 @@ describe ( 'ContasPagamento routes', () =>
                 'O identificador deve conter apenas números.',
                 'O código da parcela deve ser um número.',
                 'O código do fornecedor deve ser um número.',
+                'A data de vencimento é inválida',
+                'A data de emissão é inválida',
                 'O código da forma de pagamento deve ser um número.',
                 'O valor do juro deve ser um decimal e positivo.',
                 'O valor do desconto deve ser um decimal e positivo.',
@@ -187,6 +196,8 @@ describe ( 'ContasPagamento routes', () =>
                 serie:         'Too big: expected string to have <=2 characters',
                 parcela:       'O código da parcela deve ser um número.',
                 codFornecedor: 'O código do fornecedor deve ser um número.',
+                dtVencimento:  'A data de vencimento é inválida',
+                dtEmissao:     'A data de emissão é inválida',
                 codFormaDePag: 'O código da forma de pagamento deve ser um número.',
                 juro:          'O valor do juro deve ser um decimal e positivo.',
                 desconto:      'O valor do desconto deve ser um decimal e positivo.',
@@ -196,13 +207,60 @@ describe ( 'ContasPagamento routes', () =>
         });
     });
 
+    it ( 'POST /api/contas-pagamento com vencimento anterior à emissão retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( BASE )
+            .send ({
+                numero: '00000214', modelo: '01', serie: '01', parcela: 1,
+                codFornecedor, codFormaDePag, dtEmissao: '2026-01-10', dtVencimento: '2026-01-01',
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body ).toEqual
+        ({
+            mensagem: 'A data de vencimento não pode ser igual ou anterior à data de emissão.',
+            erros: { dtVencimento: 'A data de vencimento não pode ser igual ou anterior à data de emissão.' },
+        });
+    });
+
+    it ( 'POST /api/contas-pagamento com vencimento igual à emissão (mesmo instante) retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( BASE )
+            .send ({
+                numero: '00000216', modelo: '01', serie: '01', parcela: 1,
+                codFornecedor, codFormaDePag, dtEmissao: '2026-01-05T10:00', dtVencimento: '2026-01-05T10:00',
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'dtVencimento' );
+    });
+
+    it ( 'POST /api/contas-pagamento com vencimento mais tarde no mesmo dia da emissão retorna 201', async () =>
+    {
+        const res = await request ( app )
+            .post ( BASE )
+            .send ({
+                numero: '00000215', modelo: '01', serie: '01', parcela: 1,
+                codFornecedor, codFormaDePag, dtEmissao: '2026-01-05T08:00', dtVencimento: '2026-01-05T23:59',
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+            });
+
+        expect ( res.status ).toBe ( 201 );
+        expect ( new Date ( res.body.dtVencimento ).getTime() ).toBeGreaterThan ( new Date ( res.body.dtEmissao ).getTime() );
+    });
+
     it ( 'POST /api/contas-pagamento com número zero-preenchido retorna 400', async () =>
     {
         const res = await request ( app )
             .post ( BASE )
             .send ({
                 numero: '00000000', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -215,7 +273,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000211', modelo: '00', serie: '00', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -229,7 +288,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000212', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '0.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '0.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -242,7 +302,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000201', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor: 999999, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor: 999999, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -255,7 +316,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000202', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag: 999999, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag: 999999, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -268,7 +330,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000203', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         expect ( res.status ).toBe ( 201 );
@@ -276,7 +339,9 @@ describe ( 'ContasPagamento routes', () =>
         (
             EsperarConta
             ({
-                numero: '00000203', codFornecedor, codFormaDePag, valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                numero: '00000203', codFornecedor, codFormaDePag,
+                dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
+                valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             })
         );
     });
@@ -287,14 +352,16 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000204', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const res = await request ( app )
             .put ( `${ BASE }/00000204/01/01/1` )
             .send ({
                 numero: '00000204', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag: outraFormaDePag, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
+                codFornecedor, codFormaDePag: outraFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
             });
 
         expect ( res.status ).toBe ( 200 );
@@ -302,7 +369,9 @@ describe ( 'ContasPagamento routes', () =>
         (
             EsperarConta
             ({
-                numero: '00000204', codFornecedor, codFormaDePag: outraFormaDePag, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                numero: '00000204', codFornecedor, codFormaDePag: outraFormaDePag,
+                dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
+                valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             })
         );
     });
@@ -313,7 +382,8 @@ describe ( 'ContasPagamento routes', () =>
             .put ( `${ BASE }/99999998/99/99/99` )
             .send ({
                 numero: '99999998', modelo: '99', serie: '99', parcela: 99,
-                codFornecedor, codFormaDePag, valor: '1.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '1.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
             });
 
         expect ( res.status ).toBe ( 404 );
@@ -326,7 +396,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000213', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const res = await request ( app )
@@ -343,7 +414,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000205', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const res = await request ( app )
@@ -356,6 +428,7 @@ describe ( 'ContasPagamento routes', () =>
             EsperarConta
             ({
                 numero: '00000205', codFornecedor, codFormaDePag,
+                dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: '2026-01-15T00:00:00.000Z',
             })
         );
@@ -387,7 +460,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000206', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const res = await request ( app )
@@ -400,6 +474,7 @@ describe ( 'ContasPagamento routes', () =>
             EsperarConta
             ({
                 numero: '00000206', codFornecedor, codFormaDePag,
+                dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
                 valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00', justificativaCancelamento: 'Compra desfeita pelo fornecedor',
             })
         );
@@ -411,7 +486,8 @@ describe ( 'ContasPagamento routes', () =>
             .post ( BASE )
             .send ({
                 numero: '00000207', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             });
 
         const del = await request ( app ).delete ( `${ BASE }/00000207/01/01/1` );

@@ -28,7 +28,7 @@ export default interface ContasAPagar {
 
   codFornecedor: FornecedoresCodForn;
 
-  dtVencimento: Date | null;
+  dtVencimento: Date;
 
   valor: string;
 
@@ -42,7 +42,7 @@ export default interface ContasAPagar {
 
   codFormaDePag: FormaDePagamentoCodFormaDePag;
 
-  dtEmissao: Date | null;
+  dtEmissao: Date;
 
   juro: string;
 
@@ -69,7 +69,7 @@ export interface ContasAPagarInitializer {
 
   codFornecedor: FornecedoresCodForn;
 
-  dtVencimento?: Date | null;
+  dtVencimento: Date;
 
   valor: string;
 
@@ -86,7 +86,7 @@ export interface ContasAPagarInitializer {
 
   codFormaDePag: FormaDePagamentoCodFormaDePag;
 
-  dtEmissao?: Date | null;
+  dtEmissao: Date;
 
   juro: string;
 
@@ -113,7 +113,7 @@ export interface ContasAPagarMutator {
 
   codFornecedor?: FornecedoresCodForn;
 
-  dtVencimento?: Date | null;
+  dtVencimento?: Date;
 
   valor?: string;
 
@@ -127,7 +127,7 @@ export interface ContasAPagarMutator {
 
   codFormaDePag?: FormaDePagamentoCodFormaDePag;
 
-  dtEmissao?: Date | null;
+  dtEmissao?: Date;
 
   juro?: string;
 

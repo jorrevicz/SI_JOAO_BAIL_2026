@@ -30,7 +30,7 @@ describe ( 'ContasReceberRepository (rollback)', () =>
                     parcela: 1,
                     codCliente,
                     codFormaDePag,
-                    valor: '150.00',
+                    dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '150.00',
                     juro: '0.00',
                     desconto: '0.00',
                     multa: '0.00',
@@ -71,7 +71,7 @@ describe ( 'ContasReceberRepository (rollback)', () =>
                     parcela: 1,
                     codCliente,
                     codFormaDePag,
-                    valor: '100.00',
+                    dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00',
                     juro: '0.00',
                     desconto: '0.00',
                     multa: '0.00',
@@ -116,7 +116,7 @@ describe ( 'ContasReceberRepository (rollback)', () =>
 
             await repo.Create
             (
-                { ...id, codCliente, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never,
+                { ...id, codCliente, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never,
                 1,
                 transaction
             );
@@ -124,7 +124,7 @@ describe ( 'ContasReceberRepository (rollback)', () =>
             const atualizada = await repo.Update
             (
                 id,
-                { codCliente, codFormaDePag: outraForma, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true } as never,
+                { codCliente, codFormaDePag: outraForma, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true } as never,
                 1,
                 transaction
             );
@@ -142,7 +142,7 @@ describe ( 'ContasReceberRepository (rollback)', () =>
             const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
             const id: ContaAReceberId = { numero: '00000003', modelo: '01', serie: '01', parcela: 1 };
 
-            await repo.Create ( { ...id, codCliente, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...id, codCliente, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
 
             const dtBaixa = new Date ( '2026-01-15T00:00:00Z' );
             const dtPagamento = new Date ( '2026-01-15T00:00:00Z' );
@@ -162,7 +162,7 @@ describe ( 'ContasReceberRepository (rollback)', () =>
             const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
             const id: ContaAReceberId = { numero: '00000004', modelo: '01', serie: '01', parcela: 1 };
 
-            await repo.Create ( { ...id, codCliente, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...id, codCliente, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
 
             const cancelada = await repo.Cancelar ( id, 'Venda desfeita pelo cliente', 1, transaction );
 
@@ -179,7 +179,7 @@ describe ( 'ContasReceberRepository (rollback)', () =>
             const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
             const id: ContaAReceberId = { numero: '00000005', modelo: '01', serie: '01', parcela: 1 };
 
-            await repo.Create ( { ...id, codCliente, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...id, codCliente, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
             await repo.Delete ( id, 1, transaction );
 
             const achada = await repo.FindById ( id, transaction );
@@ -206,8 +206,8 @@ describe ( 'ContasReceberRepository (rollback)', () =>
             const primeira = { numero: '00000006', modelo: '01', serie: '01', parcela: 1 };
             const segunda  = { numero: '00000007', modelo: '01', serie: '01', parcela: 1 };
 
-            await repo.Create ( { ...primeira, codCliente, codFormaDePag, valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
-            await repo.Create ( { ...segunda,  codCliente, codFormaDePag, valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...primeira, codCliente, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
+            await repo.Create ( { ...segunda,  codCliente, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00' } as never, 1, transaction );
 
             const pagina = await repo.List ( 1, primeira, transaction );
 

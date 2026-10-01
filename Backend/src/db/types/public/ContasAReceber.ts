@@ -30,9 +30,9 @@ export default interface ContasAReceber {
 
   codFormaDePag: FormaDePagamentoCodFormaDePag;
 
-  dtEmissao: Date | null;
+  dtEmissao: Date;
 
-  dtVencimento: Date | null;
+  dtVencimento: Date;
 
   dtPagamento: Date | null;
 
@@ -73,9 +73,9 @@ export interface ContasAReceberInitializer {
 
   codFormaDePag: FormaDePagamentoCodFormaDePag;
 
-  dtEmissao?: Date | null;
+  dtEmissao: Date;
 
-  dtVencimento?: Date | null;
+  dtVencimento: Date;
 
   dtPagamento?: Date | null;
 
@@ -119,9 +119,9 @@ export interface ContasAReceberMutator {
 
   codFormaDePag?: FormaDePagamentoCodFormaDePag;
 
-  dtEmissao?: Date | null;
+  dtEmissao?: Date;
 
-  dtVencimento?: Date | null;
+  dtVencimento?: Date;
 
   dtPagamento?: Date | null;
 

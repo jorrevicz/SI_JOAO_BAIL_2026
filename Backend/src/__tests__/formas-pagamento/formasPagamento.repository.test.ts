@@ -121,6 +121,8 @@ describe ( 'FormasPagamentoRepository (rollback)', () =>
                     parcela: 1,
                     codFornecedor,
                     codFormaDePag: nova.codFormaDePag,
+                    dtEmissao: new Date ( '2026-01-01' ),
+                    dtVencimento: new Date ( '2026-01-10' ),
                     valor: '100.00',
                     juro: '0.00',
                     desconto: '0.00',
