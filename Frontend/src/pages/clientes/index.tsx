@@ -87,6 +87,41 @@ export default function ClientesPage ()
       { header: 'Telefone', cell: ( info ) => info.getValue() ?? '—' }
     ),
     columnHelper.accessor (
+      'apelido',
+      { header: 'Apelido', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
+      'nomeFantasia',
+      { header: 'Nome fantasia', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
+      'rg',
+      { header: 'RG', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
+      'dtNascimento',
+      { header: 'Nascimento', cell: ( info ) => info.getValue() ? formatarData ( info.getValue()! ) : '-' }
+    ),
+    columnHelper.accessor (
+      'dtFundacao',
+      { header: 'Fundação', cell: ( info ) => info.getValue() ? formatarData ( info.getValue()! ) : '-' }
+    ),
+    columnHelper.accessor (
+      'genero',
+      {
+        header: 'Gênero',
+        cell: ( info ) => ( { MASCULINO: 'Masculino', FEMININO: 'Feminino', OUTRO: 'Outro' } as Record < string, string > )[ info.getValue() ?? '' ] ?? '—'
+      }
+    ),
+    columnHelper.accessor (
+      'foneFixo',
+      { header: 'Telefone fixo', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
+      'email',
+      { header: 'E-mail', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
       'enderecoCl',
       { header: 'Endereço', 
         cell: ( info ) => (

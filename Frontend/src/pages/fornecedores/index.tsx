@@ -16,7 +16,6 @@ import {
   Toolbar, GrupoBotoes, Botao, InputBusca,
   TabelaWrapper, Tabela, RodapeTabela, Paginacao, PaginacaoInfo, Alerta,
 } from './style';
-// import BotaoConsultar from '../../components/botaoConsultar';
 import FornecedorForm from './FornecedorForm';
 import { InfoBlock } from '../../components/tabela/style';
 
@@ -30,9 +29,7 @@ export default function FornecedoresPage ()
   const [ erro, setErro ]         = useState ( '' );
   const { sorting, setSorting }   = useTabelaOrdenada ( 'fornecedor' );
   const [ globalFilter, setGlobalFilter ] = useState ( '' );
-  const [ pagination, setPagination ]     = useState < PaginationState > ( { pageIndex: 0, pageSize: 25 } );
-  // const [ codFornSel, setCodFornSel ] = useState < number | null > ( null )
-  // const [ fornSel, setFornSel ] = useState('')
+  const [ pagination, setPagination ]     = useState < PaginationState > ( { pageIndex: 0, pageSize: 25 } ); 
 
   const carregar = () =>
     fornecedoresService.listar ( )
@@ -83,6 +80,35 @@ export default function FornecedoresPage ()
     columnHelper.accessor (
       'tipoPessoa',
       { header: 'Tipo Pessoa', cell: ( info ) => info.getValue() === 'FISICA' ? 'Física' : info.getValue() === 'JURIDICA' ? 'Jurídica' : '—' }
+    ),
+    columnHelper.accessor (
+      'apelido',
+      { header: 'Apelido', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
+      'dtNascimento',
+      { header: 'Nascimento',
+        cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ?? '' ) }</InfoBlock>
+      } ),    
+    columnHelper.accessor (
+      'dtFundacao',
+      { header: 'Fundação', 
+        cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ?? '-') }</InfoBlock>
+      } ),
+    columnHelper.accessor (
+      'genero',
+      {
+        header: 'Gênero',
+        cell: ( info ) => ( { MASCULINO: 'Masculino', FEMININO: 'Feminino', OUTRO: 'Outro' } as Record < string, string > )[ info.getValue() ?? '' ] ?? '—'
+      }
+    ),
+    columnHelper.accessor (
+      'foneFixo',
+      { header: 'Telefone fixo', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
+      'email',
+      { header: 'E-mail', cell: ( info ) => info.getValue() ?? '—' }
     ),
     columnHelper.accessor (
       'codCidade',

@@ -43,3 +43,11 @@ export const fimDoDiaUtc = ( data: Date ) =>
 // envio à API (o Backend só entende UTC/fuso explícito — ver validarDatas nos schemas
 // de contas-pagamento/contas-receber).
 export const doInputUtcParaIso = ( valor: string ) => `${ valor }:00.000Z`;
+
+// Converte o ISO devolvido pelo Backend para um coluna DATE ("AAAA-MM-DD") no valor aceito
+// por <input type="date">. Usa só os componentes UTC, como o restante das datas.
+export const paraDataInput = ( iso: string | null | undefined ) =>
+  iso ? iso.slice ( 0, 10 ) : '';
+
+// Data de hoje ("AAAA-MM-DD", UTC) — limite máximo para nascimento/fundação.
+export const hojeParaDataInput = () => new Date().toISOString().slice ( 0, 10 );

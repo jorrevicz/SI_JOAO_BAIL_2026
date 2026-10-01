@@ -1,4 +1,5 @@
 import api from './api';
+import { type Genero } from './clientes';
 
 export interface Fornecedor
 {
@@ -14,6 +15,12 @@ export interface Fornecedor
   foneForn:       string | null;
   cpfCnpjForn:    string | null;
   inscEstSubTrib: string | null;
+  foneFixo:       string | null;
+  email:          string | null;
+  apelido:        string | null;
+  dtNascimento:   string | null;
+  dtFundacao:     string | null;
+  genero:         Genero | null;
   dtCriacao:      string;
   dtEdicao:       string;
   codUser:        number | null;
@@ -33,6 +40,12 @@ export interface CreateFornecedorInput
   foneForn:        string;
   cpfCnpjForn:     string;
   inscEstSubTrib:  string;
+  foneFixo?:       string;
+  email:           string;
+  apelido?:        string;
+  dtNascimento?:   string;
+  dtFundacao?:     string;
+  genero?:         Genero;
   isActive:        boolean;
 }
 

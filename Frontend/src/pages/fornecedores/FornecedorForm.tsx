@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ApiError } from '../../services/api';
 import { fornecedoresService, type Fornecedor, type CreateFornecedorInput } from '../../services/fornecedores';
-import { type Cidade } from '../../services/cidades';
-import { type CondicaoPagamento } from '../../services/condicoesPagamento';
+import { type Genero } from '../../services/clientes';
+import { paraDataInput, hojeParaDataInput } from '../../utils/formatters';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { CidadeConsulta } from '../cidades/CidadeConsulta';
 import { cidadesService } from '../../services/cidades';
 import { CondicaoPagamentoConsulta } from '../condicoesPagamento-Parcela/CondicaoPagamentoConsulta';
 import { condicoesPagamentoService } from '../../services/condicoesPagamento';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 
 interface Props
 {
@@ -24,6 +26,12 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     codCondDePag:   inicial.codCondDePag   ?? 0,
     fornecedor:     inicial.fornecedor     ?? '',
     nomeFantasia:   inicial.nomeFantasia   ?? '',
+    apelido:        inicial.apelido        ?? undefined,
+    dtNascimento:   paraDataInput ( inicial.dtNascimento ) || undefined,
+    dtFundacao:     paraDataInput ( inicial.dtFundacao )   || undefined,
+    genero:         inicial.genero         ?? undefined,
+    foneFixo:       inicial.foneFixo       ?? undefined,
+    email:          inicial.email          ?? '',
     tipoPessoa:     ( inicial.tipoPessoa as 'FISICA' | 'JURIDICA' ) ?? '',
     enderecoForn:   inicial.enderecoForn   ?? '',
     bairroForn:     inicial.bairroForn     ?? '',
@@ -33,19 +41,32 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     inscEstSubTrib: inicial.inscEstSubTrib ?? '',
     isActive:       inicial.isActive       ?? true,
   } );
-  const [ codCidadeSel, setCodCidadeSel ] = useState ( 0 );
-  const [ nomeCidadeSel, setNomeCidadeSel ] = useState ( '' );
-  const [ consultando, setConsultando ]     = useState ( false );
+  const campoCidade = useCampoConsulta (
+    {
+      codigoInicial: inicial.codCidade,
+      buscar:        cidadesService.obter,
+      codigoDe:      ( entidade ) => entidade.codCidade,
+      descricaoDe:   ( entidade ) => entidade.cidade,
+    }
+  );
 
-  const [ codCondDepagSel, setCodCondDePagSel ] = useState ( 0 );
-  const [ descricaoCondPagSel, setDescricaoCondPagSel ] = useState ( '' );
-  const [ consultandoCondPag, setConsultandoCondPag ]   = useState ( false );
+  const campoCondPag = useCampoConsulta (
+    {
+      codigoInicial: inicial.codCondDePag,
+      buscar:        condicoesPagamentoService.obter,
+      codigoDe:      ( entidade ) => entidade.codCondDePag,
+      descricaoDe:   ( entidade ) => entidade.descricao ?? '',
+    }
+  );
 
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
   const [ salvando, setSalvando ]     = useState ( false );
 
   const editando = !!inicial.codForn;
+
+  const pessoaFisica   = form.tipoPessoa === 'FISICA';
+  const pessoaJuridica = form.tipoPessoa === 'JURIDICA';
 
   const submit = async ( evento: React.SyntheticEvent ) =>
   {
@@ -54,12 +75,27 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     setErro ( '' );
     setErrosCampo ( {} );
 
+    const validacoes = await Promise.all ( [ campoCidade.validar(), campoCondPag.validar() ] );
+
+    if ( validacoes.includes ( false ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
     const dados: CreateFornecedorInput =
     {
-      codCidade:      form.codCidade,
-      codCondDePag:   form.codCondDePag,
+      codCidade:      campoCidade.codigo,
+      codCondDePag:   campoCondPag.codigo,
       fornecedor:     form.fornecedor,
-      nomeFantasia:   form.nomeFantasia   || undefined,
+      // Só enviamos o que vale para o tipo escolhido — o Backend também descarta o resto.
+      nomeFantasia:   pessoaJuridica ? form.nomeFantasia || undefined : undefined,
+      dtFundacao:     pessoaJuridica ? form.dtFundacao   || undefined : undefined,
+      apelido:        pessoaFisica   ? form.apelido      || undefined : undefined,
+      dtNascimento:   pessoaFisica   ? form.dtNascimento || undefined : undefined,
+      genero:         pessoaFisica   ? form.genero       || undefined : undefined,
+      foneFixo:       form.foneFixo       || undefined,
+      email:          form.email,
       tipoPessoa:     form.tipoPessoa,
       enderecoForn:   form.enderecoForn   || undefined,
       bairroForn:     form.bairroForn     || undefined,
@@ -99,45 +135,6 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     }
   };
   
-  useEffect ( () =>
-  {
-    if ( inicial.codCidade )
-    {
-      cidadesService.obter ( inicial.codCidade ).then ( ( oCidade ) =>
-      {
-        setCodCidadeSel ( oCidade.codCidade );
-        setNomeCidadeSel ( oCidade.cidade );
-      } );
-    }
-  });
-
-  const handleSelecionarCidade = ( oCidade: Cidade) =>
-  {
-    setForm ( { ...form, codCidade: oCidade.codCidade } );
-    setCodCidadeSel ( oCidade.codCidade );
-    setNomeCidadeSel ( oCidade.cidade );
-    setConsultando ( false );
-  }
-
-useEffect ( () =>
-  {
-    if ( inicial.codCondDePag )
-    {
-      condicoesPagamentoService.obter ( inicial.codCondDePag ).then ( ( oCondPag ) =>
-      {
-        setCodCondDePagSel ( oCondPag.codCondDePag );
-        setDescricaoCondPagSel ( oCondPag.descricao ?? '');
-      } );
-    }
-  });
-
-  const handleSelecionarCondPag = ( oCondPag: CondicaoPagamento ) =>
-  {
-    setForm ( { ...form, codCondDePag: oCondPag.codCondDePag } );
-    setDescricaoCondPagSel ( oCondPag.descricao ?? '' );
-    setConsultandoCondPag ( false );
-  }
-
   return (
     <>
       <FormModal
@@ -147,27 +144,7 @@ useEffect ( () =>
         onSubmit={ submit }
       >
         <FormSecao>
-          <FormCampo label="Fornecedor" obrigatorio colunas={ 6 } htmlFor="fornecedor" erro={ errosCampo.fornecedor }>
-            <input
-              id="fornecedor"
-              value={ form.fornecedor }
-              onChange={ ( evento ) => setForm ( { ...form, fornecedor: evento.target.value.toUpperCase() } ) }
-              maxLength={ 128 }
-              required
-              autoFocus
-            />
-          </FormCampo>
-
-          <FormCampo label="Nome fantasia" colunas={ 4 } htmlFor="nomeFantasia" erro={ errosCampo.nomeFantasia }>
-            <input
-              id="nomeFantasia"
-              value={ form.nomeFantasia ?? '' }
-              onChange={ ( evento ) => setForm ( { ...form, nomeFantasia: evento.target.value.toUpperCase() || undefined } ) }
-              maxLength={ 60 }
-            />
-          </FormCampo>
-
-          <FormCampo label="Tipo de pessoa" obrigatorio colunas={ 2 } htmlFor="tipoPessoa" erro={ errosCampo.tipoPessoa }>
+          <FormCampo label="Tipo de pessoa" obrigatorio colunas={ 3 } htmlFor="tipoPessoa" erro={ errosCampo.tipoPessoa }>
             <select
               id="tipoPessoa"
               value={ form.tipoPessoa }
@@ -175,6 +152,7 @@ useEffect ( () =>
                 setForm ( { ...form, tipoPessoa: evento.target.value.toUpperCase() as 'FISICA' | 'JURIDICA' } )
               }
               required
+              autoFocus
             >
               <option value="">— Selecione —</option>
               <option value="FISICA">Física</option>
@@ -182,7 +160,82 @@ useEffect ( () =>
             </select>
           </FormCampo>
 
+          <FormCampo label="Fornecedor" obrigatorio colunas={ 9 } htmlFor="fornecedor" erro={ errosCampo.fornecedor }>
+            <input
+              id="fornecedor"
+              value={ form.fornecedor }
+              onChange={ ( evento ) => setForm ( { ...form, fornecedor: evento.target.value.toUpperCase() } ) }
+              maxLength={ 128 }
+              required
+            />
+          </FormCampo>
         </FormSecao>
+
+        {
+          pessoaFisica && (
+            <FormSecao>
+              <FormCampo label="Apelido" colunas={ 4 } htmlFor="apelido" erro={ errosCampo.apelido }>
+                <input
+                  id="apelido"
+                  value={ form.apelido ?? '' }
+                  onChange={ ( evento ) => setForm ( { ...form, apelido: evento.target.value.toUpperCase() || undefined } ) }
+                  maxLength={ 60 }
+                />
+              </FormCampo>
+
+              <FormCampo label="Data de nascimento" obrigatorio colunas={ 4 } htmlFor="dtNascimento" erro={ errosCampo.dtNascimento }>
+                <input
+                  id="dtNascimento"
+                  type="date"
+                  value={ form.dtNascimento ?? '' }
+                  max={ hojeParaDataInput() }
+                  onChange={ ( evento ) => setForm ( { ...form, dtNascimento: evento.target.value || undefined } ) }
+                  required
+                />
+              </FormCampo>
+
+              <FormCampo label="Gênero" obrigatorio colunas={ 4 } htmlFor="genero" erro={ errosCampo.genero }>
+                <select
+                  id="genero"
+                  value={ form.genero ?? '' }
+                  onChange={ ( evento ) => setForm ( { ...form, genero: ( evento.target.value as Genero ) || undefined } ) }
+                  required
+                >
+                  <option value="">— Selecione —</option>
+                  <option value="MASCULINO">Masculino</option>
+                  <option value="FEMININO">Feminino</option>
+                  <option value="OUTRO">Outro</option>
+                </select>
+              </FormCampo>
+            </FormSecao>
+          )
+        }
+
+        {
+          pessoaJuridica && (
+            <FormSecao>
+              <FormCampo label="Nome fantasia" colunas={ 8 } htmlFor="nomeFantasia" erro={ errosCampo.nomeFantasia }>
+                <input
+                  id="nomeFantasia"
+                  value={ form.nomeFantasia ?? '' }
+                  onChange={ ( evento ) => setForm ( { ...form, nomeFantasia: evento.target.value.toUpperCase() || undefined } ) }
+                  maxLength={ 60 }
+                />
+              </FormCampo>
+
+              <FormCampo label="Data de fundação" obrigatorio colunas={ 4 } htmlFor="dtFundacao" erro={ errosCampo.dtFundacao }>
+                <input
+                  id="dtFundacao"
+                  type="date"
+                  value={ form.dtFundacao ?? '' }
+                  max={ hojeParaDataInput() }
+                  onChange={ ( evento ) => setForm ( { ...form, dtFundacao: evento.target.value || undefined } ) }
+                  required
+                />
+              </FormCampo>
+            </FormSecao>
+          )
+        }
 
         <FormSecao>
           <FormCampo label="CEP" obrigatorio colunas={ 2 } htmlFor="cepForn" erro={ errosCampo.cepForn }>
@@ -220,99 +273,32 @@ useEffect ( () =>
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Cidade" obrigatorio colunas={ 2 } erro={ errosCampo.codCidade }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultando ( true ) }
-              >
-                Consultar
-              </Botao> 
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Código da cidade' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codCidadeSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Nome da cidade' colunas={ 4 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input 
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ nomeCidadeSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoCidade }
+            Consulta={ CidadeConsulta }
+            rotulo="Cidade"
+            rotuloCodigo="Código da cidade"
+            rotuloNome="Nome da cidade"
+            obrigatorio
+            erroApi={ errosCampo.codCidade }
+          />
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Condição de pagamento" obrigatorio colunas={ 3 } erro={ errosCampo.codCondDePag }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultandoCondPag ( true ) }
-              >
-                Consultar
-              </Botao> 
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Código da condição' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codCondDepagSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Descrição da condição' colunas={ 4 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input 
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ descricaoCondPagSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoCondPag }
+            Consulta={ CondicaoPagamentoConsulta }
+            rotulo="Condição de pagamento"
+            rotuloCodigo="Código da condição"
+            rotuloNome="Descrição da condição"
+            obrigatorio
+            erroApi={ errosCampo.codCondDePag }
+            colunas={ [ 3, 2, 4 ] }
+          />
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Telefone" obrigatorio colunas={ 3 } htmlFor="foneForn" erro={ errosCampo.foneForn }>
+          <FormCampo label="Telefone (celular)" obrigatorio colunas={ 3 } htmlFor="foneForn" erro={ errosCampo.foneForn }>
             <input
               id="foneForn"
               type='text'
@@ -327,7 +313,34 @@ useEffect ( () =>
             />
           </FormCampo>
 
-          <FormCampo label="CPF / CNPJ" obrigatorio colunas={ 3 } htmlFor="cpfCnpjForn" erro={ errosCampo.cpfCnpjForn }>
+          <FormCampo label="Telefone fixo" colunas={ 3 } htmlFor="foneFixo" erro={ errosCampo.foneFixo }>
+            <input
+              id="foneFixo"
+              type='text'
+              inputMode='numeric'
+              value={ form.foneFixo ?? '' }
+              onChange={ ( evento ) =>
+                setForm ( { ...form, foneFixo: evento.target.value.replace ( /\D/g, '' ) || undefined } )
+              }
+              maxLength={ 15 }
+              placeholder="551133334444"
+            />
+          </FormCampo>
+
+          <FormCampo label="E-mail" obrigatorio colunas={ 6 } htmlFor="email" erro={ errosCampo.email }>
+            <input
+              id="email"
+              type='email'
+              value={ form.email }
+              onChange={ ( evento ) => setForm ( { ...form, email: evento.target.value.trim() } ) }
+              maxLength={ 254 }
+              required
+            />
+          </FormCampo>
+        </FormSecao>
+
+        <FormSecao>
+          <FormCampo label="CPF / CNPJ" obrigatorio colunas={ 4 } htmlFor="cpfCnpjForn" erro={ errosCampo.cpfCnpjForn }>
             <input
               id="cpfCnpjForn"
               type='text'
@@ -342,7 +355,7 @@ useEffect ( () =>
             />
           </FormCampo>
 
-          <FormCampo label="Inscrição estadual / Sub. trib." obrigatorio colunas={ 4 } htmlFor="inscEstSubTrib" erro={ errosCampo.inscEstSubTrib }>
+          <FormCampo label="Inscrição estadual / Sub. trib." obrigatorio colunas={ 5 } htmlFor="inscEstSubTrib" erro={ errosCampo.inscEstSubTrib }>
             <input
               id="inscEstSubTrib"
               type='number'
@@ -353,7 +366,7 @@ useEffect ( () =>
             />
           </FormCampo>
 
-          <FormCampo label='Status' colunas={ 2 }>
+          <FormCampo label='Status' colunas={ 3 }>
             <CaixaSelecao
               value={ form.isActive }
               onChange={ ( evento ) => setForm ( { ...form, isActive: evento } ) }
@@ -370,22 +383,6 @@ useEffect ( () =>
           </Botao>
         </FormAcoes>
       </FormModal>
-      {
-        consultando && (
-          <CidadeConsulta
-            onSelecionar={ handleSelecionarCidade }
-            onCancelar={ () => setConsultando ( false ) }
-          />
-        )
-      }
-      {
-        consultandoCondPag && (
-          <CondicaoPagamentoConsulta
-            onSelecionar={ handleSelecionarCondPag }
-            onCancelar={ () => setConsultandoCondPag ( false ) }
-          />
-        )
-      }
     </>
   );
 }

@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
-import { type Cidade } from '../../services/cidades';
+import { useState } from 'react';
 import { ApiError } from '../../services/api';
-import { clientesService, type Cliente, type CreateClienteInput } from '../../services/clientes';
+import { clientesService, type Cliente, type CreateClienteInput, type Genero } from '../../services/clientes';
+import { paraDataInput, hojeParaDataInput } from '../../utils/formatters';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { CidadeConsulta } from '../cidades/CidadeConsulta';
 import { cidadesService } from '../../services/cidades';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 
 interface Props
 {
@@ -26,17 +28,33 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
     bairroCl:     inicial.bairroCl     ?? undefined,
     cepCl:        inicial.cepCl        ?? '',
     foneCl:       inicial.foneCl       ?? '',
+    foneFixo:     inicial.foneFixo     ?? undefined,
+    email:        inicial.email        ?? '',
+    apelido:      inicial.apelido      ?? undefined,
+    nomeFantasia: inicial.nomeFantasia ?? undefined,
+    rg:           inicial.rg           ?? undefined,
+    dtNascimento: paraDataInput ( inicial.dtNascimento ) || undefined,
+    dtFundacao:   paraDataInput ( inicial.dtFundacao )   || undefined,
+    genero:       inicial.genero       ?? undefined,
     isActive:     inicial.isActive     ?? true,
   });
-  const [ codCidadeSel, setCodCidadeSel ] = useState ( 0 );
-  const [ nomeCidadeSel, setNomeCidadeSel ]       = useState ('');
-  const [ consultando, setConsultando ] = useState ( false );
+  const campoCidade = useCampoConsulta (
+    {
+      codigoInicial: inicial.codCidade,
+      buscar:        cidadesService.obter,
+      codigoDe:      ( entidade ) => entidade.codCidade,
+      descricaoDe:   ( entidade ) => entidade.cidade,
+    }
+  );
 
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ({});
   const [ salvando, setSalvando ]     = useState ( false );
 
   const editando = !!inicial.codCliente;
+
+  const pessoaFisica   = form.tipoPessoa === 'FISICA';
+  const pessoaJuridica = form.tipoPessoa === 'JURIDICA';
 
   const submit = async ( evento: React.SyntheticEvent ) =>
   {
@@ -45,9 +63,15 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
     setErro ( '' );
     setErrosCampo ( {} );
 
+    if ( !( await campoCidade.validar() ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
     const dados: CreateClienteInput =
     {
-      codCidade:    form.codCidade,
+      codCidade:    campoCidade.codigo,
       cliente:      form.cliente,
       tipoPessoa:   form.tipoPessoa,
       codCondDePag: form.codCondDePag || undefined,
@@ -55,6 +79,15 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
       bairroCl:     form.bairroCl     || undefined,
       cepCl:        form.cepCl,
       foneCl:       form.foneCl,
+      foneFixo:     form.foneFixo     || undefined,
+      email:        form.email,
+      // Só enviamos o que vale para o tipo escolhido — o Backend também descarta o resto.
+      apelido:      pessoaFisica   ? form.apelido      || undefined : undefined,
+      rg:           pessoaFisica   ? form.rg           || undefined : undefined,
+      dtNascimento: pessoaFisica   ? form.dtNascimento || undefined : undefined,
+      genero:       pessoaFisica   ? form.genero       || undefined : undefined,
+      nomeFantasia: pessoaJuridica ? form.nomeFantasia || undefined : undefined,
+      dtFundacao:   pessoaJuridica ? form.dtFundacao   || undefined : undefined,
       isActive:     form.isActive     || true,
     };
 
@@ -87,26 +120,6 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
     }
   };
 
-  useEffect ( () =>
-  {
-    if ( inicial.codCidade )
-    {
-      cidadesService.obter ( inicial.codCidade ).then ( ( oCidade ) =>
-      {
-        setCodCidadeSel ( oCidade.codCidade );
-        setNomeCidadeSel ( oCidade.cidade );
-      } );
-    }
-  });
-
-  const HandleSelecionarCidade = ( oCidade: Cidade ) =>
-  {
-    setForm ( { ...form, codCidade: oCidade.codCidade } );
-    setCodCidadeSel ( oCidade.codCidade );
-    setNomeCidadeSel ( oCidade.cidade );
-    setConsultando ( false );
-  } 
-
   return (
     <>
       <FormModal
@@ -116,17 +129,6 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
         onSubmit={ submit }
       >
         <FormSecao>
-          <FormCampo label="Cliente" obrigatorio colunas={ 8 } htmlFor="cliente" erro={ errosCampo.cliente }>
-            <input
-              id="cliente"
-              value={ form.cliente }
-              onChange={ ( evento ) => setForm ( { ...form, cliente: evento.target.value.toLocaleUpperCase() } ) }
-              maxLength={ 128 }
-              required
-              autoFocus
-            />
-          </FormCampo>
-
           <FormCampo label="Tipo de pessoa" obrigatorio colunas={ 3 } htmlFor="tipoPessoa" erro={ errosCampo.tipoPessoa }>
             <select
               id="tipoPessoa"
@@ -135,13 +137,99 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
                 setForm ( { ...form, tipoPessoa: evento.target.value.toUpperCase() } )
               }
               required
+              autoFocus
             >
               <option value="">— Selecione —</option>
               <option value="FISICA">Física</option>
               <option value="JURIDICA">Jurídica</option>
             </select>
           </FormCampo>
+
+          <FormCampo label="Cliente" obrigatorio colunas={ 9 } htmlFor="cliente" erro={ errosCampo.cliente }>
+            <input
+              id="cliente"
+              value={ form.cliente }
+              onChange={ ( evento ) => setForm ( { ...form, cliente: evento.target.value.toLocaleUpperCase() } ) }
+              maxLength={ 128 }
+              required
+            />
+          </FormCampo>
         </FormSecao>
+
+        {
+          pessoaFisica && (
+            <FormSecao>
+              <FormCampo label="Apelido" colunas={ 3 } htmlFor="apelido" erro={ errosCampo.apelido }>
+                <input
+                  id="apelido"
+                  value={ form.apelido ?? '' }
+                  onChange={ ( evento ) => setForm ( { ...form, apelido: evento.target.value.toLocaleUpperCase() || undefined } ) }
+                  maxLength={ 60 }
+                />
+              </FormCampo>
+
+              <FormCampo label="RG" colunas={ 3 } htmlFor="rg" erro={ errosCampo.rg }>
+                <input
+                  id="rg"
+                  value={ form.rg ?? '' }
+                  onChange={ ( evento ) => setForm ( { ...form, rg: evento.target.value.toLocaleUpperCase() || undefined } ) }
+                  maxLength={ 20 }
+                />
+              </FormCampo>
+
+              <FormCampo label="Data de nascimento" obrigatorio colunas={ 3 } htmlFor="dtNascimento" erro={ errosCampo.dtNascimento }>
+                <input
+                  id="dtNascimento"
+                  type="date"
+                  value={ form.dtNascimento ?? '' }
+                  max={ hojeParaDataInput() }
+                  onChange={ ( evento ) => setForm ( { ...form, dtNascimento: evento.target.value || undefined } ) }
+                  required
+                />
+              </FormCampo>
+
+              <FormCampo label="Gênero" obrigatorio colunas={ 3 } htmlFor="genero" erro={ errosCampo.genero }>
+                <select
+                  id="genero"
+                  value={ form.genero ?? '' }
+                  onChange={ ( evento ) => setForm ( { ...form, genero: ( evento.target.value as Genero ) || undefined } ) }
+                  required
+                >
+                  <option value="">— Selecione —</option>
+                  <option value="MASCULINO">Masculino</option>
+                  <option value="FEMININO">Feminino</option>
+                  <option value="OUTRO">Outro</option>
+                </select>
+              </FormCampo>
+            </FormSecao>
+          )
+        }
+
+        {
+          pessoaJuridica && (
+            <FormSecao>
+              <FormCampo label="Nome fantasia" colunas={ 8 } htmlFor="nomeFantasia" erro={ errosCampo.nomeFantasia }>
+                <input
+                  id="nomeFantasia"
+                  value={ form.nomeFantasia ?? '' }
+                  onChange={ ( evento ) => setForm ( { ...form, nomeFantasia: evento.target.value.toLocaleUpperCase() || undefined } ) }
+                  maxLength={ 60 }
+                />
+              </FormCampo>
+
+              <FormCampo label="Data de fundação" obrigatorio colunas={ 4 } htmlFor="dtFundacao" erro={ errosCampo.dtFundacao }>
+                <input
+                  id="dtFundacao"
+                  type="date"
+                  value={ form.dtFundacao ?? '' }
+                  max={ hojeParaDataInput() }
+                  onChange={ ( evento ) => setForm ( { ...form, dtFundacao: evento.target.value || undefined } ) }
+                  required
+                />
+              </FormCampo>
+            </FormSecao>
+          )
+        }
 
         <FormSecao>
           <FormCampo label="CEP" obrigatorio colunas={ 2 } htmlFor="cepCl" erro={ errosCampo.cepCl }>
@@ -179,53 +267,19 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Cidade" obrigatorio colunas={ 2 } erro={ errosCampo.codCidade }>
-            <div style={ { gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultando( true ) }
-              >
-                Consultar
-              </Botao>  
-            </div> 
-          </FormCampo>
-
-          <FormCampo label='Código da cidade' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codCidadeSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Nome da cidade' colunas={ 4 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input 
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ nomeCidadeSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoCidade }
+            Consulta={ CidadeConsulta }
+            rotulo="Cidade"
+            rotuloCodigo="Código da cidade"
+            rotuloNome="Nome da cidade"
+            obrigatorio
+            erroApi={ errosCampo.codCidade }
+          />
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Telefone" obrigatorio colunas={ 4 } htmlFor="foneCl" erro={ errosCampo.foneCl }>
+          <FormCampo label="Telefone (celular)" obrigatorio colunas={ 3 } htmlFor="foneCl" erro={ errosCampo.foneCl }>
             <input
               id="foneCl"
               type='text'
@@ -240,7 +294,32 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
 
-          <FormCampo label='Status' colunas={ 3 }>
+          <FormCampo label="Telefone fixo" colunas={ 3 } htmlFor="foneFixo" erro={ errosCampo.foneFixo }>
+            <input
+              id="foneFixo"
+              type='text'
+              inputMode='numeric'
+              value={ form.foneFixo ?? '' }
+              onChange={ ( evento ) =>
+                setForm ( { ...form, foneFixo: evento.target.value.replace ( /\D/g, '' ) || undefined } )
+              }
+              maxLength={ 15 }
+              placeholder="551133334444"
+            />
+          </FormCampo>
+
+          <FormCampo label="E-mail" obrigatorio colunas={ 4 } htmlFor="email" erro={ errosCampo.email }>
+            <input
+              id="email"
+              type='email'
+              value={ form.email }
+              onChange={ ( evento ) => setForm ( { ...form, email: evento.target.value.trim() } ) }
+              maxLength={ 254 }
+              required
+            />
+          </FormCampo>
+
+          <FormCampo label='Status' colunas={ 2 }>
             <CaixaSelecao
               value={ form.isActive }
               onChange={ ( evento ) => setForm ( { ...form, isActive: evento } ) }
@@ -257,14 +336,6 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
           </Botao>
         </FormAcoes>
       </FormModal>
-      {
-        consultando && (
-          <CidadeConsulta
-            onSelecionar={ HandleSelecionarCidade }
-            onCancelar={ () => setConsultando ( false ) }
-          />
-        )
-      }
     </>
   );
 }

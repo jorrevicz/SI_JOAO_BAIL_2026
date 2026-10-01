@@ -1,5 +1,7 @@
 import api from './api';
 
+export type Genero = 'MASCULINO' | 'FEMININO' | 'OUTRO';
+
 export interface Cliente
 {
   codCliente:   number;
@@ -11,6 +13,14 @@ export interface Cliente
   bairroCl:     string | null;
   cepCl:        string | null;
   foneCl:       string | null;
+  foneFixo:     string | null;
+  email:        string | null;
+  apelido:      string | null;
+  nomeFantasia: string | null;
+  rg:           string | null;
+  dtNascimento: string | null;
+  dtFundacao:   string | null;
+  genero:       Genero | null;
   dtCriacao:    string;
   dtEdicao:     string;
   codUser:      number | null;
@@ -27,6 +37,14 @@ export interface CreateClienteInput
   bairroCl?:     string;
   cepCl:         string;
   foneCl:        string;
+  foneFixo?:     string;
+  email:         string;
+  apelido?:      string;
+  nomeFantasia?: string;
+  rg?:           string;
+  dtNascimento?: string;
+  dtFundacao?:   string;
+  genero?:       Genero;
   isActive:      boolean;
 }
 
