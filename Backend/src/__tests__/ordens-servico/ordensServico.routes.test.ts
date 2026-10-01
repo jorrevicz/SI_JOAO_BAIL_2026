@@ -3,7 +3,7 @@ import request from 'supertest';
 import app from '../../app';
 import sql from '../../lib/db';
 
-const NUM_ODS_INEXISTENTE = '00000000-0000-0000-0000-000000000000';
+const NUM_ODS_INEXISTENTE = 999999;
 
 describe ( 'Ordens de Serviço routes', () =>
 {

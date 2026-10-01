@@ -23,7 +23,7 @@ export class OrdensServicoRepository
     async List
     (
         limit:  number,
-        afterId = '',
+        afterId = 0,
         codCliente?: number,
         transaction?: postgres.TransactionSql
 
@@ -44,7 +44,7 @@ export class OrdensServicoRepository
 
     async FindById
     (
-        numOdS: string,
+        numOdS: number,
         transaction?: postgres.TransactionSql
 
     ): Promise < OrdemDeServicos | null >
@@ -104,7 +104,7 @@ export class OrdensServicoRepository
 
     async RegistrarDiagnostico
     (
-        numOdS: string,
+        numOdS: number,
         dados:  RegistrarDiagnosticoRow,
         codUser: number,
         transaction?: postgres.TransactionSql
@@ -128,7 +128,7 @@ export class OrdensServicoRepository
 
     async AtualizarObsTecnica
     (
-        numOdS: string,
+        numOdS: number,
         obsTecnica: string | null | undefined,
         codUser: number,
         transaction?: postgres.TransactionSql
@@ -151,7 +151,7 @@ export class OrdensServicoRepository
 
     async AtualizarSituacao
     (
-        numOdS: string,
+        numOdS: number,
         situacao: string,
         codUser: number,
         transaction?: postgres.TransactionSql

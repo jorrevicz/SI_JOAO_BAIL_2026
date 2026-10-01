@@ -30,7 +30,7 @@ export interface Equipamento
 
 export interface ProcedimentoOdS
 {
-  numOdS:          string;
+  numOdS:          number;
   codProcedimento: number;
   ordem:           number;
   posicao:         string | null;
@@ -41,14 +41,14 @@ export interface ProcedimentoOdS
 
 export interface ServicoOdS
 {
-  numOdS:     string;
+  numOdS:     number;
   codServico: number;
   qtdServico: number;
 }
 
 export interface OrcamentoPecaOdS
 {
-  numOdS:   string;
+  numOdS:   number;
   codPeca:  number;
   vlrPv:    string;
   aprovado: boolean;
@@ -56,7 +56,7 @@ export interface OrcamentoPecaOdS
 
 export interface SubstituirPecaOdS
 {
-  numOdS:          string;
+  numOdS:          number;
   codPeca:         number;
   qtdPeca:         number;
   vlrUnitarioPeca: number;
@@ -64,7 +64,7 @@ export interface SubstituirPecaOdS
 
 export interface OrdemServico
 {
-  numOdS:               string;
+  numOdS:               number;
   codCliente:            number;
   atendente:             string;
   dtAtendimento:         string | null;
@@ -193,13 +193,13 @@ export interface RegistrarSubstituicaoPecasInput
 
 export const ordensServicoService = {
   listar: (
-    params?: { limit?: number; after?: string; codCliente?: number }
+    params?: { limit?: number; after?: number; codCliente?: number }
   ) => api
     .get < OrdemServico[] > ( '/api/ordens-servico', { params } )
     .then ( ( resposta ) => resposta.data ),
 
   obter: (
-    numOdS: string
+    numOdS: number
   ) => api
     .get < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }` )
     .then ( ( resposta ) => resposta.data ),
@@ -211,28 +211,28 @@ export const ordensServicoService = {
     .then ( ( resposta ) => resposta.data ),
 
   definirProcedimentos: (
-    numOdS: string,
+    numOdS: number,
     dados:  DefinirProcedimentosInput
   ) => api
     .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/procedimentos`, dados )
     .then ( ( resposta ) => resposta.data ),
 
   registrarDiagnostico: (
-    numOdS: string,
+    numOdS: number,
     dados:  RegistrarDiagnosticoInput
   ) => api
     .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/diagnostico`, dados )
     .then ( ( resposta ) => resposta.data ),
 
   registrarExecucao: (
-    numOdS: string,
+    numOdS: number,
     dados:  RegistrarExecucaoInput
   ) => api
     .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/execucao`, dados )
     .then ( ( resposta ) => resposta.data ),
 
   registrarSubstituicaoPecas: (
-    numOdS: string,
+    numOdS: number,
     dados:  RegistrarSubstituicaoPecasInput
   ) => api
     .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/substituicao-pecas`, dados )

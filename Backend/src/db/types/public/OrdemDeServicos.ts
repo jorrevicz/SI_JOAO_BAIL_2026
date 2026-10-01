@@ -6,7 +6,7 @@ import type { AparelhosCodAparelho } from './Aparelhos';
 import type { EquipamentosCodEquipamento } from './Equipamentos';
 
 /** Identifier type for public.OrdemDeServicos */
-export type OrdemDeServicosNumOdS = string & { __brand: 'public.OrdemDeServicos' };
+export type OrdemDeServicosNumOdS = number & { __brand: 'public.OrdemDeServicos' };
 
 /** Represents the table public.OrdemDeServicos */
 export default interface OrdemDeServicos {
@@ -53,7 +53,6 @@ export default interface OrdemDeServicos {
 
 /** Represents the initializer for the table public.OrdemDeServicos */
 export interface OrdemDeServicosInitializer {
-  /** Default value: gen_random_uuid() */
   numOdS?: OrdemDeServicosNumOdS;
 
   codCliente: ClientesCodCliente;

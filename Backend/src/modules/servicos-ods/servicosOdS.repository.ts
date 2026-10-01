@@ -7,7 +7,7 @@ export class ServicosOdSRepository
 {
     async ListByOS
     (
-        numOdS: string,
+        numOdS: number,
         transaction?: postgres.TransactionSql
 
     ): Promise < ServicosOdS[] >
@@ -24,7 +24,7 @@ export class ServicosOdSRepository
 
     async Create
     (
-        numOdS: string,
+        numOdS: number,
         item:   ServicoOdSItem,
         codUser: number,
         transaction?: postgres.TransactionSql
@@ -55,7 +55,7 @@ export class ServicosOdSRepository
 
     async Update
     (
-        numOdS: string,
+        numOdS: number,
         codServico: number,
         item:   ServicoOdSItem,
         codUser: number,
@@ -80,7 +80,7 @@ export class ServicosOdSRepository
 
     async Delete
     (
-        numOdS: string,
+        numOdS: number,
         codServico: number,
         codUser: number,
         transaction?: postgres.TransactionSql

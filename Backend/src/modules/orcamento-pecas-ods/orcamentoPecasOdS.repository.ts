@@ -7,7 +7,7 @@ export class OrcamentoPecasOdSRepository
 {
     async ListByOS
     (
-        numOdS: string,
+        numOdS: number,
         transaction?: postgres.TransactionSql
 
     ): Promise < OrcamentoPecasOdS[] >
@@ -24,7 +24,7 @@ export class OrcamentoPecasOdSRepository
 
     async FindOne
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         transaction?: postgres.TransactionSql
 
@@ -44,7 +44,7 @@ export class OrcamentoPecasOdSRepository
 
     async Create
     (
-        numOdS: string,
+        numOdS: number,
         item:   OrcamentoPecaOdSItem,
         codUser: number,
         transaction?: postgres.TransactionSql
@@ -75,7 +75,7 @@ export class OrcamentoPecasOdSRepository
 
     async Update
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         item:   OrcamentoPecaOdSItem,
         codUser: number,
@@ -100,7 +100,7 @@ export class OrcamentoPecasOdSRepository
 
     async Aprovar
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         codUser: number,
         transaction?: postgres.TransactionSql
@@ -124,7 +124,7 @@ export class OrcamentoPecasOdSRepository
 
     async Delete
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         codUser: number,
         transaction?: postgres.TransactionSql

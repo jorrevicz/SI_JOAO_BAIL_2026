@@ -12,7 +12,7 @@ const CARGO_TESTE  = { cargo: 'Téc. ExecTst' };
 
 describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', () =>
 {
-    let numOdS:         string;
+    let numOdS:         number;
     let codCidade:      number;
     let codCargo:       number;
     let codCliente:     number;
@@ -54,6 +54,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
             ({
                 tipoPessoa: 'FISICA', cliente: 'Cliente ExecTst', codCidade: cidade.body.codCidade,
                 enderecoCl: 'Rua X', bairroCl: 'Centro', cepCl: '13000000', foneCl: '19999999999',
+                email: 'exec@kaneko.com.br', dtNascimento: '1990-01-01', genero: 'OUTRO',
             });
 
         codCidade      = cidade.body.codCidade;

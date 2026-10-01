@@ -7,7 +7,7 @@ export class SubstituirPecasOdSRepository
 {
     async ListByOS
     (
-        numOdS: string,
+        numOdS: number,
         transaction?: postgres.TransactionSql
 
     ): Promise < SubstituirPecasOdS[] >
@@ -24,7 +24,7 @@ export class SubstituirPecasOdSRepository
 
     async Create
     (
-        numOdS: string,
+        numOdS: number,
         item:   SubstituirPecaOdSItem,
         codUser: number,
         transaction?: postgres.TransactionSql
@@ -57,7 +57,7 @@ export class SubstituirPecasOdSRepository
 
     async Update
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         item:   SubstituirPecaOdSItem,
         codUser: number,
@@ -83,7 +83,7 @@ export class SubstituirPecasOdSRepository
 
     async Delete
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         codUser: number,
         transaction?: postgres.TransactionSql

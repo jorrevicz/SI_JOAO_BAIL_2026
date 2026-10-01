@@ -67,7 +67,7 @@ export class OrdensServicoService
     async ListOrdensServico
     (
         limit  = 50,
-        afterId = '',
+        afterId = 0,
         codCliente?: number
     )
     {
@@ -76,7 +76,7 @@ export class OrdensServicoService
 
     async FindOrdemServico
     (
-        numOdS: string,
+        numOdS: number,
         transaction?: postgres.TransactionSql
     )
     {
@@ -148,7 +148,7 @@ export class OrdensServicoService
      */
     async DefinirProcedimentosOS
     (
-        numOdS: string,
+        numOdS: number,
         data:   DefinirProcedimentosInput,
         codUser: number
     )
@@ -207,7 +207,7 @@ export class OrdensServicoService
      */
     async RegistrarDiagnostico
     (
-        numOdS: string,
+        numOdS: number,
         data:   RegistrarDiagnosticoInput,
         codUser: number
     )
@@ -289,7 +289,7 @@ export class OrdensServicoService
      */
     async RegistrarExecucao
     (
-        numOdS: string,
+        numOdS: number,
         data:   RegistrarExecucaoInput,
         codUser: number
     )
@@ -340,7 +340,7 @@ export class OrdensServicoService
      */
     async AprovarOrcamentoPeca
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         codUser: number
     )
@@ -367,7 +367,7 @@ export class OrdensServicoService
      */
     async ReprovarOrcamentoPeca
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         codUser: number
     )
@@ -397,7 +397,7 @@ export class OrdensServicoService
      */
     async RegistrarSubstituicaoPecas
     (
-        numOdS: string,
+        numOdS: number,
         data:   RegistrarSubstituicaoPecasInput,
         codUser: number
     )
@@ -449,7 +449,7 @@ export class OrdensServicoService
      */
     private async RecomputarSituacaoExecucao
     (
-        numOdS: string,
+        numOdS: number,
         codUser: number,
         transaction: postgres.TransactionSql
     )
@@ -532,7 +532,7 @@ export class OrdensServicoService
 
     private async AssertOrcamentoAprovado
     (
-        numOdS: string,
+        numOdS: number,
         codPeca: number,
         transaction?: postgres.TransactionSql
     )

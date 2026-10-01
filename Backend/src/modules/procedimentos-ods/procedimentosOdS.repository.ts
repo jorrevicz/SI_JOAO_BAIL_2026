@@ -11,7 +11,7 @@ export class ProcedimentosOdSRepository
 {
     async ListByOS
     (
-        numOdS: string,
+        numOdS: number,
         transaction?: postgres.TransactionSql
 
     ): Promise < ProcedimentosOdS[] >
@@ -32,7 +32,7 @@ export class ProcedimentosOdSRepository
      */
     async CreateEstrutura
     (
-        numOdS: string,
+        numOdS: number,
         item:   ProcedimentoEstruturaOdSItem,
         codUser: number,
         transaction?: postgres.TransactionSql
@@ -67,7 +67,7 @@ export class ProcedimentosOdSRepository
      */
     async UpdateOrdem
     (
-        numOdS: string,
+        numOdS: number,
         codProcedimento: number,
         ordem: number,
         codUser: number,
@@ -96,7 +96,7 @@ export class ProcedimentosOdSRepository
      */
     async UpdateChecagem
     (
-        numOdS: string,
+        numOdS: number,
         codProcedimento: number,
         item:   ProcedimentoOdSItem,
         codUser: number,
@@ -124,7 +124,7 @@ export class ProcedimentosOdSRepository
 
     async Delete
     (
-        numOdS: string,
+        numOdS: number,
         codProcedimento: number,
         codUser: number,
         transaction?: postgres.TransactionSql

@@ -21,7 +21,7 @@ export default function ProcedimentosOSPage ()
 {
   'use no memo';
   const [ searchParams ] = useSearchParams();
-  const numOdS = searchParams.get ( 'numOdS' ) ?? '';
+  const numOdS = Number ( searchParams.get ( 'numOdS' ) ) || 0;
 
   const [ itens, setItens ]                   = useState < ProcedimentoListaLocal[] > ( [] );
   const [ selecionadoUid, setSelecionadoUid ] = useState < string | null > ( null );
