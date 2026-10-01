@@ -142,20 +142,31 @@ export class CondicoesPagamentoService
 
     async DeleteCondicao ( id: number, codUser: number )
     {
-        if ( !( await this.repo.FindById ( id ) ) )
+        return WithTransaction ( async ( transaction ) =>
         {
-            throw new AppError ( 'Condição de pagamento não encontrada.', 404 );
-        }
+            if ( !( await this.repo.FindById ( id, transaction ) ) )
+            {
+                throw new AppError ( 'Condição de pagamento não encontrada.', 404 );
+            }
 
-        if ( await this.repo.HasDependents ( id ) )
-        {
-            throw new AppError
-            (
-                'Não é possível excluir: há parcelas, clientes ou compras vinculados a esta condição.',
-                409
-            );
-        }
+            // Parcelas não existem sem a condição: não bloqueiam a exclusão, são removidas junto.
+            if ( await this.repo.HasExternalReferences ( id, transaction ) )
+            {
+                throw new AppError
+                (
+                    'Não é possível excluir: há clientes ou compras vinculados a esta condição.',
+                    409
+                );
+            }
 
-        await this.repo.Delete ( id, codUser );
+            const parcelas = await this.parcelasRepo.List ( 999, 0, id, transaction );
+
+            for ( const parcela of parcelas )
+            {
+                await this.parcelasRepo.Delete ( parcela.codParcela, codUser, transaction );
+            }
+
+            await this.repo.Delete ( id, codUser, transaction );
+        } );
     }
 }

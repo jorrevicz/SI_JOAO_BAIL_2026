@@ -17,7 +17,6 @@ function MakeRepo
         Create:                  vi.fn(),
         Update:                  vi.fn(),
         Delete:                  vi.fn(),
-        HasDependents:           vi.fn(),
         HasExternalReferences:   vi.fn(),
         ...over,
     };
@@ -293,23 +292,29 @@ describe ( 'CondicoesPagamentoService', () =>
         expect ( repo.Delete ).not.toHaveBeenCalled();
     });
 
-    it ( 'DeleteCondicao lança 409 quando há dependentes', async () =>
+    it ( 'DeleteCondicao lança 409 quando há clientes ou compras vinculados', async () =>
     {
         repo.FindById.mockResolvedValue ( { codCondDePag: 1 } );
-        repo.HasDependents.mockResolvedValue ( true );
+        repo.HasExternalReferences.mockResolvedValue ( true );
 
         await expect ( service.DeleteCondicao ( 1, 1 ) ).rejects.toMatchObject ( { status: 409 } );
+        expect ( parcelasRepo.Delete ).not.toHaveBeenCalled();
         expect ( repo.Delete ).not.toHaveBeenCalled();
     });
 
-    it ( 'DeleteCondicao deleta quando não há dependentes', async () =>
+    it ( 'DeleteCondicao remove as parcelas da condição e depois a própria condição', async () =>
     {
         repo.FindById.mockResolvedValue ( { codCondDePag: 1 } );
-        repo.HasDependents.mockResolvedValue ( false );
+        repo.HasExternalReferences.mockResolvedValue ( false );
+        parcelasRepo.List.mockResolvedValue ( [ { codParcela: 10 }, { codParcela: 11 } ] );
+        parcelasRepo.Delete.mockResolvedValue ( { codParcela: 10 } );
         repo.Delete.mockResolvedValue ( { codCondDePag: 1 } );
 
         await service.DeleteCondicao ( 1, 1 );
 
-        expect ( repo.Delete ).toHaveBeenCalledWith ( 1, 1 );
+        expect ( parcelasRepo.List ).toHaveBeenCalledWith ( 999, 0, 1, {} );
+        expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 10, 1, {} );
+        expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 11, 1, {} );
+        expect ( repo.Delete ).toHaveBeenCalledWith ( 1, 1, {} );
     });
 });

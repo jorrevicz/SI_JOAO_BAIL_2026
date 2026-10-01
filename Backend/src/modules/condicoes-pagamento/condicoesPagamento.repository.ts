@@ -116,30 +116,10 @@ export class CondicoesPagamentoRepository
         return row ?? null;
     }
 
-    async HasDependents
-    (
-        id: number,
-        transaction?: postgres.TransactionSql
-    ): Promise < boolean >
-    {
-        const client = transaction ?? sql;
-        const [ row ] = await client`
-            SELECT 1 FROM "Parcelas"  WHERE "codCondDePag" = ${ id } AND "isActive" = true
-            UNION ALL
-            SELECT 1 FROM "Clientes"  WHERE "codCondDePag" = ${ id } AND "isActive" = true
-            UNION ALL
-            SELECT 1 FROM "Compras"   WHERE "codCondDePag" = ${ id } AND "isActive" = true
-            LIMIT 1
-        `;
-
-        return !!row;
-    }
-
     /**
-     * Diferente de HasDependents: exclui "Parcelas" de propósito — parcelas são filho
-     * embutido gerenciado de forma atômica dentro do próprio formulário da condição
-     * (RN003–RN006), não um dependente externo. Toda condição tem ao menos uma parcela
-     * (RN003), então incluí-la aqui bloquearia a edição de qualquer condição para sempre.
+     * Só considera referências externas (Clientes e Compras). "Parcelas" ficam de fora de
+     * propósito: são filho embutido da condição, gerenciado de forma atômica junto dela
+     * (RN003–RN006) e removido em cascata quando a condição é excluída.
      */
     async HasExternalReferences
     (
