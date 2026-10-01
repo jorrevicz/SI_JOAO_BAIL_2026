@@ -40,7 +40,6 @@ O atributo `Users.perfil` define o papel do usuário. Atores previstos
 
 | Ator | Acesso |
 |------|--------|
-| **Visitante Anônimo** | Pode registrar conta e acessar **recursos limitados** (RN001 do gerenciamento de usuário). |
 | **Usuário** | Acesso completo aos cadastros, compras, contas e NF após autenticação. |
 | **Fornecedor / Cliente / Transportadora** | Participam de **fluxos específicos** da [Nota Fiscal](07-casos-de-uso.md#gerenciar-nota-fiscal) (solicitar, confirmar entrega/recebimento, dados de transporte). |
 

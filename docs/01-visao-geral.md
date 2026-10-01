@@ -64,7 +64,6 @@ Em ordem de prioridade (detalhada em [Roadmap](09-roadmap.md)):
 |------|-------|
 | **Usuário** | Operador autenticado do sistema (administra cadastros, OS, compras, contas, NF). |
 | **Técnico** | Operador responsável pela execução dos serviços de reparo nas OS. |
-| **Visitante Anônimo** | Pode registrar conta e acessar recursos limitados. |
 | **Fornecedor** | Participa de fluxos específicos de compra e Nota Fiscal. |
 | **Cliente** | Traz equipamentos para reparo (OS) e participa de fluxos da Nota Fiscal. |
 | **Transportadora** | Participa de fluxos de transporte/entrega da Nota Fiscal. |

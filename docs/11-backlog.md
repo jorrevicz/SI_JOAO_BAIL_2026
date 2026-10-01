@@ -367,7 +367,7 @@ soft-delete, auditoria e paginação por cursor.
 - [ ] **T-101 — Login/sessão** — definir mecanismo (JWT vs sessão) — **bloqueado por decisão**; `entrarConta`/`sairConta`. **Dep:** T-100
 - [ ] **T-102 — `mudarSenha` + hashing** — senha com hash forte; nunca em texto puro. **Dep:** T-100
 - [ ] **T-103 — Ativar auth real (RN001/RNF03)** — substituir stub do T-033; proteger todos os módulos exceto login/registro. **Dep:** T-101
-- [ ] **T-104 — Autorização por perfil** — recursos limitados para visitante anônimo; permissões por `perfil`. **Dep:** T-103
+- [ ] **T-104 — Autorização por perfil** — permissões por `perfil`. **Dep:** T-103
 
 ### Frontend — executar após T-104 completo
 
