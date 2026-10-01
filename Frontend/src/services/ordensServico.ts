@@ -123,7 +123,6 @@ export interface EquipamentoInput
 
 export interface AbrirOrdemServicoInput
 {
-  numOdS:      string;
   codCliente:   number;
   atendente:   string;
   acessorio?:  string | null;

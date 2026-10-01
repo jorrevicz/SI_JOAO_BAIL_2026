@@ -59,7 +59,27 @@ export default function OrdensServicoPage ()
   const columns = [
     columnHelper.accessor ( 'numOdS', { header: 'Número' } ),
     columnHelper.accessor ( 'codCliente', { header: 'Código Cliente' } ),
-    columnHelper.accessor ( 'atendente', { header: 'Atendente' } ),
+    columnHelper.accessor ( 'atendente', { header: 'Atendente', cell: ( info ) => <InfoBlock>{ info.getValue() }</InfoBlock> } ),
+    columnHelper.accessor (
+      'dtAtendimento',
+      { header: () => <>Data de<br/>Atendimento</>, cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '-' }</InfoBlock> }
+    ),
+    columnHelper.accessor (
+      'dtExecucao',
+      { header: () => <>Data de<br/>Execução</>, cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '-' }</InfoBlock> }
+    ),
+    columnHelper.accessor ( 'codAparelho', { header: () => <>Código do<br/>Aparelho</> } ),
+    columnHelper.accessor (
+      'acessorio',
+      {
+        header: 'Acessório',
+        cell: ( info ) => (
+          <InfoBlock>
+            { info.getValue() ?? '-' }
+          </InfoBlock>
+        ),
+      }
+    ),
     columnHelper.accessor (
       'defeito',
       {
@@ -71,20 +91,77 @@ export default function OrdensServicoPage ()
         ),
       }
     ),
+    columnHelper.accessor (
+      'obsBalcao',
+      {
+        header: () => <>Observação<br/>Balcão</>,
+        cell: ( info ) => (
+          <InfoBlock>
+            { info.getValue() ?? '-' }
+          </InfoBlock>
+        ),
+      }
+    ),
+    columnHelper.accessor (
+      'obsTecnica',
+      {
+        header: () => <>Observação<br/>Técnica</>,
+        cell: ( info ) => (
+          <InfoBlock>
+            { info.getValue() ?? '-' }
+          </InfoBlock>
+        ),
+      }
+    ),
+    columnHelper.accessor (
+      'entreguePara',
+      {
+        header: () => <>Entregue<br/>Para</>,
+        cell: ( info ) => (
+          <InfoBlock>
+            { info.getValue() ?? '-' }
+          </InfoBlock>
+        ),
+      }
+    ),
     columnHelper.accessor ( 'tipoOdS', { header: 'Tipo' } ),
+    columnHelper.accessor ( 'codEquipamento', { header: () => <>Código do<br/>Equipamento</> } ),
+    columnHelper.accessor (
+      'historicoManutencao',
+      {
+        header: () => <>Histórico de<br/>Manutenção</>,
+        cell: ( info ) => (
+          <InfoBlock>
+            { info.getValue() ?? '-' }
+          </InfoBlock>
+        ),
+      }
+    ),
+    columnHelper.accessor (
+      'solicitante',
+      {
+        header: 'Solicitante',
+        cell: ( info ) => (
+          <InfoBlock>
+            { info.getValue() ?? '-' }
+          </InfoBlock>
+        ),
+      }
+    ),
     columnHelper.accessor (
       'dtAtendimento',
-      { header: 'Diagnóstico', cell: ( info ) => info.getValue() ? formatarData ( info.getValue()! ) : 'Pendente' }
+      { id: 'diagnostico', header: 'Diagnóstico', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : 'Pendente' }</InfoBlock> }
     ),
     columnHelper.accessor (
       'dtCriacao',
-      { header: 'Criação', cell: ( info ) => formatarData ( info.getValue() ) }
+      { header: 'Criação', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor (
       'dtEdicao',
-      { header: 'Edição', cell: ( info ) => formatarData ( info.getValue() ) }
+      { header: 'Edição', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor ( 'isActive', { header: 'Status' } ),
+    columnHelper.accessor ( 'codUser', { header: 'Código Usuário', cell: ( info ) => info.getValue() ?? '-' } ),
     columnHelper.display ( {
       id:     'acoes',
       header: 'Ações',

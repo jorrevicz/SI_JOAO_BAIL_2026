@@ -13,7 +13,6 @@ interface Props
 }
 
 const FORM_VAZIO: AbrirOrdemServicoInput = {
-  numOdS:      '',
   codCliente:  0,
   atendente:   '',
   acessorio:   '',
@@ -53,13 +52,6 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
   const [ foneClienteSelecionado, setFoneClienteSlecionado ] = useState ( '' );
   const [ enderecoClienteSelecionado, setEnderecoClienteSelecionado ] = useState ( '' );
   const [ consultandoCliente, setConsultandoCliente ] = useState ( false );
-
-  // O número da OS e o cliente selecionado precisam ser validados — número
-  // inédito e cliente existente — antes de liberar a edição dos demais
-  // campos (mesmo padrão de chave em ContaPagamentoForm).
-  const [ chaveValidada, setChaveValidada ]   = useState ( false );
-  const [ validandoChave, setValidandoChave ] = useState ( false );
-  const [ erroChave, setErroChave ]           = useState ( '' );
 
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
@@ -102,59 +94,13 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
     setFoneClienteSlecionado ( oCliente.foneCl ?? '' );
     setEnderecoClienteSelecionado ( oCliente.enderecoCl ?? '' );
     setConsultandoCliente ( false );
-    setChaveValidada ( false );
-    setErroChave ( '' );
   };
 
-  const AlterarNumOdS = ( valor: string ) =>
-  {
-    setForm ( { ...form, numOdS: valor.toUpperCase() } );
-    setChaveValidada ( false );
-    setErroChave ( '' );
-  };
-
-  const ValidarChave = async () =>
-  {
-    setValidandoChave ( true );
-    setErroChave ( '' );
-    setErrosCampo ( {} );
-
-    try
-    {
-      await ordensServicoService.obter ( form.numOdS );
-      setErroChave ( 'Já existe uma OS com esse número.' );
-      return;
-    }
-    catch
-    {
-      // 404 esperado: número da OS ainda inédito, segue para validar o cliente.
-      setChaveValidada ( true );
-    }
-
-    // try
-    // {
-    //   await clientesService.obter ( form.codCliente );
-    //   setChaveValidada ( true );
-    // }
-    // catch ( err )
-    // {
-    //   if ( err instanceof ApiError && err.erros )
-    //   {
-    //     setErrosCampo ( err.erros );
-    //   }
-    //   else
-    //   {
-    //     setErroChave ( 'Cliente selecionado não encontrado.' );
-    //   }
-    // }
-    finally
-    {
-      setValidandoChave ( false );
-    }
-  };
-
-  const podeValidarChave = !!form.numOdS && !validandoChave;
-  const podeSalvar       = !salvando && chaveValidada;
+  // O cliente selecionado libera a edição dos demais campos (o número da OS é
+  // gerado pelo banco na abertura — não há mais chave a validar antes de
+  // preencher o restante do formulário).
+  const clienteSelecionado = codClienteSelecionado > 0;
+  const podeSalvar         = !salvando && clienteSelecionado;
 
   return (
     <FormModal
@@ -164,32 +110,6 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
       onSubmit={ submit }
     >
       <FormSecao>
-        <FormCampo label="Número da OS" obrigatorio colunas={ 3 } htmlFor="numOdS" erro={ errosCampo.numOdS }>
-          <input
-            id="numOdS"
-            value={ form.numOdS }
-            onChange={ ( evento ) => AlterarNumOdS ( evento.target.value ) }
-            maxLength={ 8 }
-            disabled={ chaveValidada }
-            readOnly={ chaveValidada }
-            required
-            autoFocus
-          />
-        </FormCampo>
-
-        <FormCampo label="Chave do documento" colunas={ 3 } erro={ erroChave }>
-          <Botao
-            type="button"
-            $variante={ chaveValidada ? 'secundario' : undefined }
-            onClick={ ValidarChave }
-            disabled={ chaveValidada || !podeValidarChave }
-          >
-            { chaveValidada ? 'Validado ✓' : validandoChave ? 'Validando…' : 'Validar Chave' }
-          </Botao>
-        </FormCampo> 
-      </FormSecao>
-
-      <FormSecao>
         <FormCampo label="Tipo da OS" obrigatorio colunas={ 4 } htmlFor="tipoOdS" erro={ errosCampo.tipoOdS }>
           <input
             id="tipoOdS"
@@ -197,7 +117,7 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
             onChange={ ( evento ) => setForm ( { ...form, tipoOdS: evento.target.value } ) }
             maxLength={ 14 }
             placeholder="Ex.: Garantia"
-            disabled={ !chaveValidada }
+            disabled={ !clienteSelecionado }
             required
           />
           </FormCampo>
@@ -210,7 +130,7 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
               type="button"
               $variante="secundario"
               onClick={ () => setConsultandoCliente ( true ) }
-              disabled={ !chaveValidada }
+              autoFocus
             >
               Consultar
             </Botao>
@@ -283,7 +203,7 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
         </FormCampo>
       </FormSecao>  
 
-      <fieldset disabled={ !chaveValidada } style={ { border: 'none', padding: 0, margin: 0 } }>
+      <fieldset disabled={ !clienteSelecionado } style={ { border: 'none', padding: 0, margin: 0 } }>
       <div>
         <h4 style={ { marginBottom: '0.75rem', fontWeight: 600 } }>Aparelho</h4>
         <FormSecao>
