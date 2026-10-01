@@ -364,9 +364,10 @@ para a ordem de implementação (lotes OS-A/OS-B/OS-C).
   `codAparelho`, `acessorio`, `defeito`, `obsBalcao`, `obsTecnica`, `entreguePara`,
   `tipoOdS`, `situacao`, `codEquipamento`, `historicoManutencao`, `solicitante`,
   `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
-- `numOdS` — **chave primária natural** `CHAR(8)`, informada pelo requisitante na
-  abertura (mesmo padrão de chave natural de `Compras`/`ContasAPagar`/`ContasAReceber`);
-  o Postgres rejeita duplicidade (`23505` → 409 PT).
+- `numOdS` — **UID gerado pelo banco** (`UUID`, `DEFAULT gen_random_uuid()`), diferente
+  do padrão de chave natural informada de `Compras`/`ContasAPagar`/`ContasAReceber`: a OS
+  não tem um identificador de negócio natural e legível a ser digitado na abertura, então
+  o Backend gera o valor — o formulário não pede nem valida formato de número de OS.
 - **Relacionamento:** referencia **Cliente** (`codCliente`), **Aparelho**
   (`codAparelho`) e **Equipamento** (`codEquipamento`); agrega
   [ProcedimentosOdS](#procedimentosods-checklist-de-checagens---associativa-os--procedimento)

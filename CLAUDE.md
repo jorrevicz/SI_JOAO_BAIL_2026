@@ -149,6 +149,48 @@ compra e financeiro. Web API REST + SPA.
 > aprovação/reprovação de orçamento de peças (`aprovarOrcamentoPeca()`/
 > `reprovarOrcamentoPeca()`) também ainda não tem tela própria.
 >
+> **Datas de Contas a Pagar/Receber obrigatórias, com hora e fuso:** `dtEmissao` e
+> `dtVencimento` de `ContasAPagar`/`ContasAReceber` eram opcionais e passaram a ser
+> `NOT NULL` (migration `contas-datas-obrigatorias`, com backfill a partir de
+> `dtCriacao` para os registros pré-existentes). Em seguida, as duas colunas passaram de
+> `Timestamp(3)` (sem fuso) para `TimestampTz(3)` (migration `contas-datas-com-timezone`)
+> — o valor gravado como "sem fuso" dependia implicitamente do `TimeZone` da sessão para
+> ser reinterpretado corretamente; `TimestampTz` grava o instante de forma inequívoca. A
+> checagem cruzada no Zod (`superRefine`, mesmo padrão de `validarParcelas` em Condição
+> de Pagamento) exige que `dtVencimento` seja **estritamente posterior** a `dtEmissao`
+> — datas/horários iguais não são permitidos, mesmo no mesmo dia — não no Frontend, ver
+> [docs/ref/validacao-frontend-backend-driven.md](docs/ref/validacao-frontend-backend-driven.md).
+> `ContaPagamentoForm`/`ContaReceberForm` usam `<input type="datetime-local">` (data e
+> hora, não só data) com `required` e `min` no campo de vencimento amarrado à emissão;
+> na criação, a emissão nasce pré-preenchida com a data/hora atual (UTC) e o vencimento
+> com o fim do dia de hoje (23:59 UTC) — combinação que já nasce válida.
+>
+> **Varredura de datas para `TimestampTz` + padrão brasileiro:** todas as colunas de
+> data/hora do schema (não só Contas a Pagar/Receber) passaram de `Timestamp(3)` para
+> `TimestampTz(3)` — migration `todas-datas-com-timezone`, um `DO` block que converte
+> toda coluna `timestamp without time zone` de `information_schema.columns` (exceto
+> `pgmigrations`, tabela interna do node-pg-migrate). O Backend continua
+> retornando/recebendo ISO 8601 em UTC; o Frontend passou a formatar exibição no padrão
+> brasileiro `DD-MM-AAAA` (`formatarData`) e `DD-MM-AAAA HH:mm` onde a hora importa
+> (`formatarDataHora`), sempre a partir dos componentes UTC da data — nunca do fuso do
+> navegador (`Frontend/src/utils/formatters.ts`). Os campos `datetime-local` de
+> emissão/vencimento também usam esse truque (dígitos UTC no lugar de dígitos locais,
+> via `paraDataHoraInputUtc`/`doInputUtcParaIso`), já que o widget nativo do navegador
+> não tem modo UTC — ver [docs/06](docs/06-modelo-de-dados.md#princípios-de-modelagem).
+>
+> **`numOdS` revisado para UID gerado:** por decisão do responsável pelo projeto, a OS
+> deixou de usar chave natural informada pelo requisitante (`CHAR(8)`, mesmo padrão de
+> `Compras`/`ContasAPagar`/`ContasAReceber`, adotado no Lote OS-A) e passou a usar um UID
+> gerado pelo banco (`UUID`, `DEFAULT gen_random_uuid()`) — migration
+> `ordem-de-servico-numods-uuid` altera o tipo da coluna em `OrdemDeServicos` e nas
+> quatro associativas (`ProcedimentosOdS`, `ServicosOdS`, `OrcamentoPecasOdS`,
+> `SubstituirPecasOdS`); como só havia dado de seed/teste em ambiente local, as tabelas
+> foram truncadas na migration (nada de produção a preservar). O schema Zod
+> (`abrirOrdemServicoSchema`) não recebe mais `numOdS` — o campo de validação de
+> comprimento/formato do número da OS foi removido do Backend, e o Frontend não tem
+> mais campo de entrada nem o fluxo de "Validar Chave" (`OrdemServicoForm` agora libera
+> os demais campos ao selecionar o cliente).
+>
 > **Próximo passo: telas de cadastro de Cargos/Funcionarios/Servicos/Pecas e a UI de
 > aprovação/reprovação de orçamento de peças.**
 

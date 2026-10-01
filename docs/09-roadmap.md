@@ -141,7 +141,9 @@ Campos principais (Lote OS-A):
   OS** (`tipoOdS`).
 - **Diagnóstico:** observação técnica (`obsTecnica`), histórico de manutenção,
   checklist de checagens padronizadas (`Procedimentos` × `ProcedimentosOdS`).
-- **Chave:** `numOdS` — natural, informada na abertura (sem `codOS` substituto).
+- **Chave:** `numOdS` — UID gerado pelo banco na abertura (`UUID`,
+  `DEFAULT gen_random_uuid()`, sem `codOS` substituto); não é informado nem validado
+  quanto a formato (revisão posterior ao Lote OS-A — ver nota abaixo).
 
 Campos ainda **fora do Lote OS-A** (chegam nos Lotes OS-B/OS-C, ver abaixo): status
 (máquina de estados), valor total, condição de pagamento, prazo/garantia, execução de
@@ -170,8 +172,12 @@ de backend + frontend, consultas antes de escrita:
 3. [x] **Frontend:** formulário de abertura e de diagnóstico (modal).
 
 > **Backend concluído:** `abrirOS()` cria o cabeçalho e, na mesma transação (RNF06),
-> os registros de `Aparelhos`/`Equipamentos` daquela unidade; `numOdS` é validado
-> quanto à disponibilidade (`23505` → 409 PT). `registrarDiagnosticoOS()` é operação
+> os registros de `Aparelhos`/`Equipamentos` daquela unidade. Na abertura original do
+> Lote OS-A, `numOdS` era uma chave natural (`CHAR(8)`) informada pelo requisitante e
+> validada quanto à disponibilidade (`23505` → 409 PT) — **revisado posteriormente**:
+> por decisão do responsável pelo projeto, `numOdS` passou a ser um UID gerado pelo
+> banco (`UUID`, `DEFAULT gen_random_uuid()`), sem campo de entrada nem validação de
+> formato no schema Zod (nem no Frontend). `registrarDiagnosticoOS()` é operação
 > dedicada que preenche `obsTecnica`/`historicoManutencao`/`dtAtendimento` e reconcilia
 > a checklist de `ProcedimentosOdS` por diferença de conjuntos (mesmo padrão de
 > Condição de Pagamento × Parcelas). Testes TDD (service unitário, repository
@@ -179,8 +185,9 @@ de backend + frontend, consultas antes de escrita:
 >
 > **Frontend concluído:** telas de **Procedimentos** (cadastro simples, mesmo padrão de
 > Categorias) e **Ordens de Serviço** — listagem com filtro por cliente (picker
-> `ClienteConsulta` reaproveitado), formulário de abertura (`numOdS` livre + seleção de
-> cliente + campos de Aparelho/Equipamento embutidos, tudo num único `POST`) e modal de
+> `ClienteConsulta` reaproveitado), formulário de abertura (seleção de cliente libera
+> a edição dos demais campos + campos de Aparelho/Equipamento embutidos, tudo num único
+> `POST` — o número da OS não é mais digitado, nasce do `DEFAULT` do banco) e modal de
 > diagnóstico dedicado (`PATCH .../diagnostico`) com checklist de `ProcedimentosOdS`
 > embutido e reconciliado (mesmo padrão de Parcelas × Condição de Pagamento, via um
 > `ProcedimentoOdSForm` que reaproveita um novo `ProcedimentoConsulta`).

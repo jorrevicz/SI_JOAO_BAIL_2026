@@ -154,6 +154,19 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **RN004 — Cancelamento só antes da baixa:** `cancelarContaPagar()` só é permitido
   enquanto `valorBaixa`/`dtBaixa` ainda estiverem nulos (título não pago); um título já
   baixado não pode ser cancelado.
+- **RN005 — Emissão e vencimento obrigatórios e consistentes:** `dtEmissao` e
+  `dtVencimento` são obrigatórios (não são mais opcionais), armazenados como
+  `TimestampTz(3)` (data **e hora**, com fuso explícito — não mais `Timestamp`
+  sem fuso) e `dtVencimento` precisa ser **estritamente posterior** a `dtEmissao` —
+  datas/horários iguais não são permitidos, mesmo no mesmo dia. Validado no Zod
+  (`superRefine` comparando as duas datas), o mesmo padrão de `validarParcelas` em
+  Condição de Pagamento — ver
+  [validação backend-driven](ref/validacao-frontend-backend-driven.md). O Frontend usa
+  `<input type="datetime-local">` para capturar data e hora (sempre em UTC — ver
+  princípio de datas em [docs/06](06-modelo-de-dados.md#princípios-de-modelagem)) e
+  pré-preenche, na criação, a emissão com a data/hora atual e o vencimento com o fim
+  do dia de hoje (23:59 UTC) — combinação que já nasce válida e o usuário ajusta se
+  precisar.
 - **Pós-condição:** cadastrar, consultar, editar, remover e **cancelar** contas a pagar.
 
 ### Gerenciar Contas a Receber
@@ -163,6 +176,9 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **RN004 — Cancelamento só antes da baixa:** `cancelarContaReceber()` só é permitido
   enquanto `valorBaixa`/`dtBaixa`/`dtPagamento` ainda estiverem nulos (título não
   recebido); um título já baixado não pode ser cancelado.
+- **RN005 — Emissão e vencimento obrigatórios e consistentes:** mesma regra de Contas a
+  Pagar (`dtEmissao`/`dtVencimento` obrigatórios; `dtVencimento` estritamente posterior a
+  `dtEmissao`) — ver RN005 de [Gerenciar Contas a Pagar](#gerenciar-contas-a-pagar).
 - **Pós-condição:** cadastrar, consultar, editar, remover e **cancelar** contas a receber.
 
 ### Gerenciar Ordem de Serviço
@@ -171,9 +187,10 @@ Ativação comum: **clicar no item de menu** correspondente.
   - **RN001 — Abertura atômica:** `abrirOS()` cria o cabeçalho da OS e, na mesma
     transação (RNF06), os registros de `Aparelhos` e `Equipamentos` daquela unidade —
     os três nascem ou não nascem juntos.
-  - **RN002 — Chave informada:** `numOdS` é informado pelo requisitante na abertura
-    (chave natural, não gerada pelo banco); duplicidade é rejeitada (409 PT — mesmo
-    padrão de `Compras`/`ContasAPagar`/`ContasAReceber`).
+  - **RN002 — Chave gerada:** `numOdS` é um UID gerado pelo banco (`UUID`,
+    `DEFAULT gen_random_uuid()`) na abertura — o requisitante não informa nem valida
+    formato de número de OS (diferente do padrão de chave natural informada de
+    `Compras`/`ContasAPagar`/`ContasAReceber`).
   - **RN003 — Diagnóstico não é edição livre:** `registrarDiagnosticoOS()` é operação
     dedicada (não passa pelo `Update` genérico) — atualiza `historicoManutencao`,
     preenche `dtAtendimento` (na primeira vez), preenche a checagem (`posicao`,

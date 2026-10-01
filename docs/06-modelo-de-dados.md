@@ -26,8 +26,10 @@ conforme DER) e ao requisito de **formas normais**.
   (*cursor-based pagination*) — sem uso de `OFFSET`. A exceção é `Compras`, que usa
   **chave primária composta natural** (`numero` VarChar(28), `modelo` VarChar(2),
   `serie` VarChar(2)) — o próprio documento de compra, sem `codCompra` substituto.
-  `OrdemDeServicos` segue o mesmo princípio com chave natural simples (`numOdS`
-  Char(8), informado na abertura, sem `codOS` substituto).
+  `OrdemDeServicos` também dispensa `codOS` substituto, mas por outro motivo: `numOdS`
+  não é uma chave natural informada — é um **UID gerado pelo banco** (`UUID`,
+  `DEFAULT gen_random_uuid()`), já que a OS não tem um número de negócio digitável e
+  legível (diferente do documento de compra).
 - **Sufixo de contexto nos campos de endereço:** campos homônimos entre entidades
   (endereço, bairro, CEP, fone, CPF/CNPJ) recebem sufixo do subdomínio (`Forn`, `Cl`,
   `Transp`) para evitar ambiguidade em JOINs e respostas de API.
@@ -47,6 +49,16 @@ conforme DER) e ao requisito de **formas normais**.
 - **Datas de NF-e como `DateTime`:** `dhEmiNfe` e `dhSaiNfe` armazenam data e hora
   em campo único (tipo `DateTime`), substituindo os campos separados `dtEmissaoNfe`,
   `hrEmissaoNfe`, `dtSaidaNfe`, `hrSaidaNfe` que existiam no diagrama original.
+- **Toda coluna de data/hora é `TimestampTz` (UTC), nunca `Timestamp` sem fuso:** um
+  valor "sem fuso" depende implicitamente do `TimeZone` da sessão do Postgres para ser
+  reinterpretado corretamente — frágil a um dump/restore ou a uma sessão com fuso
+  diferente. Migration `todas-datas-com-timezone` converteu todas as colunas do schema
+  (auditoria `dtCriacao`/`dtEdicao` e datas de negócio) de `Timestamp(3)` para
+  `TimestampTz(3)`; qualquer coluna de data/hora nova nasce direto como `TimestampTz`.
+  O Backend sempre retorna/recebe ISO 8601 em UTC (sufixo `Z`); o Frontend formata para
+  exibição no padrão brasileiro `DD-MM-AAAA` (e `DD-MM-AAAA HH:mm` onde a hora é
+  relevante) a partir dos componentes UTC da data, nunca do fuso do navegador — ver
+  `formatarData`/`formatarDataHora` em `Frontend/src/utils/formatters.ts`.
 
 ## Tabelas e chaves
 
@@ -86,8 +98,8 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 | `CondicaoDePagamento` | `codCondDePag` | — | `descricao` VarChar(60), `juroCondPag`, `multaCondPag`, `descontoCondPag` |
 | `FormaDePagamento` | `codFormaDePag` | — | `formaDePag` VarChar(50), `prazoCompensacao` |
 | `Parcelas` | `codParcela` | `codCondDePag` → `CondicaoDePagamento`, `codFormaDePag` → `FormaDePagamento` | `percentual` Decimal(5,2), `numDias` |
-| `ContasAPagar` | (`numero`, `modelo`, `serie`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`, `dtVencimento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
-| `ContasAReceber` | (`numero`, `modelo`, `serie`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`, `dtVencimento`, `dtPagamento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
+| `ContasAPagar` | (`numero`, `modelo`, `serie`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`/`dtVencimento` `TimestampTz(3)` obrigatórias (`dtVencimento` ≥ `dtEmissao`), `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
+| `ContasAReceber` | (`numero`, `modelo`, `serie`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`/`dtVencimento` `TimestampTz(3)` obrigatórias (`dtVencimento` ≥ `dtEmissao`), `dtPagamento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
 
 ### Atendimento (Ordem de Serviço)
 | Tabela | PK | FKs | Campos notáveis |
@@ -96,7 +108,7 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 | `Equipamentos` | `codEquipamento` | — | `equipamento`, `grupoUser` (opcional), `soEq`, `socketEq`, `memoriaRam`, `tipoOffice`, `placaMae`, `bios`, `capacidadeRam`, `possuiSSD`, `possuiHD`, `capacidadeArmz`, `usoArmz` — ficha técnica da máquina daquela OS |
 | `Procedimentos` | `codProcedimento` | — | `procedimento` VarChar(150) — catálogo de checagens padrão |
 | `ProcedimentosOdS` | (`numOdS`, `codProcedimento`) | → `OrdemDeServicos`, → `Procedimentos` | associativa N:N — `posicao` VarChar(8), `checagem` VarChar(8), `obsProcedimento` VarChar(244) opcional, `dthFim` — checklist respondido por OS |
-| `OrdemDeServicos` | `numOdS` CHAR(8) (natural) | `codCliente` → `Clientes`, `codAparelho` → `Aparelhos`, `codEquipamento` → `Equipamentos` | `atendente`, `solicitante`, `defeito` obrigatórios; `dtAtendimento`, `obsTecnica`, `historicoManutencao`, `entreguePara`, `dtExecucao`, `acessorio`, `obsBalcao` opcionais; `tipoOdS` (classificação livre, ex.: "Garantia"); `situacao` VarChar(24) (máquina de estados — Lote OS-B, `DEFAULT 'Aberta'`, domínio fechado só em Zod, sem tabela de apoio) |
+| `OrdemDeServicos` | `numOdS` UUID (UID gerado, `DEFAULT gen_random_uuid()`) | `codCliente` → `Clientes`, `codAparelho` → `Aparelhos`, `codEquipamento` → `Equipamentos` | `atendente`, `solicitante`, `defeito` obrigatórios; `dtAtendimento`, `obsTecnica`, `historicoManutencao`, `entreguePara`, `dtExecucao`, `acessorio`, `obsBalcao` opcionais; `tipoOdS` (classificação livre, ex.: "Garantia"); `situacao` VarChar(24) (máquina de estados — Lote OS-B, `DEFAULT 'Aberta'`, domínio fechado só em Zod, sem tabela de apoio) |
 | `Cargos` | `codCargo` | — | `cargo` VarChar(15) — Lote OS-B |
 | `Funcionarios` | `codFuncionario` | `codCidade` → `Cidades`, `codCargo` → `Cargos` | `funcionario`, `funcFone` — Lote OS-B |
 | `Servicos` | `codServico` | `codFuncionario` → `Funcionarios` | `servico`, `valor` — catálogo de serviços, Lote OS-B |
