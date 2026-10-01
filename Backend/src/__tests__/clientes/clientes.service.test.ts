@@ -42,7 +42,7 @@ describe ( 'ClientesService', () =>
 
         const dados = {
             codCidade: 1, cliente: 'João da Silva',
-            tipoPessoa: 'FISICA' as const, cepCl: '20511120', foneCl: '5521988887777',
+            tipoPessoa: 'FISICA' as const, cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
         };
 
         await service.CreateCliente ( dados, 7 );
@@ -56,7 +56,7 @@ describe ( 'ClientesService', () =>
 
         await expect ( service.UpdateCliente ( 99, {
             codCidade: 1, cliente: 'X',
-            tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+            tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
             isActive: true,
         }, 1 ) )
             .rejects.toMatchObject ( { status: 404 } );
@@ -68,7 +68,7 @@ describe ( 'ClientesService', () =>
 
         await expect ( service.UpdateCliente ( 1, {
             codCidade: 1, cliente: 'X',
-            tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+            tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
             isActive: true,
         }, 1 ) ).rejects.toMatchObject ( { status: 409 } );
 

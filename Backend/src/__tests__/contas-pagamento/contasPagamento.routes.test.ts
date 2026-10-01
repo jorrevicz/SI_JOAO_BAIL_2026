@@ -86,7 +86,7 @@ describe ( 'ContasPagamento routes', () =>
         (
             {
                 codCidade, codCondDePag, fornecedor: 'Fornecedor Rota Contas Pagar',
-                tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
                 cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
             },
             1

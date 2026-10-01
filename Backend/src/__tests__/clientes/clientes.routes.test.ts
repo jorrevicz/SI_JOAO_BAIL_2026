@@ -61,4 +61,50 @@ describe ( 'Clientes routes', () =>
         expect ( res.status ).toBe ( 400 );
         expect ( res.body.erros ).toHaveProperty ( 'foneCl' );
     });
+
+    describe ( 'dados pessoais por tipo de pessoa', () =>
+    {
+        const base =
+        {
+            codCidade: 1, cliente: 'Cliente Teste', cepCl: '20511120',
+            foneCl: '5521988887777', email: 'teste@kaneko.com.br',
+        };
+
+        it ( 'pessoa física sem data de nascimento e gênero retorna 400', async () =>
+        {
+            const res = await request ( app ).post ( '/api/clientes' ).send ( { ...base, tipoPessoa: 'FISICA' } );
+            expect ( res.status ).toBe ( 400 );
+            expect ( res.body.erros ).toHaveProperty ( 'dtNascimento' );
+            expect ( res.body.erros ).toHaveProperty ( 'genero' );
+        });
+
+        it ( 'pessoa jurídica sem data de fundação retorna 400', async () =>
+        {
+            const res = await request ( app ).post ( '/api/clientes' ).send ( { ...base, tipoPessoa: 'JURIDICA' } );
+            expect ( res.status ).toBe ( 400 );
+            expect ( res.body.erros ).toHaveProperty ( 'dtFundacao' );
+        });
+
+        it ( 'data de nascimento no futuro retorna 400', async () =>
+        {
+            const res = await request ( app )
+                .post ( '/api/clientes' )
+                .send ( { ...base, tipoPessoa: 'FISICA', genero: 'OUTRO', dtNascimento: '2999-01-01' } );
+            expect ( res.status ).toBe ( 400 );
+            expect ( res.body.erros ).toHaveProperty ( 'dtNascimento' );
+        });
+
+        it ( 'e-mail inválido e telefone fixo inválido retornam 400', async () =>
+        {
+            const res = await request ( app )
+                .post ( '/api/clientes' )
+                .send ( {
+                    ...base, tipoPessoa: 'JURIDICA', dtFundacao: '2010-03-01',
+                    email: 'sem-arroba', foneFixo: '123',
+                } );
+            expect ( res.status ).toBe ( 400 );
+            expect ( res.body.erros ).toHaveProperty ( 'email' );
+            expect ( res.body.erros ).toHaveProperty ( 'foneFixo' );
+        });
+    });
 });

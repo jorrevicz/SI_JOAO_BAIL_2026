@@ -24,7 +24,7 @@ describe ( 'FornecedoresRepository (rollback)', () =>
             (
                 {
                     codCidade, codCondDePag, fornecedor: 'Distribuidora Teste Ltda',
-                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
                     cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
                 },
                 1,
@@ -57,6 +57,7 @@ describe ( 'FornecedoresRepository (rollback)', () =>
                     cepForn:     '01310100',
                     cpfCnpjForn: '12345678000190',
                     foneForn:    '11912345678',
+                    email:       'teste@kaneko.com.br',
                     inscEstSubTrib: '222222222222',
                 },
                 1,
@@ -79,7 +80,7 @@ describe ( 'FornecedoresRepository (rollback)', () =>
             (
                 {
                     codCidade, codCondDePag, fornecedor: 'Fornecedor Original',
-                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
                     cpfCnpjForn: '33333333000103', inscEstSubTrib: '333333333333',
                 },
                 1,
@@ -91,7 +92,7 @@ describe ( 'FornecedoresRepository (rollback)', () =>
                 novo.codForn,
                 {
                     codCidade, codCondDePag, fornecedor: 'Fornecedor Atualizado',
-                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
                     cpfCnpjForn: '33333333000103', inscEstSubTrib: '333333333333',
                     isActive: true,
                 },
@@ -114,7 +115,7 @@ describe ( 'FornecedoresRepository (rollback)', () =>
             (
                 {
                     codCidade, codCondDePag, fornecedor: 'Para Excluir',
-                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
                     cpfCnpjForn: '44444444000104', inscEstSubTrib: '444444444444',
                 },
                 1,
@@ -146,7 +147,7 @@ describe ( 'FornecedoresRepository (rollback)', () =>
             (
                 {
                     codCidade, codCondDePag, fornecedor: 'Sem Dependentes',
-                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+                    tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
                     cpfCnpjForn: '55555555000105', inscEstSubTrib: '555555555555',
                 },
                 1,

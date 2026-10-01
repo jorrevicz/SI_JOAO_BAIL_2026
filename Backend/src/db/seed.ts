@@ -378,13 +378,16 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
       UPDATE "Fornecedores" SET
         "fornecedor"     = 'TECHDISTRIB INFORMÁTICA LTDA',
         "nomeFantasia"   = 'TECHDISTRIB',
-        "tipoPessoa"     = 'J',
+        "tipoPessoa"     = 'JURIDICA',
         "codCidade"      = ${ cidadeSP.codCidade },
         "codCondDePag"   = ${ codCondDePag },
         "enderecoForn"   = 'AV. PAULISTA, 726',
         "bairroForn"     = 'BELA VISTA',
         "cepForn"        = '01310100',
         "foneForn"       = '551133331111',
+        "foneFixo"       = '551133331111',
+        "email"          = 'contato@techdistrib.com.br',
+        "dtFundacao"     = '2005-03-15',
         "inscEstSubTrib" = '111111111111'
       WHERE "codForn" = ${ forn1Cod }
     `;
@@ -394,11 +397,13 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
     const [ inserted ] = await sql`
       INSERT INTO "Fornecedores"
         ( "fornecedor", "nomeFantasia", "tipoPessoa", "codCidade", "codCondDePag", "enderecoForn",
-         "bairroForn", "cepForn", "foneForn", "cpfCnpjForn", "inscEstSubTrib" )
+         "bairroForn", "cepForn", "foneForn", "cpfCnpjForn", "inscEstSubTrib",
+         "foneFixo", "email", "dtFundacao" )
       VALUES
-        ( 'TECHDISTRIB INFORMÁTICA LTDA', 'TECHDISTRIB', 'J', ${ cidadeSP.codCidade }, ${ codCondDePag },
+        ( 'TECHDISTRIB INFORMÁTICA LTDA', 'TECHDISTRIB', 'JURIDICA', ${ cidadeSP.codCidade }, ${ codCondDePag },
          'AV. PAULISTA, 726', 'BELA VISTA', '01310100', '551133331111',
-         '12345678000190', '111111111111' )
+         '12345678000190', '111111111111',
+         '551133331111', 'contato@techdistrib.com.br', '2005-03-15' )
       RETURNING "codForn"
     `;
     forn1Cod = inserted.codForn;
@@ -413,13 +418,16 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
       UPDATE "Fornecedores" SET
         "fornecedor"     = 'INFOSUL DISTRIBUIDORA DE TI EIRELI',
         "nomeFantasia"   = 'INFOSUL TI',
-        "tipoPessoa"     = 'J',
+        "tipoPessoa"     = 'JURIDICA',
         "codCidade"      = ${ cidadeCWB.codCidade },
         "codCondDePag"   = ${ codCondDePag },
         "enderecoForn"   = 'RUA XV DE NOVEMBRO, 1000',
         "bairroForn"     = 'CENTRO',
         "cepForn"        = '80060000',
         "foneForn"       = '554122229999',
+        "foneFixo"       = '554122229999',
+        "email"          = 'vendas@infosulti.com.br',
+        "dtFundacao"     = '2011-08-22',
         "inscEstSubTrib" = '222222222222'
       WHERE "codForn" = ${ existForn2[ 0 ].codForn }
     `;
@@ -429,11 +437,13 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
     await sql`
       INSERT INTO "Fornecedores"
         ( "fornecedor", "nomeFantasia", "tipoPessoa", "codCidade", "codCondDePag", "enderecoForn",
-         "bairroForn", "cepForn", "foneForn", "cpfCnpjForn", "inscEstSubTrib" )
+         "bairroForn", "cepForn", "foneForn", "cpfCnpjForn", "inscEstSubTrib",
+         "foneFixo", "email", "dtFundacao" )
       VALUES
-        ( 'INFOSUL DISTRIBUIDORA DE TI EIRELI', 'INFOSUL TI', 'J', ${ cidadeCWB.codCidade }, ${ codCondDePag },
+        ( 'INFOSUL DISTRIBUIDORA DE TI EIRELI', 'INFOSUL TI', 'JURIDICA', ${ cidadeCWB.codCidade }, ${ codCondDePag },
          'RUA XV DE NOVEMBRO, 1000', 'CENTRO', '80060000', '554122229999',
-         '98765432000110', '222222222222' )
+         '98765432000110', '222222222222',
+         '554122229999', 'vendas@infosulti.com.br', '2011-08-22' )
     `;
   }
 
@@ -446,10 +456,18 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
     await sql`
       INSERT INTO "Clientes"
         ( "cliente", "tipoPessoa", "codCidade", "codCondDePag",
-         "enderecoCl", "bairroCl", "cepCl", "foneCl" )
+         "enderecoCl", "bairroCl", "cepCl", "foneCl",
+         "foneFixo", "email", "apelido", "rg", "dtNascimento", "genero" )
       VALUES
-        ( 'ANA PAULA LIMA', 'F', ${ cidadeRJ.codCidade }, ${ codCondDePag },
-         'RUA DAS FLORES, 45', 'TIJUCA', '20511120', '5521988887777' )
+        ( 'ANA PAULA LIMA', 'FISICA', ${ cidadeRJ.codCidade }, ${ codCondDePag },
+         'RUA DAS FLORES, 45', 'TIJUCA', '20511120', '5521988887777',
+         '552133334444', 'ana.lima@email.com', 'ANA', '123456789', '1992-04-18', 'FEMININO' )
+    `;
+  }
+  else
+  {
+    await sql`
+      UPDATE "Clientes" SET "tipoPessoa" = 'FISICA' WHERE "codCliente" = ${ existCl1[ 0 ].codCliente }
     `;
   }
 
@@ -461,10 +479,18 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
     await sql`
       INSERT INTO "Clientes"
         ( "cliente", "tipoPessoa", "codCidade", "codCondDePag",
-         "enderecoCl", "bairroCl", "cepCl", "foneCl" )
+         "enderecoCl", "bairroCl", "cepCl", "foneCl",
+         "foneFixo", "email", "apelido", "rg", "dtNascimento", "genero" )
       VALUES
-        ( 'CARLOS EDUARDO SANTOS', 'F', ${ cidadeSP.codCidade }, ${ codCondDePag },
-         'AV. PAULISTA, 1500', 'BELA VISTA', '01310100', '5511977776666' )
+        ( 'CARLOS EDUARDO SANTOS', 'FISICA', ${ cidadeSP.codCidade }, ${ codCondDePag },
+         'AV. PAULISTA, 1500', 'BELA VISTA', '01310100', '5511977776666',
+         '551133335555', 'carlos.santos@email.com', 'CADU', '987654321', '1985-11-02', 'MASCULINO' )
+    `;
+  }
+  else
+  {
+    await sql`
+      UPDATE "Clientes" SET "tipoPessoa" = 'FISICA' WHERE "codCliente" = ${ existCl2[ 0 ].codCliente }
     `;
   }
 
@@ -508,7 +534,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
       UPDATE "Transportadoras" SET
         "transportadora"  = 'EXPRESSO RÁPIDO CARGAS LTDA',
         "nomeFantasia"    = 'EXPRESSO RÁPIDO',
-        "tipoPessoa"      = 'J',
+        "tipoPessoa"      = 'JURIDICA',
         "codCidade"       = ${ cidadeSP.codCidade },
         "codVeiculo"      = ${ codVeiculo },
         "enderecoTransp"  = 'RUA DOS CAMINHÕES, 300',
@@ -523,7 +549,7 @@ async function seedParceiros( estadoMap: Record < string, number > ): Promise < 
         ( "transportadora", "nomeFantasia", "tipoPessoa", "codCidade", "codVeiculo",
          "enderecoTransp", "cpfCnpjTransp", "inscEstTransp" )
       VALUES
-        ( 'EXPRESSO RÁPIDO CARGAS LTDA', 'EXPRESSO RÁPIDO', 'J', ${ cidadeSP.codCidade },
+        ( 'EXPRESSO RÁPIDO CARGAS LTDA', 'EXPRESSO RÁPIDO', 'JURIDICA', ${ cidadeSP.codCidade },
          ${ codVeiculo }, 'RUA DOS CAMINHÕES, 300', '55555555000155', '333333333333' )
     `;
   }
@@ -981,7 +1007,7 @@ async function seedProcedimentos(): Promise < Record < string, number > >
 
 /**
  * Duas OS em estágios diferentes do fluxo (RNF06 — Aparelho/Equipamento nascem
- * atomicamente com a OS, mesmo padrão de `AbrirOS()`). `numOdS` é UID gerado pelo
+ * atomicamente com a OS, mesmo padrão de `AbrirOS()`). `numOdS` é inteiro gerado pelo
  * banco (UUID) — o seed usa valores fixos só para permitir a checagem de
  * idempotência (`existeOS1`/`existeOS2`), não para representar o formato real de
  * uma OS aberta pela aplicação (que nasce sem valor informado, via DEFAULT):
@@ -991,9 +1017,6 @@ async function seedProcedimentos(): Promise < Record < string, number > >
  *   aprovado, execução com serviço prestado e peça efetivamente substituída
  *   (situação 'Em execução').
  */
-const OS_1 = '00000000-0000-0000-0000-000000000001';
-const OS_2 = '00000000-0000-0000-0000-000000000002';
-
 async function seedOrdensServico ( codProcedimentoMap: Record < string, number > ): Promise < void >
 {
   const [ ana ] = await sql`
@@ -1017,7 +1040,9 @@ async function seedOrdensServico ( codProcedimentoMap: Record < string, number >
   const checklist = PROCEDIMENTOS_LISTA.slice ( 0, 3 ).map ( ( procedimento ) => codProcedimentoMap [ procedimento ] );
 
   // OS_1 — recém-aberta
-  const existeOS1 = await sql`SELECT 1 FROM "OrdemDeServicos" WHERE "numOdS" = ${ OS_1 } LIMIT 1`;
+  const existeOS1 = await sql`
+    SELECT 1 FROM "OrdemDeServicos" WHERE "codCliente" = ${ ana.codCliente } AND "defeito" = 'NÃO LIGA' LIMIT 1
+  `;
   if ( existeOS1.length === 0 )
   {
     const [ aparelho1 ] = await sql`
@@ -1035,27 +1060,30 @@ async function seedOrdensServico ( codProcedimentoMap: Record < string, number >
       RETURNING "codEquipamento"
     `;
 
-    await sql`
+    const [ ordemServico1 ] = await sql`
       INSERT INTO "OrdemDeServicos"
-        ( "numOdS", "codCliente", "atendente", "codAparelho", "acessorio", "defeito",
+        ( "codCliente", "atendente", "codAparelho", "acessorio", "defeito",
          "obsBalcao", "tipoOdS", "codEquipamento", "solicitante", "dtAtendimento" )
       VALUES
-        ( ${ OS_1 }, ${ ana.codCliente }, 'JULIANA PEREIRA DIAS', ${ aparelho1.codAparelho }, 'CARREGADOR',
+        ( ${ ana.codCliente }, 'JULIANA PEREIRA DIAS', ${ aparelho1.codAparelho }, 'CARREGADOR',
          'NÃO LIGA', 'CLIENTE RELATA QUE PAROU DE FUNCIONAR APÓS QUEDA DE ENERGIA', 'MANUTENÇÃO',
          ${ equipamento1.codEquipamento }, 'ANA PAULA LIMA', now() )
+      RETURNING "numOdS"
     `;
 
     for ( let indice = 0; indice < checklist.length; indice++ )
     {
       await sql`
         INSERT INTO "ProcedimentosOdS" ( "numOdS", "codProcedimento", "ordem" )
-        VALUES ( ${ OS_1 }, ${ checklist [ indice ] }, ${ indice + 1 } )
+        VALUES ( ${ ordemServico1.numOdS }, ${ checklist [ indice ] }, ${ indice + 1 } )
       `;
     }
   }
 
   // OS_2 — fluxo completo (diagnóstico + execução)
-  const existeOS2 = await sql`SELECT 1 FROM "OrdemDeServicos" WHERE "numOdS" = ${ OS_2 } LIMIT 1`;
+  const existeOS2 = await sql`
+    SELECT 1 FROM "OrdemDeServicos" WHERE "codCliente" = ${ carlos.codCliente } AND "defeito" = 'LENTIDÃO EXCESSIVA' LIMIT 1
+  `;
   if ( existeOS2.length === 0 )
   {
     const [ aparelho2 ] = await sql`
@@ -1073,16 +1101,17 @@ async function seedOrdensServico ( codProcedimentoMap: Record < string, number >
       RETURNING "codEquipamento"
     `;
 
-    await sql`
+    const [ ordemServico2 ] = await sql`
       INSERT INTO "OrdemDeServicos"
-        ( "numOdS", "codCliente", "atendente", "codAparelho", "defeito", "obsBalcao", "tipoOdS",
+        ( "codCliente", "atendente", "codAparelho", "defeito", "obsBalcao", "tipoOdS",
          "codEquipamento", "situacao", "dtAtendimento", "dtExecucao", "historicoManutencao", "obsTecnica" )
       VALUES
-        ( ${ OS_2 }, ${ carlos.codCliente }, 'JULIANA PEREIRA DIAS', ${ aparelho2.codAparelho },
+        ( ${ carlos.codCliente }, 'JULIANA PEREIRA DIAS', ${ aparelho2.codAparelho },
          'LENTIDÃO EXCESSIVA', 'CLIENTE RELATA LENTIDÃO AO ABRIR PROGRAMAS', 'MANUTENÇÃO',
          ${ equipamento2.codEquipamento }, 'Em execução', now() - interval '2 days', now(),
          'MEMÓRIA RAM INSUFICIENTE PARA O USO RELATADO — RECOMENDADA TROCA/AMPLIAÇÃO.',
          'MEMÓRIA SUBSTITUÍDA E SISTEMA OTIMIZADO; DESEMPENHO NORMALIZADO NOS TESTES.' )
+      RETURNING "numOdS"
     `;
 
     for ( let indice = 0; indice < checklist.length; indice++ )
@@ -1092,24 +1121,24 @@ async function seedOrdensServico ( codProcedimentoMap: Record < string, number >
         INSERT INTO "ProcedimentosOdS"
           ( "numOdS", "codProcedimento", "ordem", "posicao", "checagem", "obsProcedimento", "dthFim" )
         VALUES
-          ( ${ OS_2 }, ${ checklist [ indice ] }, ${ indice + 1 }, 'INTERNO', ${ checagem },
+          ( ${ ordemServico2.numOdS }, ${ checklist [ indice ] }, ${ indice + 1 }, 'INTERNO', ${ checagem },
            ${ checagem ? null : 'RESPOSTA INTERMITENTE — ENCAMINHADO PARA SUBSTITUIÇÃO FUTURA.' }, now() )
       `;
     }
 
     await sql`
       INSERT INTO "OrcamentoPecasOdS" ( "codPeca", "numOdS", "vlrPv", "aprovado" )
-      VALUES ( ${ pecaMemoria.codPeca }, ${ OS_2 }, '180.00', true )
+      VALUES ( ${ pecaMemoria.codPeca }, ${ ordemServico2.numOdS }, '180.00', true )
     `;
 
     await sql`
       INSERT INTO "ServicosOdS" ( "codServico", "numOdS", "qtdServico" )
-      VALUES ( ${ servicoLimpeza.codServico }, ${ OS_2 }, 1 )
+      VALUES ( ${ servicoLimpeza.codServico }, ${ ordemServico2.numOdS }, 1 )
     `;
 
     await sql`
       INSERT INTO "SubstituirPecasOdS" ( "codPeca", "numOdS", "qtdPeca", "vlrUnitarioPeca" )
-      VALUES ( ${ pecaMemoria.codPeca }, ${ OS_2 }, 1, 180.00 )
+      VALUES ( ${ pecaMemoria.codPeca }, ${ ordemServico2.numOdS }, 1, 180.00 )
     `;
   }
 }

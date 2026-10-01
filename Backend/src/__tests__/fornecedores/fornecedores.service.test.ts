@@ -42,7 +42,7 @@ describe ( 'FornecedoresService', () =>
 
         const dados = {
             codCidade: 1, codCondDePag: 1, fornecedor: 'Tech Distribuidora',
-            tipoPessoa: 'JURIDICA' as const, cepForn: '01310100', foneForn: '551133331111',
+            tipoPessoa: 'JURIDICA' as const, cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
             cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
         };
 
@@ -57,7 +57,7 @@ describe ( 'FornecedoresService', () =>
 
         await expect ( service.UpdateFornecedor ( 99, {
             codCidade: 1, codCondDePag: 1, fornecedor: 'X',
-            tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+            tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
             cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
             isActive: true,
         }, 1 ) )
@@ -70,7 +70,7 @@ describe ( 'FornecedoresService', () =>
 
         await expect ( service.UpdateFornecedor ( 1, {
             codCidade: 1, codCondDePag: 1, fornecedor: 'X',
-            tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111',
+            tipoPessoa: 'JURIDICA', cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
             cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
             isActive: true,
         }, 1 ) ).rejects.toMatchObject ( { status: 409 } );

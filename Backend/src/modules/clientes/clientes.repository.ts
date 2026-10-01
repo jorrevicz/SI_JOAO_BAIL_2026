@@ -62,6 +62,14 @@ export class ClientesRepository
                 "bairroCl",
                 "cepCl",
                 "foneCl",
+                "foneFixo",
+                "email",
+                "apelido",
+                "nomeFantasia",
+                "rg",
+                "dtNascimento",
+                "dtFundacao",
+                "genero",
                 "codUser"
             )
             VALUES
@@ -74,6 +82,14 @@ export class ClientesRepository
                 ${ cliente.bairroCl     ?? null },
                 ${ cliente.cepCl        ?? null },
                 ${ cliente.foneCl       ?? null },
+                ${ cliente.foneFixo     ?? null },
+                ${ cliente.email        ?? null },
+                ${ cliente.apelido      ?? null },
+                ${ cliente.nomeFantasia ?? null },
+                ${ cliente.rg           ?? null },
+                ${ cliente.dtNascimento ?? null },
+                ${ cliente.dtFundacao   ?? null },
+                ${ cliente.genero       ?? null },
                 ${ codUser }
             )
             RETURNING *
@@ -102,6 +118,14 @@ export class ClientesRepository
                 "bairroCl"     = ${ cliente.bairroCl     ?? null },
                 "cepCl"        = ${ cliente.cepCl        ?? null },
                 "foneCl"       = ${ cliente.foneCl       ?? null },
+                "foneFixo"     = ${ cliente.foneFixo     ?? null },
+                "email"        = ${ cliente.email        ?? null },
+                "apelido"      = ${ cliente.apelido      ?? null },
+                "nomeFantasia" = ${ cliente.nomeFantasia ?? null },
+                "rg"           = ${ cliente.rg           ?? null },
+                "dtNascimento" = ${ cliente.dtNascimento ?? null },
+                "dtFundacao"   = ${ cliente.dtFundacao   ?? null },
+                "genero"       = ${ cliente.genero       ?? null },
                 "codUser"      = ${ codUser },
                 "dtEdicao"     = CURRENT_TIMESTAMP,
                 "isActive"     = ${ cliente.isActive }

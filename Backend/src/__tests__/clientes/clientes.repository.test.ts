@@ -23,7 +23,7 @@ describe ( 'ClientesRepository (rollback)', () =>
             (
                 {
                     codCidade, cliente: 'Maria Oliveira',
-                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
                 },
                 1,
                 transaction
@@ -37,6 +37,33 @@ describe ( 'ClientesRepository (rollback)', () =>
         });
     });
 
+    it ( 'Create persiste os dados pessoais (RG, nascimento, gênero, fone fixo e e-mail)', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codCidade = await criarCidadeDeTeste ( transaction );
+
+            const novo = await repo.Create
+            (
+                {
+                    codCidade, cliente: 'Maria Oliveira', tipoPessoa: 'FISICA',
+                    cepCl: '20511120', foneCl: '5521988887777', email: 'maria@kaneko.com.br',
+                    foneFixo: '552133334444', apelido: 'MARI', rg: '123456789',
+                    dtNascimento: '1990-05-10', genero: 'FEMININO',
+                },
+                1,
+                transaction
+            );
+
+            expect ( novo.apelido ).toBe ( 'MARI' );
+            expect ( novo.rg ).toBe ( '123456789' );
+            expect ( novo.genero ).toBe ( 'FEMININO' );
+            expect ( novo.foneFixo ).toBe ( '552133334444' );
+            expect ( novo.email ).toBe ( 'maria@kaneko.com.br' );
+            expect ( new Date ( novo.dtNascimento! ).toISOString().slice ( 0, 10 ) ).toBe ( '1990-05-10' );
+        });
+    });
+
     it ( 'Update altera os dados do cliente dentro da transação', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
@@ -47,7 +74,7 @@ describe ( 'ClientesRepository (rollback)', () =>
             (
                 {
                     codCidade, cliente: 'Cliente Original',
-                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
                 },
                 1,
                 transaction
@@ -58,7 +85,7 @@ describe ( 'ClientesRepository (rollback)', () =>
                 novo.codCliente,
                 {
                     codCidade, cliente: 'Cliente Atualizado',
-                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
                     isActive: true,
                 },
                 1,
@@ -79,7 +106,7 @@ describe ( 'ClientesRepository (rollback)', () =>
             (
                 {
                     codCidade, cliente: 'Para Excluir',
-                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
                 },
                 1,
                 transaction
@@ -109,7 +136,7 @@ describe ( 'ClientesRepository (rollback)', () =>
             (
                 {
                     codCidade, cliente: 'Sem Dependentes',
-                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777',
+                    tipoPessoa: 'FISICA', cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
                 },
                 1,
                 transaction

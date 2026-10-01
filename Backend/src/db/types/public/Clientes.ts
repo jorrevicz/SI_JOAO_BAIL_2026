@@ -3,6 +3,7 @@
 
 import type { CidadesCodCidade } from './Cidades';
 import type { CondicaoDePagamentoCodCondDePag } from './CondicaoDePagamento';
+import type { default as Genero } from './Genero';
 
 /** Identifier type for public.Clientes */
 export type ClientesCodCliente = number & { __brand: 'public.Clientes' };
@@ -34,6 +35,22 @@ export default interface Clientes {
   isActive: boolean;
 
   tipoPessoa: string;
+
+  apelido: string | null;
+
+  nomeFantasia: string | null;
+
+  rg: string | null;
+
+  dtNascimento: Date | null;
+
+  dtFundacao: Date | null;
+
+  genero: Genero | null;
+
+  foneFixo: string | null;
+
+  email: string | null;
 }
 
 /** Represents the initializer for the table public.Clientes */
@@ -66,6 +83,22 @@ export interface ClientesInitializer {
   isActive?: boolean;
 
   tipoPessoa: string;
+
+  apelido?: string | null;
+
+  nomeFantasia?: string | null;
+
+  rg?: string | null;
+
+  dtNascimento?: Date | null;
+
+  dtFundacao?: Date | null;
+
+  genero?: Genero | null;
+
+  foneFixo?: string | null;
+
+  email?: string | null;
 }
 
 /** Represents the mutator for the table public.Clientes */
@@ -95,4 +128,20 @@ export interface ClientesMutator {
   isActive?: boolean;
 
   tipoPessoa?: string;
+
+  apelido?: string | null;
+
+  nomeFantasia?: string | null;
+
+  rg?: string | null;
+
+  dtNascimento?: Date | null;
+
+  dtFundacao?: Date | null;
+
+  genero?: Genero | null;
+
+  foneFixo?: string | null;
+
+  email?: string | null;
 }

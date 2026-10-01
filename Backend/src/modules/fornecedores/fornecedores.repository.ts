@@ -65,6 +65,12 @@ export class FornecedoresRepository
                 "foneForn",
                 "cpfCnpjForn",
                 "inscEstSubTrib",
+                "foneFixo",
+                "email",
+                "apelido",
+                "dtNascimento",
+                "dtFundacao",
+                "genero",
                 "codUser"
             )
             VALUES
@@ -80,6 +86,12 @@ export class FornecedoresRepository
                 ${ forn.foneForn        ?? null },
                 ${ forn.cpfCnpjForn     ?? null },
                 ${ forn.inscEstSubTrib  ?? null },
+                ${ forn.foneFixo        ?? null },
+                ${ forn.email           ?? null },
+                ${ forn.apelido         ?? null },
+                ${ forn.dtNascimento    ?? null },
+                ${ forn.dtFundacao      ?? null },
+                ${ forn.genero          ?? null },
                 ${ codUser }
             )
             RETURNING *
@@ -111,6 +123,12 @@ export class FornecedoresRepository
                 "foneForn"       = ${ forn.foneForn        ?? null },
                 "cpfCnpjForn"    = ${ forn.cpfCnpjForn     ?? null },
                 "inscEstSubTrib" = ${ forn.inscEstSubTrib  ?? null },
+                "foneFixo"       = ${ forn.foneFixo        ?? null },
+                "email"          = ${ forn.email           ?? null },
+                "apelido"        = ${ forn.apelido         ?? null },
+                "dtNascimento"   = ${ forn.dtNascimento    ?? null },
+                "dtFundacao"     = ${ forn.dtFundacao      ?? null },
+                "genero"         = ${ forn.genero          ?? null },
                 "codUser"        = ${ codUser },
                 "dtEdicao"       = CURRENT_TIMESTAMP,
                 "isActive"       = ${ forn.isActive }

@@ -3,6 +3,7 @@
 
 import type { CidadesCodCidade } from './Cidades';
 import type { CondicaoDePagamentoCodCondDePag } from './CondicaoDePagamento';
+import type { default as Genero } from './Genero';
 
 /** Identifier type for public.Fornecedores */
 export type FornecedoresCodForn = number & { __brand: 'public.Fornecedores' };
@@ -40,6 +41,18 @@ export default interface Fornecedores {
   isActive: boolean;
 
   tipoPessoa: string;
+
+  apelido: string | null;
+
+  dtNascimento: Date | null;
+
+  dtFundacao: Date | null;
+
+  genero: Genero | null;
+
+  foneFixo: string | null;
+
+  email: string | null;
 }
 
 /** Represents the initializer for the table public.Fornecedores */
@@ -78,6 +91,18 @@ export interface FornecedoresInitializer {
   isActive?: boolean;
 
   tipoPessoa: string;
+
+  apelido?: string | null;
+
+  dtNascimento?: Date | null;
+
+  dtFundacao?: Date | null;
+
+  genero?: Genero | null;
+
+  foneFixo?: string | null;
+
+  email?: string | null;
 }
 
 /** Represents the mutator for the table public.Fornecedores */
@@ -113,4 +138,16 @@ export interface FornecedoresMutator {
   isActive?: boolean;
 
   tipoPessoa?: string;
+
+  apelido?: string | null;
+
+  dtNascimento?: Date | null;
+
+  dtFundacao?: Date | null;
+
+  genero?: Genero | null;
+
+  foneFixo?: string | null;
+
+  email?: string | null;
 }
