@@ -114,6 +114,7 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
   const handleSelecionarCidade = ( oCidade: Cidade) =>
   {
     setForm ( { ...form, codCidade: oCidade.codCidade } );
+    setCodCidadeSel ( oCidade.codCidade );
     setNomeCidadeSel ( oCidade.cidade );
     setConsultando ( false );
   }
