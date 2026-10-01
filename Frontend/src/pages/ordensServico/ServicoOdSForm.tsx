@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { type ServicoOdSInput } from '../../services/ordensServico';
-import { type Funcionario } from '../../services/funcionarios';
-import { TecnicoConsulta } from '../funcionarios/TecnicoConsulta';
+import { funcionariosService } from '../../services/funcionarios';
+import { cargosService } from '../../services/cargos';
+import { TecnicoConsulta, NomeCargoNormalizado } from '../funcionarios/TecnicoConsulta';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { FormSecao, FormCampo, Botao } from './style';
 
 export interface ServicoOdSLocal extends ServicoOdSInput
@@ -23,26 +26,38 @@ export function ServicoOdSForm ( { onAdicionar }: Props )
   const [ codServico, setCodServico ]     = useState ( 0 );
   const [ nomeServico, setNomeServico ]   = useState ( '' );
   const [ valorUnitario, setValorUnitario ] = useState ( '' );
-  const [ codFuncionario, setCodFuncionario ] = useState ( 0 );
-  const [ nomeFuncionario, setNomeFuncionario ] = useState ( '' );
+  const campoTecnico = useCampoConsulta (
+    {
+      codigoInicial: null,
+      // Digitado à mão, o código precisa ser de um funcionário com cargo Técnico, como na consulta
+      buscar:        async ( codigo ) =>
+      {
+        const funcionario = await funcionariosService.obter ( codigo );
+        const cargo       = await cargosService.obter ( funcionario.codCargo );
+
+        if ( NomeCargoNormalizado ( cargo.cargo ) !== 'tecnico' )
+        {
+          throw new Error ( `O funcionário ${ codigo } não é um Técnico.` );
+        }
+
+        return funcionario;
+      },
+      codigoDe:      ( funcionario ) => funcionario.codFuncionario,
+      descricaoDe:   ( funcionario ) => funcionario.funcionario,
+    }
+  );
   const [ qtdServico, setQtdServico ]     = useState ( 1 );
-  const [ consultandoTecnico, setConsultandoTecnico ] = useState ( false );
   const [ erroServico, setErroServico ]   = useState ( '' );
   const [ erroDescricao, setErroDescricao ] = useState ( '' );
   const [ erroQuantidade, setErroQuantidade ] = useState ( '' );
   const [ erroFuncionario, setErroFuncionario ] = useState ( '' );
 
-  const HandleSelecionarTecnico = ( oFuncionario: Funcionario ) =>
-  {
-    setCodFuncionario ( oFuncionario.codFuncionario );
-    setNomeFuncionario ( oFuncionario.funcionario );
-    setErroFuncionario ( '' );
-    setConsultandoTecnico ( false );
-  };
-
-  const HandleAdicionar = () =>
+  const HandleAdicionar = async () =>
   {
     let valido = true;
+
+    // Confere no banco o código do técnico digitado à mão antes de incluir o serviço na lista
+    const tecnicoEncontrado = await campoTecnico.resolver();
 
     if ( !codServico )
     {
@@ -74,7 +89,7 @@ export function ServicoOdSForm ( { onAdicionar }: Props )
       setErroQuantidade ( '' );
     }
 
-    if ( !codFuncionario )
+    if ( !campoTecnico.codigo )
     {
       setErroFuncionario ( 'Informe o código do técnico.' );
       valido = false;
@@ -82,9 +97,14 @@ export function ServicoOdSForm ( { onAdicionar }: Props )
     else
     {
       setErroFuncionario ( '' );
+
+      if ( !tecnicoEncontrado )
+      {
+        valido = false;
+      }
     }
 
-    if ( !valido )
+    if ( !valido || !tecnicoEncontrado )
     {
       return;
     }
@@ -94,16 +114,15 @@ export function ServicoOdSForm ( { onAdicionar }: Props )
       codServico,
       nomeServico,
       valorUnitario: Number ( valorUnitario || 0 ).toFixed ( 2 ),
-      codFuncionario,
-      nomeFuncionario,
+      codFuncionario:  tecnicoEncontrado.codFuncionario,
+      nomeFuncionario: tecnicoEncontrado.funcionario,
       qtdServico,
     });
 
     setCodServico ( 0 );
     setNomeServico ( '' );
     setValorUnitario ( '' );
-    setCodFuncionario ( 0 );
-    setNomeFuncionario ( '' );
+    campoTecnico.digitar ( '' );
     setQtdServico ( 1 );
   };
 
@@ -152,51 +171,25 @@ export function ServicoOdSForm ( { onAdicionar }: Props )
       </FormSecao>
 
       <FormSecao>
-        <FormCampo label="Técnico" obrigatorio colunas={ 3 } erro={ erroFuncionario }>
-          <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-            <Botao
-              type="button"
-              $variante="secundario"
-              onClick={ () => setConsultandoTecnico ( true ) }
-            >
-              Consultar
-            </Botao>
-          </div>
-        </FormCampo>
-
-        <FormCampo label="Código do Técnico" colunas={ 2 }>
-          <input
-            disabled
-            readOnly
-            value={ codFuncionario || '' }
-          />
-        </FormCampo>
-
-        <FormCampo label="Nome do Técnico" colunas={ 4 }>
-          <input
-            disabled
-            readOnly
-            value={ nomeFuncionario }
-          />
-        </FormCampo>
+        <CampoConsulta
+          campo={ campoTecnico }
+          Consulta={ TecnicoConsulta }
+          rotulo="Técnico"
+          rotuloCodigo="Código do Técnico"
+          rotuloNome="Nome do Técnico"
+          obrigatorio
+          erroApi={ erroFuncionario }
+          colunas={ [ 3, 2, 4 ] }
+        />
 
         <FormCampo colunas={ 3 }>
           <div style={ { display: 'flex', justifyContent: 'flex-end' } }>
-            <Botao type="button" onClick={ HandleAdicionar }>
+            <Botao type="button" onClick={ () => { void HandleAdicionar(); } }>
               Adicionar
             </Botao>
           </div>
         </FormCampo>
       </FormSecao>
-
-      {
-        consultandoTecnico && (
-          <TecnicoConsulta
-            onSelecionar={ HandleSelecionarTecnico }
-            onCancelar={ () => setConsultandoTecnico ( false ) }
-          />
-        )
-      }
     </>
   );
 }

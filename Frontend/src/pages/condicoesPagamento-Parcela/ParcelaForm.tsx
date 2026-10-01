@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { FormaPagamentoConsulta } from '../formasPagamento/FormaPagamentoConsulta';
-import { type FormaPagamento } from '../../services/formasPagamento';
+import { formasPagamentoService } from '../../services/formasPagamento';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { type ParcelaCondicaoInput } from '../../services/condicoesPagamento';
 import { FormSecao, FormCampo, Botao } from './style';
 
@@ -18,28 +20,28 @@ interface Props
 
 export function ParcelaForm ( { onAdicionar }: Props )
 {
-  const [ codFormaDePag, setCodFormaDePag ] = useState ( 0 );
-  const [ nomeFormaPag, setNomeFormaPag ]   = useState ( '' );
+  const campoFormaPag = useCampoConsulta (
+    {
+      codigoInicial: null,
+      buscar:        formasPagamentoService.obter,
+      codigoDe:      ( formaPagamento ) => formaPagamento.codFormaDePag,
+      descricaoDe:   ( formaPagamento ) => formaPagamento.formaDePag,
+    }
+  );
   const [ percentual, setPercentual ]       = useState ( 0 );
   const [ numDias, setNumDias ]             = useState ( 1 );
   const [ isActive, setIsActive ]           = useState ( true );
-  const [ consultando, setConsultando ]     = useState ( false );
   const [ erroForma, setErroForma ]         = useState ( '' );
   const [ erroPercentual, setErroPercentual ] = useState ( '' );
 
-  const HandleSelecionarFormPag = ( oFormPag: FormaPagamento ) =>
-  {
-    setCodFormaDePag ( oFormPag.codFormaDePag );
-    setNomeFormaPag ( oFormPag.formaDePag );
-    setErroForma ( '' );
-    setConsultando ( false );
-  };
-
-  const HandleAdicionar = () =>
+  const HandleAdicionar = async () =>
   {
     let valido = true;
 
-    if ( !codFormaDePag )
+    // Confere no banco o código digitado à mão antes de incluí-lo na lista
+    const formaEncontrada = await campoFormaPag.resolver();
+
+    if ( !campoFormaPag.codigo )
     {
       setErroForma ( 'Selecione uma forma de pagamento.' );
       valido = false;
@@ -47,6 +49,11 @@ export function ParcelaForm ( { onAdicionar }: Props )
     else
     {
       setErroForma ( '' );
+
+      if ( !formaEncontrada )
+      {
+        valido = false;
+      }
     }
 
     if ( percentual <= 0 )
@@ -59,22 +66,21 @@ export function ParcelaForm ( { onAdicionar }: Props )
       setErroPercentual ( '' );
     }
 
-    if ( !valido )
+    if ( !valido || !formaEncontrada )
     {
       return;
     }
 
     onAdicionar({
       _uid:          crypto.randomUUID(),
-      codFormaDePag,
-      nomeFormaPag,
+      codFormaDePag: formaEncontrada.codFormaDePag,
+      nomeFormaPag:  formaEncontrada.formaDePag,
       percentual,
       numDias,
       isActive,
     });
 
-    setCodFormaDePag ( 0 );
-    setNomeFormaPag ( '' );
+    campoFormaPag.digitar ( '' );
     setPercentual ( 0 );
     setNumDias ( 1 );
     setIsActive ( true );
@@ -83,24 +89,16 @@ export function ParcelaForm ( { onAdicionar }: Props )
   return (
     <>
       <FormSecao>
-        <FormCampo label="Forma de Pagamento" obrigatorio colunas={ 3 } erro={ erroForma }>
-          <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-            <Botao
-              type="button"
-              $variante="secundario"
-              onClick={ () => setConsultando ( true ) }
-            >
-              Consultar
-            </Botao>
-            {
-              nomeFormaPag && (
-                <span style={ { fontSize: '0.875rem' } }>
-                  { nomeFormaPag }
-                </span>
-              )
-            }
-          </div>
-        </FormCampo>
+        <CampoConsulta
+          campo={ campoFormaPag }
+          Consulta={ FormaPagamentoConsulta }
+          rotulo="Forma de Pagamento"
+          rotuloCodigo="Código da forma"
+          rotuloNome="Descrição da forma"
+          obrigatorio
+          erroApi={ erroForma }
+          colunas={ [ 2, 2, 3 ] }
+        />
 
         <FormCampo label="Percentual (%)" obrigatorio colunas={ 2 } htmlFor="parcelaPercentual" erro={ erroPercentual }>
           <input
@@ -140,21 +138,12 @@ export function ParcelaForm ( { onAdicionar }: Props )
 
         <FormCampo colunas={ 3 }>
           <div style={ { display: 'flex', justifyContent: 'flex-end' } }>
-            <Botao type="button" onClick={ HandleAdicionar }>
+            <Botao type="button" onClick={ () => { void HandleAdicionar(); } }>
               Adicionar parcela
             </Botao>
           </div>
         </FormCampo>
       </FormSecao>
-
-      {
-        consultando && (
-          <FormaPagamentoConsulta
-            onSelecionar={ HandleSelecionarFormPag }
-            onCancelar={ () => setConsultando ( false ) }
-          />
-        )
-      }
     </>
   );
 }

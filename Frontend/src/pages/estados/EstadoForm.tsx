@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ApiError } from '../../services/api';
 import { estadosService, type Estado, type CreateEstadoInput } from '../../services/estados';
-import { paisesService, type Pais } from '../../services/paises';
+import { paisesService } from '../../services/paises';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { PaisConsulta } from '../paises/PaisConsulta';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 
 interface Props
 {
@@ -21,9 +23,14 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
     estado:  inicial.estado  ?? '',
     isActive: inicial.isActive ?? true,
   } );
-  const [ codPaisSelecionado, setCodPaisSelecionado ] = useState ( 0 )
-  const [ nomePaisSelecionado, setNomePaisSelecionado ] = useState ( '' );
-  const [ consultandoPais, setConsultando ] = useState ( false );
+  const campoPais = useCampoConsulta (
+    {
+      codigoInicial: inicial.codPais,
+      buscar:        paisesService.obter,
+      codigoDe:      ( pais ) => pais.codPais,
+      descricaoDe:   ( pais ) => pais.pais,
+    }
+  );
 
   const [ erro, setErro ] = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
@@ -38,15 +45,23 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
     setErro ( '' );
     setErrosCampo ( {} );
 
+    if ( !( await campoPais.validar() ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
+    const dados: CreateEstadoInput = { ...form, codPais: campoPais.codigo };
+
     try
     {
       if ( editando )
       {
-        await estadosService.atualizar ( inicial.codEstado!, form );
+        await estadosService.atualizar ( inicial.codEstado!, dados );
       }
       else
       {
-        await estadosService.criar ( form );
+        await estadosService.criar ( dados );
       }
       onSalvo();
     }
@@ -65,26 +80,6 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
     {
       setSalvando ( false );
     }
-  };
-
-  useEffect ( () =>
-  {
-    if ( inicial.codPais )
-    {
-      paisesService.obter ( inicial.codPais ).then ( ( oPais ) =>
-      {
-        setCodPaisSelecionado ( oPais.codPais );
-        setNomePaisSelecionado ( oPais.pais );
-      } );
-    }
-  });
-
-  const handleSelecionarPais = ( oPais: Pais ) =>
-  {
-    setForm ( { ...form, codPais: oPais.codPais } );
-    setCodPaisSelecionado ( oPais.codPais )
-    setNomePaisSelecionado ( oPais.pais );
-    setConsultando ( false );
   };
 
   return (
@@ -120,49 +115,15 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="País" obrigatorio colunas={ 2 } erro={ errosCampo.codPais }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type="button"
-                $variante="secundario"
-                onClick={ () => setConsultando ( true ) }
-              >
-                Consultar
-              </Botao> 
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Código do país' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codPaisSelecionado }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Nome do país' colunas={ 4 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input 
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ nomePaisSelecionado }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo> 
+          <CampoConsulta
+            campo={ campoPais }
+            Consulta={ PaisConsulta }
+            rotulo="País"
+            rotuloCodigo="Código do país"
+            rotuloNome="Nome do país"
+            obrigatorio
+            erroApi={ errosCampo.codPais }
+          />
 
           <FormCampo label='Status' colunas={ 2 }>
             <CaixaSelecao
@@ -181,13 +142,6 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
           </Botao>
         </FormAcoes>
       </FormModal>
-
-      { consultandoPais && (
-        <PaisConsulta
-          onSelecionar={ handleSelecionarPais }
-          onCancelar={ () => setConsultando ( false ) }
-        />
-      )}
     </>
   );
 }

@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
-import { estadosService, type Estado } from '../../services/estados';
+import { useState } from 'react';
+import { estadosService } from '../../services/estados';
 import { ApiError } from '../../services/api';
 import { veiculosService, type Veiculo, type CreateVeiculoInput } from '../../services/veiculos';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { EstadoConsulta } from '../estados/EstadoConsulta';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 
 interface Props
 {
@@ -25,9 +27,14 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
     codAntt:       inicial.codAntt       ?? '',
     isActive:      inicial.isActive      ?? true,
   } );
-  const [ codEstadoSel, setCodEstadoSel ] = useState ( 0 );
-  const [ nomeEstadoSel, setNomeEstadoSel ]   = useState ( '' );
-  const [ consultando, setConsultando ]       = useState ( false );
+  const campoEstado = useCampoConsulta (
+    {
+      codigoInicial: inicial.codEstado,
+      buscar:        estadosService.obter,
+      codigoDe:      ( entidade ) => entidade.codEstado,
+      descricaoDe:   ( entidade ) => entidade.estado,
+    }
+  );
 
   const [ erro, setErro ]               = useState ( '' );
   const [ errosCampo, setErrosCampo ]   = useState < Record < string, string > > ( {} );
@@ -42,12 +49,18 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
     setErro ( '' );
     setErrosCampo ( {} );
 
+    if ( !( await campoEstado.validar() ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
     const dados: CreateVeiculoInput =
     {
       placaVeiculo:  form.placaVeiculo,
       modeloVeiculo: form.modeloVeiculo,
       marca:         form.marca,
-      codEstado:     form.codEstado     || undefined,
+      codEstado:     campoEstado.codigo || undefined,
       placaMercoSul: form.placaMercoSul || undefined,
       codAntt:       form.codAntt,
       isActive:      form.isActive      || true,
@@ -81,25 +94,6 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
       setSalvando ( false );
     }
   };
-
-  useEffect ( () =>
-  {
-    if ( inicial.codEstado )
-    {
-      estadosService.obter ( inicial.codEstado ).then ( ( oEstado ) =>
-      {
-        setCodEstadoSel ( oEstado.codEstado );
-        setNomeEstadoSel ( oEstado.estado );
-      } );
-    }
-  });
-
-  const HandleSelecionarEstado = ( oEstado: Estado ) =>
-  {
-    setForm ( { ...form, codEstado: oEstado.codEstado } );
-    setNomeEstadoSel ( oEstado.estado );
-    setConsultando ( false );
-  }
 
   return (
     <>
@@ -152,49 +146,15 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Estado" obrigatorio colunas={ 2 } erro={ errosCampo.codEstado }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultando ( true ) }
-              >
-                Consultar
-              </Botao> 
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Código do estado' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codEstadoSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Nome do estado' colunas={ 4 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input 
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ nomeEstadoSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoEstado }
+            Consulta={ EstadoConsulta }
+            rotulo="Estado"
+            rotuloCodigo="Código do estado"
+            rotuloNome="Nome do estado"
+            obrigatorio
+            erroApi={ errosCampo.codEstado }
+          />
         </FormSecao>
 
         <FormSecao>
@@ -240,14 +200,6 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
           </Botao>
         </FormAcoes>
       </FormModal>
-      {
-        consultando && (
-          <EstadoConsulta
-            onSelecionar={ HandleSelecionarEstado }
-            onCancelar={ () => setConsultando ( false ) }
-          />
-        )
-      }
     </>
   );
 }

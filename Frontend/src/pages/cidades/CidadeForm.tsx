@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ApiError } from '../../services/api';
-import { estadosService, type Estado } from '../../services/estados';
+import { estadosService } from '../../services/estados';
 import { cidadesService, type Cidade, type CreateCidadeInput } from '../../services/cidades';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { EstadoConsulta } from '../estados/EstadoConsulta';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 
 interface Props
 {
@@ -21,9 +23,15 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
     ddd:       inicial.ddd       ?? '',
     isActive:  inicial.isActive  ?? true,
   } );
-  const [ codEstadoSel, setCodEstadoSel ] = useState ( 0 );
-  const [ nomeEstadoSel, setNomeEstadoSel ] = useState ( '' );
-  const [ consultando, setConsultando ] = useState ( false );
+  const campoEstado = useCampoConsulta (
+    {
+      codigoInicial: inicial.codEstado,
+      buscar:        estadosService.obter,
+      codigoDe:      ( entidade ) => entidade.codEstado,
+      descricaoDe:   ( entidade ) => entidade.estado,
+    }
+  );
+
   const [ erro, setErro ] = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
   const [ salvando, setSalvando ] = useState ( false );
@@ -37,15 +45,23 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
     setErro ( '' );
     setErrosCampo ( {} );
 
+    if ( !( await campoEstado.validar() ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
+    const dados: CreateCidadeInput = { ...form, codEstado: campoEstado.codigo };
+
     try
     {
       if ( editando )
       {
-        await cidadesService.atualizar ( inicial.codCidade!, form );
+        await cidadesService.atualizar ( inicial.codCidade!, dados );
       }
       else
       {
-        await cidadesService.criar ( form );
+        await cidadesService.criar ( dados );
       }
       onSalvo();
     }
@@ -65,26 +81,6 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
       setSalvando ( false );
     }
   };
-
-  useEffect ( () =>
-  {
-    if ( inicial.codEstado )
-    {
-      estadosService.obter ( inicial.codEstado ).then ( ( oEstado ) =>
-      {
-        setCodEstadoSel ( oEstado.codEstado );
-        setNomeEstadoSel ( oEstado.estado );
-      } );
-    }
-  });
-
-  const handleSelecionarEstado = ( oEstado: Estado ) =>
-  {
-    setForm ( { ...form, codEstado: oEstado.codEstado } );
-    setCodEstadoSel ( oEstado.codEstado )
-    setNomeEstadoSel ( oEstado.estado );
-    setConsultando ( false );
-  }
 
   return (
     <>
@@ -120,49 +116,15 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
           </FormCampo>
         </FormSecao>
         <FormSecao>
-          <FormCampo label="Estado" obrigatorio colunas={ 2 } erro={ errosCampo.codEstado }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultando ( true ) }
-              >
-                Consultar
-              </Botao>
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Código do estado' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codEstadoSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Nome do estado' colunas={ 4 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input 
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ nomeEstadoSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo> 
+          <CampoConsulta
+            campo={ campoEstado }
+            Consulta={ EstadoConsulta }
+            rotulo="Estado"
+            rotuloCodigo="Código do estado"
+            rotuloNome="Nome do estado"
+            obrigatorio
+            erroApi={ errosCampo.codEstado }
+          />
 
           <FormCampo label='Status' colunas={ 2 }>
             <CaixaSelecao
@@ -181,15 +143,6 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
           </Botao>
         </FormAcoes>
       </FormModal>
-
-      {
-        consultando && (
-          <EstadoConsulta
-            onSelecionar={ handleSelecionarEstado }
-            onCancelar={ () => setConsultando ( false ) }
-          />
-        )
-      }
     </>
   );
 }

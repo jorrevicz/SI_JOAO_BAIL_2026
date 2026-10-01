@@ -31,7 +31,7 @@ import
 import { TrSelecionavel } from '../../components/tabela/style';
 import { useTabelaOrdenada } from '../../hooks/tabela';
 
-const NomeCargoNormalizado = ( nome: string ) =>
+export const NomeCargoNormalizado = ( nome: string ) =>
     nome.normalize ( 'NFD' ).replace ( /[̀-ͯ]/g, '' ).trim().toLowerCase();
 
 interface Props

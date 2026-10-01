@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { ApiError } from '../../services/api';
 import { ordensServicoService, type AbrirOrdemServicoInput } from '../../services/ordensServico';
-import { type Cliente } from '../../services/clientes';
+import { clientesService } from '../../services/clientes';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { ClienteConsulta } from '../clientes/ClienteConsulta';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 
 interface Props
 {
@@ -47,11 +49,14 @@ const FORM_VAZIO: AbrirOrdemServicoInput = {
 export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
 {
   const [ form, setForm ]       = useState < AbrirOrdemServicoInput > ( FORM_VAZIO );
-  const [ codClienteSelecionado, setCodClienteSelecionado] = useState ( 0 );
-  const [ nomeClienteSelecionado, setNomeClienteSelecionado ] = useState ( '' );
-  const [ foneClienteSelecionado, setFoneClienteSlecionado ] = useState ( '' );
-  const [ enderecoClienteSelecionado, setEnderecoClienteSelecionado ] = useState ( '' );
-  const [ consultandoCliente, setConsultandoCliente ] = useState ( false );
+  const campoCliente      = useCampoConsulta (
+    {
+      codigoInicial: null,
+      buscar:        clientesService.obter,
+      codigoDe:      ( cliente ) => cliente.codCliente,
+      descricaoDe:   ( cliente ) => cliente.cliente,
+    }
+  );
 
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
@@ -64,9 +69,15 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
     setErro ( '' );
     setErrosCampo ( {} );
 
+    if ( !( await campoCliente.validar() ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
     try
     {
-      await ordensServicoService.abrir ( form );
+      await ordensServicoService.abrir ( { ...form, codCliente: campoCliente.codigo } );
       onSalvo();
     }
     catch ( err )
@@ -86,20 +97,10 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
     }
   }; 
 
-  const HandleSelecionarCliente = ( oCliente: Cliente ) =>
-  {
-    setForm ( { ...form, codCliente: oCliente.codCliente } );
-    setCodClienteSelecionado ( oCliente.codCliente );
-    setNomeClienteSelecionado ( oCliente.cliente );
-    setFoneClienteSlecionado ( oCliente.foneCl ?? '' );
-    setEnderecoClienteSelecionado ( oCliente.enderecoCl ?? '' );
-    setConsultandoCliente ( false );
-  };
-
-  // O cliente selecionado libera a edição dos demais campos (o número da OS é
+  // O cliente informado libera a edição dos demais campos (o número da OS é
   // gerado pelo banco na abertura — não há mais chave a validar antes de
-  // preencher o restante do formulário).
-  const clienteSelecionado = codClienteSelecionado > 0;
+  // preencher o restante do formulário). A existência do código é conferida ao salvar.
+  const clienteSelecionado = campoCliente.codigo > 0;
   const podeSalvar         = !salvando && clienteSelecionado;
 
   return (
@@ -124,51 +125,16 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
       </FormSecao>
 
       <FormSecao>
-        <FormCampo label="Clientes" obrigatorio colunas={ 2 } erro={ errosCampo.codCliente }>
-          <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-            <Botao
-              type="button"
-              $variante="secundario"
-              onClick={ () => setConsultandoCliente ( true ) }
-              autoFocus
-            >
-              Consultar
-            </Botao>
-          </div>
-        </FormCampo>
-
-        <FormCampo label='Código do cliente' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codClienteSelecionado }
-                    />
-                  </span>
-                )
-              }
-            </div>
-        </FormCampo>
-
-
-        <FormCampo label='Cliente' colunas={ 5 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ nomeClienteSelecionado }
-                    />
-                  </span>
-                )
-              }
-            </div>
-        </FormCampo>
+        <CampoConsulta
+          campo={ campoCliente }
+          Consulta={ ClienteConsulta }
+          rotulo="Clientes"
+          rotuloCodigo="Código do cliente"
+          rotuloNome="Cliente"
+          obrigatorio
+          erroApi={ errosCampo.codCliente }
+          colunas={ [ 2, 2, 5 ] }
+        />
 
         <FormCampo label='Fone' colunas={ 4 }>
           <div>
@@ -178,7 +144,7 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
                   <input 
                     disabled={ true }
                     readOnly={ true }
-                    value={ foneClienteSelecionado }
+                    value={ campoCliente.entidade?.foneCl ?? '' }
                   />
                 </span>
               )
@@ -194,7 +160,7 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
                   <input 
                     disabled={ true }
                     readOnly={ true }
-                    value={ enderecoClienteSelecionado }
+                    value={ campoCliente.entidade?.enderecoCl ?? '' }
                   />
                 </span>
               )
@@ -449,15 +415,6 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
           { salvando ? 'Salvando…' : 'Abrir OS' }
         </Botao>
       </FormAcoes>
-
-      {
-        consultandoCliente && (
-          <ClienteConsulta
-            onSelecionar={ HandleSelecionarCliente }
-            onCancelar={ () => setConsultandoCliente ( false ) }
-          />
-        )
-      }
     </FormModal>
   );
 }

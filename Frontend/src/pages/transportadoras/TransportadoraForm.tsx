@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { type Cidade } from '../../services/cidades';
-import { veiculosService, type Veiculo } from '../../services/veiculos';
+import { useState } from 'react';
+import { veiculosService } from '../../services/veiculos';
 import { ApiError } from '../../services/api';
 import { transportadorasService, type Transportadora, type CreateTransportadoraInput } from '../../services/transportadoras';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
@@ -8,6 +7,8 @@ import { CaixaSelecao } from '../../components/caixaSelecao';
 import { CidadeConsulta } from '../cidades/CidadeConsulta';
 import { cidadesService } from '../../services/cidades';
 import { VeiculoConsulta } from '../veiculos/VeiculoConsulta';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 
 
 interface Props
@@ -30,14 +31,23 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
     inscEstTransp:  inicial.inscEstTransp  ?? '',
     isActive:       inicial.isActive       ?? true,
   } );
-  const [ codCidadeSel, setCodCidadeSel ] = useState( 0 );
-  const [ nomeCidadeSel, setNomeCidadeSel ] = useState ( '' );
+  const campoCidade = useCampoConsulta (
+    {
+      codigoInicial: inicial.codCidade,
+      buscar:        cidadesService.obter,
+      codigoDe:      ( entidade ) => entidade.codCidade,
+      descricaoDe:   ( entidade ) => entidade.cidade,
+    }
+  );
 
-  const [ codVeicSel, setCodVeicSel ] = useState ( 0 );
-  const [ placaVeicSel, setPlacaVeicSel ]     = useState ( '' );
-
-  type consultaAtiva = 'cidade'| 'veic' | false;
-  const [ consultando, setConsultando ] = useState < consultaAtiva > ( false );
+  const campoVeiculo = useCampoConsulta (
+    {
+      codigoInicial: inicial.codVeiculo,
+      buscar:        veiculosService.obter,
+      codigoDe:      ( entidade ) => entidade.codVeiculo,
+      descricaoDe:   ( entidade ) => entidade.placaVeiculo,
+    }
+  );
 
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
@@ -52,11 +62,19 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
     setErro ( '' );
     setErrosCampo ( {} );
 
+    const validacoes = await Promise.all ( [ campoCidade.validar(), campoVeiculo.validar() ] );
+
+    if ( validacoes.includes ( false ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
     const dados: CreateTransportadoraInput =
     {
-      codCidade:      form.codCidade,
+      codCidade:      campoCidade.codigo,
       transportadora: form.transportadora,
-      codVeiculo:     form.codVeiculo     || undefined,
+      codVeiculo:     campoVeiculo.codigo || undefined,
       nomeFantasia:   form.nomeFantasia   || undefined,
       tipoPessoa:     form.tipoPessoa,
       enderecoTransp: form.enderecoTransp || undefined,
@@ -93,45 +111,6 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
       setSalvando ( false );
     }
   };
-
-  useEffect ( () =>
-  {
-    if ( inicial.codCidade )
-    {
-      cidadesService.obter ( inicial.codCidade ).then ( ( oCidade ) =>
-      {
-        setCodCidadeSel ( oCidade.codCidade );
-        setNomeCidadeSel ( oCidade.cidade );
-      } );
-    }
-  });
-
-  const HandleSelecionarCidade = ( oCidade: Cidade ) =>
-  {
-    setForm ( { ...form, codCidade: oCidade.codCidade } );
-    setNomeCidadeSel ( oCidade.cidade );
-    setConsultando ( false );
-  }
-
-  useEffect ( () =>
-  {
-    if ( inicial.codVeiculo )
-    {
-      veiculosService.obter ( inicial.codVeiculo ).then ( ( oVeic ) =>
-      {
-        setCodVeicSel ( oVeic.codVeiculo );
-        setPlacaVeicSel ( oVeic.placaVeiculo );
-      } );
-    }
-  });
-
-  const HandleSelecionarVeic = ( oVeic: Veiculo ) =>
-  {
-    setForm ( { ...form, codVeiculo: oVeic.codVeiculo } );
-    setCodVeicSel ( oVeic.codVeiculo )
-    setPlacaVeicSel ( oVeic.placaVeiculo );
-    setConsultando ( false );
-  }
 
   return (
     <>
@@ -186,49 +165,15 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Cidades" obrigatorio colunas={ 2 } erro={ errosCampo.codCidade }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultando ( 'cidade' ) }
-              >
-                Consultar
-              </Botao> 
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Código da cidade' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codCidadeSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Nome da cidade' colunas={ 4 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input 
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ nomeCidadeSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoCidade }
+            Consulta={ CidadeConsulta }
+            rotulo="Cidades"
+            rotuloCodigo="Código da cidade"
+            rotuloNome="Nome da cidade"
+            obrigatorio
+            erroApi={ errosCampo.codCidade }
+          />
         </FormSecao>
 
         <FormSecao>
@@ -271,49 +216,15 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Veículos" obrigatorio colunas={ 2 } erro={ errosCampo.codVeiculo }>
-            <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-              <Botao
-                type='button'
-                $variante='secundario'
-                onClick={ () => setConsultando ( 'veic' ) }
-              >
-                Consultar
-              </Botao> 
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Código do veículo' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ codVeicSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
-
-          <FormCampo label='Placa do veículo' colunas={ 2 }>
-            <div>
-              {
-                (
-                  <span style={ { fontSize: '0.875rem' } }>
-                    <input 
-                      disabled={ true }
-                      readOnly={ true }
-                      value={ placaVeicSel }
-                    />
-                  </span>
-                )
-              }
-            </div>
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoVeiculo }
+            Consulta={ VeiculoConsulta }
+            rotulo="Veículos"
+            rotuloCodigo="Código do veículo"
+            rotuloNome="Placa do veículo"
+            obrigatorio
+            erroApi={ errosCampo.codVeiculo }
+          />
         </FormSecao>
 
         <FormAcoes>
@@ -325,31 +236,6 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
           </Botao>
         </FormAcoes>
       </FormModal>
-      {
-        consultando === 'cidade' && (
-        <CidadeConsulta
-          onSelecionar={ ( cidade ) =>
-          {
-            HandleSelecionarCidade ( cidade );
-            setConsultando ( false );
-          } }
-          onCancelar={ () => setConsultando ( false ) }
-        />
-      )
-    }
-
-    {
-      consultando === 'veic' && (
-        <VeiculoConsulta
-          onSelecionar={ ( veiculo ) =>
-          {
-            HandleSelecionarVeic ( veiculo );
-            setConsultando ( false );
-          } }
-          onCancelar={ () => setConsultando ( false ) }
-        />
-      )
-    }
     </>
   );
 }

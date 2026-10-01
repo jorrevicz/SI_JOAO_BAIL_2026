@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ApiError } from '../../services/api';
 import
 {
@@ -6,13 +6,14 @@ import
   type ContaAPagar,
   type CreateContaAPagarInput,
 } from '../../services/contasPagamento';
-import { type Fornecedor } from '../../services/fornecedores';
 import { fornecedoresService } from '../../services/fornecedores';
-import { type FormaPagamento, formasPagamentoService } from '../../services/formasPagamento';
+import { formasPagamentoService } from '../../services/formasPagamento';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { FornecedorConsulta } from '../fornecedores/FornecedorConsulta';
 import { FormaPagamentoConsulta } from '../formasPagamento/FormaPagamentoConsulta';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { paraDataHoraInputUtc, fimDoDiaUtc, doInputUtcParaIso } from '../../utils/formatters';
 
 interface Props
@@ -43,11 +44,23 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
     isActive:      inicial.isActive      ?? true,
   } );
 
-  const [ fornecedorSel, setFornecedorSel ]     = useState < Fornecedor | null > ( null );
-  const [ consultandoForn, setConsultandoForn ] = useState ( false );
+  const campoFornecedor = useCampoConsulta (
+    {
+      codigoInicial: inicial.codFornecedor,
+      buscar:        fornecedoresService.obter,
+      codigoDe:      ( entidade ) => entidade.codForn,
+      descricaoDe:   ( entidade ) => entidade.fornecedor,
+    }
+  );
 
-  const [ formaPagSel, setFormaPagSel ]           = useState < FormaPagamento | null > ( null );
-  const [ consultandoFormaPag, setConsultandoFormaPag ] = useState ( false );
+  const campoFormaPag = useCampoConsulta (
+    {
+      codigoInicial: inicial.codFormaDePag,
+      buscar:        formasPagamentoService.obter,
+      codigoDe:      ( entidade ) => entidade.codFormaDePag,
+      descricaoDe:   ( entidade ) => entidade.formaDePag,
+    }
+  );
 
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
@@ -101,36 +114,6 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
     }
   };
 
-  useEffect ( () =>
-  {
-    if ( inicial.codFornecedor )
-    {
-      fornecedoresService.obter ( inicial.codFornecedor ).then ( setFornecedorSel );
-    }
-  }, [ inicial.codFornecedor ] );
-
-  useEffect ( () =>
-  {
-    if ( inicial.codFormaDePag )
-    {
-      formasPagamentoService.obter ( inicial.codFormaDePag ).then ( setFormaPagSel );
-    }
-  }, [ inicial.codFormaDePag ] );
-
-  const HandleSelecionarFornecedor = ( oForn: Fornecedor ) =>
-  {
-    setForm ( { ...form, codFornecedor: oForn.codForn } );
-    setFornecedorSel ( oForn );
-    setConsultandoForn ( false );
-  };
-
-  const HandleSelecionarFormaPag = ( oFormaPag: FormaPagamento ) =>
-  {
-    setForm ( { ...form, codFormaDePag: oFormaPag.codFormaDePag } );
-    setFormaPagSel ( oFormaPag );
-    setConsultandoFormaPag ( false );
-  };
-
   const submit = async ( evento: React.SyntheticEvent ) =>
   {
     evento.preventDefault();
@@ -138,14 +121,22 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
     setErro ( '' );
     setErrosCampo ( {} );
 
+    const validacoes = await Promise.all ( [ campoFornecedor.validar(), campoFormaPag.validar() ] );
+
+    if ( validacoes.includes ( false ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
     const dados: CreateContaAPagarInput =
     {
       numero:        form.numero,
       modelo:        form.modelo,
       serie:         form.serie,
       parcela:       form.parcela,
-      codFornecedor: form.codFornecedor,
-      codFormaDePag: form.codFormaDePag,
+      codFornecedor: campoFornecedor.codigo,
+      codFormaDePag: campoFormaPag.codigo,
       dtEmissao:     doInputUtcParaIso ( form.dtEmissao ),
       dtVencimento:  doInputUtcParaIso ( form.dtVencimento ),
       valor:         Number ( form.valor ).toFixed ( 2 ),
@@ -270,45 +261,31 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
         </FormSecao> 
 
         <FormSecao>
-          <FormCampo label="Fornecedor" obrigatorio colunas={ 3 } erro={ errosCampo.codFornecedor }>
-            <Botao
-              type="button"
-              $variante="secundario"
-              onClick={ () => setConsultandoForn ( true ) }
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            >
-              Consultar
-            </Botao>
-          </FormCampo>
-
-          <FormCampo label="Código do fornecedor" colunas={ 2 }>
-            <input disabled readOnly value={ form.codFornecedor || '' } />
-          </FormCampo>
-
-          <FormCampo label="Nome do fornecedor" colunas={ 5 }>
-            <input disabled readOnly value={ fornecedorSel?.fornecedor ?? '' } />
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoFornecedor }
+            Consulta={ FornecedorConsulta }
+            rotulo="Fornecedor"
+            rotuloCodigo="Código do fornecedor"
+            rotuloNome="Nome do fornecedor"
+            obrigatorio
+            erroApi={ errosCampo.codFornecedor }
+            colunas={ [ 3, 2, 5 ] }
+            desabilitado={ !editando && !chaveValidada || edicaoBloqueada }
+          />
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Forma de pagamento" obrigatorio colunas={ 3 } erro={ errosCampo.codFormaDePag }>
-            <Botao
-              type="button"
-              $variante="secundario"
-              onClick={ () => setConsultandoFormaPag ( true ) }
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            >
-              Consultar
-            </Botao>
-          </FormCampo>
-
-          <FormCampo label="Código da forma" colunas={ 2 }>
-            <input disabled readOnly value={ form.codFormaDePag || '' } />
-          </FormCampo>
-
-          <FormCampo label="Descrição da forma" colunas={ 5 }>
-            <input disabled readOnly value={ formaPagSel?.formaDePag ?? '' } />
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoFormaPag }
+            Consulta={ FormaPagamentoConsulta }
+            rotulo="Forma de pagamento"
+            rotuloCodigo="Código da forma"
+            rotuloNome="Descrição da forma"
+            obrigatorio
+            erroApi={ errosCampo.codFormaDePag }
+            colunas={ [ 3, 2, 5 ] }
+            desabilitado={ !editando && !chaveValidada || edicaoBloqueada }
+          />
         </FormSecao>
 
         <FormSecao>
@@ -410,22 +387,6 @@ export default function ContaPagamentoForm ( { inicial, onSalvo, onCancelar }: P
           </Botao>
         </FormAcoes>
       </FormModal>
-      {
-        consultandoForn && (
-          <FornecedorConsulta
-            onSelecionar={ HandleSelecionarFornecedor }
-            onCancelar={ () => setConsultandoForn ( false ) }
-          />
-        )
-      }
-      {
-        consultandoFormaPag && (
-          <FormaPagamentoConsulta
-            onSelecionar={ HandleSelecionarFormaPag }
-            onCancelar={ () => setConsultandoFormaPag ( false ) }
-          />
-        )
-      }
     </>
   );
 }

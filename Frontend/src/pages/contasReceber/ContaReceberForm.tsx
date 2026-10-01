@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ApiError } from '../../services/api';
 import
 {
@@ -6,12 +6,14 @@ import
   type ContaAReceber,
   type CreateContaAReceberInput,
 } from '../../services/contasReceber';
-import { type Cliente, clientesService } from '../../services/clientes';
-import { type FormaPagamento, formasPagamentoService } from '../../services/formasPagamento';
+import { clientesService } from '../../services/clientes';
+import { formasPagamentoService } from '../../services/formasPagamento';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import { ClienteConsulta } from '../clientes/ClienteConsulta';
 import { FormaPagamentoConsulta } from '../formasPagamento/FormaPagamentoConsulta';
+import { CampoConsulta } from '../../components/campoConsulta';
+import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { paraDataHoraInputUtc, fimDoDiaUtc, doInputUtcParaIso } from '../../utils/formatters';
 
 interface Props
@@ -42,11 +44,23 @@ export default function ContaReceberForm ( { inicial, onSalvo, onCancelar }: Pro
     isActive:      inicial.isActive      ?? true,
   } );
 
-  const [ clienteSel, setClienteSel ]           = useState < Cliente | null > ( null );
-  const [ consultandoCliente, setConsultandoCliente ] = useState ( false );
+  const campoCliente = useCampoConsulta (
+    {
+      codigoInicial: inicial.codCliente,
+      buscar:        clientesService.obter,
+      codigoDe:      ( entidade ) => entidade.codCliente,
+      descricaoDe:   ( entidade ) => entidade.cliente,
+    }
+  );
 
-  const [ formaPagSel, setFormaPagSel ]           = useState < FormaPagamento | null > ( null );
-  const [ consultandoFormaPag, setConsultandoFormaPag ] = useState ( false );
+  const campoFormaPag = useCampoConsulta (
+    {
+      codigoInicial: inicial.codFormaDePag,
+      buscar:        formasPagamentoService.obter,
+      codigoDe:      ( entidade ) => entidade.codFormaDePag,
+      descricaoDe:   ( entidade ) => entidade.formaDePag,
+    }
+  );
 
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
@@ -100,36 +114,6 @@ export default function ContaReceberForm ( { inicial, onSalvo, onCancelar }: Pro
     }
   };
 
-  useEffect ( () =>
-  {
-    if ( inicial.codCliente )
-    {
-      clientesService.obter ( inicial.codCliente ).then ( setClienteSel );
-    }
-  }, [ inicial.codCliente ] );
-
-  useEffect ( () =>
-  {
-    if ( inicial.codFormaDePag )
-    {
-      formasPagamentoService.obter ( inicial.codFormaDePag ).then ( setFormaPagSel );
-    }
-  }, [ inicial.codFormaDePag ] );
-
-  const HandleSelecionarCliente = ( oCliente: Cliente ) =>
-  {
-    setForm ( { ...form, codCliente: oCliente.codCliente } );
-    setClienteSel ( oCliente );
-    setConsultandoCliente ( false );
-  };
-
-  const HandleSelecionarFormaPag = ( oFormaPag: FormaPagamento ) =>
-  {
-    setForm ( { ...form, codFormaDePag: oFormaPag.codFormaDePag } );
-    setFormaPagSel ( oFormaPag );
-    setConsultandoFormaPag ( false );
-  };
-
   const submit = async ( evento: React.SyntheticEvent ) =>
   {
     evento.preventDefault();
@@ -137,14 +121,22 @@ export default function ContaReceberForm ( { inicial, onSalvo, onCancelar }: Pro
     setErro ( '' );
     setErrosCampo ( {} );
 
+    const validacoes = await Promise.all ( [ campoCliente.validar(), campoFormaPag.validar() ] );
+
+    if ( validacoes.includes ( false ) )
+    {
+      setSalvando ( false );
+      return;
+    }
+
     const dados: CreateContaAReceberInput =
     {
       numero:        form.numero,
       modelo:        form.modelo,
       serie:         form.serie,
       parcela:       form.parcela,
-      codCliente:    form.codCliente,
-      codFormaDePag: form.codFormaDePag,
+      codCliente:    campoCliente.codigo,
+      codFormaDePag: campoFormaPag.codigo,
       dtEmissao:     doInputUtcParaIso ( form.dtEmissao ),
       dtVencimento:  doInputUtcParaIso ( form.dtVencimento ),
       valor:         Number ( form.valor ).toFixed ( 2 ),
@@ -269,45 +261,31 @@ export default function ContaReceberForm ( { inicial, onSalvo, onCancelar }: Pro
         </FormSecao> 
 
         <FormSecao>
-          <FormCampo label="Cliente" obrigatorio colunas={ 3 } erro={ errosCampo.codCliente }>
-            <Botao
-              type="button"
-              $variante="secundario"
-              onClick={ () => setConsultandoCliente ( true ) }
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            >
-              Consultar
-            </Botao>
-          </FormCampo>
-
-          <FormCampo label="Código do cliente" colunas={ 2 }>
-            <input disabled readOnly value={ form.codCliente || '' } />
-          </FormCampo>
-
-          <FormCampo label="Nome do cliente" colunas={ 5 }>
-            <input disabled readOnly value={ clienteSel?.cliente ?? '' } />
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoCliente }
+            Consulta={ ClienteConsulta }
+            rotulo="Cliente"
+            rotuloCodigo="Código do cliente"
+            rotuloNome="Nome do cliente"
+            obrigatorio
+            erroApi={ errosCampo.codCliente }
+            colunas={ [ 3, 2, 5 ] }
+            desabilitado={ !editando && !chaveValidada || edicaoBloqueada }
+          />
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Forma de pagamento" obrigatorio colunas={ 3 } erro={ errosCampo.codFormaDePag }>
-            <Botao
-              type="button"
-              $variante="secundario"
-              onClick={ () => setConsultandoFormaPag ( true ) }
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            >
-              Consultar
-            </Botao>
-          </FormCampo>
-
-          <FormCampo label="Código da forma" colunas={ 2 }>
-            <input disabled readOnly value={ form.codFormaDePag || '' } />
-          </FormCampo>
-
-          <FormCampo label="Descrição da forma" colunas={ 5 }>
-            <input disabled readOnly value={ formaPagSel?.formaDePag ?? '' } />
-          </FormCampo>
+          <CampoConsulta
+            campo={ campoFormaPag }
+            Consulta={ FormaPagamentoConsulta }
+            rotulo="Forma de pagamento"
+            rotuloCodigo="Código da forma"
+            rotuloNome="Descrição da forma"
+            obrigatorio
+            erroApi={ errosCampo.codFormaDePag }
+            colunas={ [ 3, 2, 5 ] }
+            desabilitado={ !editando && !chaveValidada || edicaoBloqueada }
+          />
         </FormSecao>
 
         <FormSecao>
@@ -409,22 +387,6 @@ export default function ContaReceberForm ( { inicial, onSalvo, onCancelar }: Pro
           </Botao>
         </FormAcoes>
       </FormModal>
-      {
-        consultandoCliente && (
-          <ClienteConsulta
-            onSelecionar={ HandleSelecionarCliente }
-            onCancelar={ () => setConsultandoCliente ( false ) }
-          />
-        )
-      }
-      {
-        consultandoFormaPag && (
-          <FormaPagamentoConsulta
-            onSelecionar={ HandleSelecionarFormaPag }
-            onCancelar={ () => setConsultandoFormaPag ( false ) }
-          />
-        )
-      }
     </>
   );
 }
