@@ -123,6 +123,19 @@ const CATEGORIAS_LISTA = [
 // taxonomia aberta do catálogo de produtos.
 const CLASSIFICACOES_COMPRA = [ 'obra-prima', 'revenda', 'serviços' ];
 
+// ============================================================
+// T-061 — Seed de atendimento (Procedimentos e Ordens de Serviço)
+// Ordem: Procedimentos → (Clientes, Servicos, Pecas já existentes) → OrdemDeServicos
+// ============================================================
+
+const PROCEDIMENTOS_LISTA = [
+  'TESTE DE INICIALIZAÇÃO',
+  'TESTE DE TECLADO E TOUCHPAD',
+  'TESTE DE TELA E VÍDEO',
+  'LIMPEZA EXTERNA E INTERNA',
+  'TESTE DE CONECTIVIDADE WI-FI',
+];
+
 async function seedGeografico(): Promise < Record < string, number > > {
   // Paises tem unique index em sigla — usa ON CONFLICT
   const [brasil] = await sql`
@@ -690,6 +703,8 @@ async function seedContasAPagar(): Promise < void >
       juro:          '0.00',
       desconto:      '0.00',
       multa:         '0.00',
+      valorBaixa:    null as string | null,
+      dtBaixa:       null as string | null,
     },
     {
       numero:        '00000002',
@@ -699,11 +714,31 @@ async function seedContasAPagar(): Promise < void >
       codFornecedor: forn2.codForn,
       codFormaDePag: pix.codFormaDePag,
       dtEmissao:     '2026-09-05',
-      dtVencimento:  '2026-09-05',
+      dtVencimento:  '2026-09-05T23:59:00Z',
       valor:         '1950.00',
       juro:          '0.00',
       desconto:      '5.00',
       multa:         '0.00',
+      valorBaixa:    null as string | null,
+      dtBaixa:       null as string | null,
+    },
+    // Conta já baixada — preenche os campos opcionais de baixa (RegistrarBaixa),
+    // que na seed original nunca eram exercitados.
+    {
+      numero:        '00000003',
+      modelo:        '55',
+      serie:         '01',
+      parcela:       1,
+      codFornecedor: forn1.codForn,
+      codFormaDePag: pix.codFormaDePag,
+      dtEmissao:     '2026-09-10',
+      dtVencimento:  '2026-09-10T23:59:00Z',
+      valor:         '500.00',
+      juro:          '0.00',
+      desconto:      '0.00',
+      multa:         '0.00',
+      valorBaixa:    '500.00' as string | null,
+      dtBaixa:       '2026-09-10T18:00:00Z' as string | null,
     },
   ];
 
@@ -722,11 +757,103 @@ async function seedContasAPagar(): Promise < void >
       await sql`
         INSERT INTO "ContasAPagar"
           ( "numero", "modelo", "serie", "parcela", "codFornecedor", "codFormaDePag",
-           "dtEmissao", "dtVencimento", "valor", "juro", "desconto", "multa" )
+           "dtEmissao", "dtVencimento", "valor", "juro", "desconto", "multa",
+           "valorBaixa", "dtBaixa" )
         VALUES
           ( ${ conta.numero }, ${ conta.modelo }, ${ conta.serie }, ${ conta.parcela },
            ${ conta.codFornecedor }, ${ conta.codFormaDePag }, ${ conta.dtEmissao },
-           ${ conta.dtVencimento }, ${ conta.valor }, ${ conta.juro }, ${ conta.desconto }, ${ conta.multa } )
+           ${ conta.dtVencimento }, ${ conta.valor }, ${ conta.juro }, ${ conta.desconto }, ${ conta.multa },
+           ${ conta.valorBaixa }, ${ conta.dtBaixa } )
+      `;
+    }
+  }
+}
+
+// ============================================================
+// T-042 — Seed de Contas a Receber
+// Ordem: Clientes → FormaDePagamento → ContasAReceber
+// ============================================================
+
+async function seedContasAReceber(): Promise < void >
+{
+  const [ ana ] = await sql`
+    SELECT "codCliente" FROM "Clientes" WHERE "cliente" = 'ANA PAULA LIMA' LIMIT 1
+  `;
+  const [ carlos ] = await sql`
+    SELECT "codCliente" FROM "Clientes" WHERE "cliente" = 'CARLOS EDUARDO SANTOS' LIMIT 1
+  `;
+  const [ boleto ] = await sql`
+    SELECT "codFormaDePag" FROM "FormaDePagamento" WHERE "formaDePag" = 'BOLETO BANCÁRIO' LIMIT 1
+  `;
+  const [ pix ] = await sql`
+    SELECT "codFormaDePag" FROM "FormaDePagamento" WHERE "formaDePag" = 'PIX' LIMIT 1
+  `;
+
+  if ( !ana || !carlos || !boleto || !pix )
+  {
+    throw new Error ( 'Clientes/Formas de Pagamento de referência não encontrados — rode seedParceiros e seedFinanceiro primeiro.' );
+  }
+
+  const contas = [
+    {
+      numero:        '00000001',
+      modelo:        '55',
+      serie:         '01',
+      parcela:       1,
+      codCliente:    ana.codCliente,
+      codFormaDePag: boleto.codFormaDePag,
+      dtEmissao:     '2026-09-10',
+      dtVencimento:  '2026-10-10T23:59:00Z',
+      valor:         '380.00',
+      juro:          '0.00',
+      desconto:      '0.00',
+      multa:         '0.00',
+      valorBaixa:    null as string | null,
+      dtBaixa:       null as string | null,
+      dtPagamento:   null as string | null,
+    },
+    // Conta já recebida — preenche valorBaixa/dtBaixa/dtPagamento (RegistrarPagamentoRecebido).
+    {
+      numero:        '00000002',
+      modelo:        '55',
+      serie:         '01',
+      parcela:       1,
+      codCliente:    carlos.codCliente,
+      codFormaDePag: pix.codFormaDePag,
+      dtEmissao:     '2026-09-12',
+      dtVencimento:  '2026-09-12T23:59:00Z',
+      valor:         '210.00',
+      juro:          '0.00',
+      desconto:      '0.00',
+      multa:         '0.00',
+      valorBaixa:    '210.00' as string | null,
+      dtBaixa:       '2026-09-12T15:30:00Z' as string | null,
+      dtPagamento:   '2026-09-12T15:30:00Z' as string | null,
+    },
+  ];
+
+  for ( const conta of contas )
+  {
+    const existing = await sql`
+      SELECT 1 FROM "ContasAReceber"
+      WHERE "numero"  = ${ conta.numero }
+      AND   "modelo"  = ${ conta.modelo }
+      AND   "serie"   = ${ conta.serie }
+      AND   "parcela" = ${ conta.parcela }
+      LIMIT 1
+    `;
+    if ( existing.length === 0 )
+    {
+      await sql`
+        INSERT INTO "ContasAReceber"
+          ( "numero", "modelo", "serie", "parcela", "codCliente", "codFormaDePag",
+           "dtEmissao", "dtVencimento", "valor", "juro", "desconto", "multa",
+           "valorBaixa", "dtBaixa", "dtPagamento" )
+        VALUES
+          ( ${ conta.numero }, ${ conta.modelo }, ${ conta.serie }, ${ conta.parcela },
+           ${ conta.codCliente }, ${ conta.codFormaDePag }, ${ conta.dtEmissao },
+           ${ conta.dtVencimento }, ${ conta.valor }, ${ conta.juro }, ${ conta.desconto }, ${ conta.multa },
+           ${ conta.valorBaixa }, ${ conta.dtBaixa }, ${ conta.dtPagamento } )
       `;
     }
   }
@@ -827,6 +954,166 @@ async function seedRecursosHumanos(): Promise < void >
   }
 }
 
+async function seedProcedimentos(): Promise < Record < string, number > >
+{
+  const codProcedimentoMap: Record < string, number > = {};
+  for ( const procedimento of PROCEDIMENTOS_LISTA )
+  {
+    const existing = await sql`
+      SELECT "codProcedimento" FROM "Procedimentos" WHERE "procedimento" = ${ procedimento } LIMIT 1
+    `;
+    if ( existing.length > 0 )
+    {
+      codProcedimentoMap [ procedimento ] = existing [ 0 ].codProcedimento;
+    }
+    else
+    {
+      const [ inserted ] = await sql`
+        INSERT INTO "Procedimentos" ( "procedimento" )
+        VALUES ( ${ procedimento } )
+        RETURNING "codProcedimento"
+      `;
+      codProcedimentoMap [ procedimento ] = inserted.codProcedimento;
+    }
+  }
+  return codProcedimentoMap;
+}
+
+/**
+ * Duas OS em estágios diferentes do fluxo (RNF06 — Aparelho/Equipamento nascem
+ * atomicamente com a OS, mesmo padrão de `AbrirOS()`). `numOdS` é UID gerado pelo
+ * banco (UUID) — o seed usa valores fixos só para permitir a checagem de
+ * idempotência (`existeOS1`/`existeOS2`), não para representar o formato real de
+ * uma OS aberta pela aplicação (que nasce sem valor informado, via DEFAULT):
+ * - OS_1: recém-aberta — checklist de procedimentos definida (RN009), mas ainda
+ *   sem diagnóstico registrado (situação permanece 'Aberta').
+ * - OS_2: fluxo completo — diagnóstico com checklist checada e orçamento de peça
+ *   aprovado, execução com serviço prestado e peça efetivamente substituída
+ *   (situação 'Em execução').
+ */
+const OS_1 = '00000000-0000-0000-0000-000000000001';
+const OS_2 = '00000000-0000-0000-0000-000000000002';
+
+async function seedOrdensServico ( codProcedimentoMap: Record < string, number > ): Promise < void >
+{
+  const [ ana ] = await sql`
+    SELECT "codCliente" FROM "Clientes" WHERE "cliente" = 'ANA PAULA LIMA' LIMIT 1
+  `;
+  const [ carlos ] = await sql`
+    SELECT "codCliente" FROM "Clientes" WHERE "cliente" = 'CARLOS EDUARDO SANTOS' LIMIT 1
+  `;
+  const [ servicoLimpeza ] = await sql`
+    SELECT "codServico" FROM "Servicos" WHERE "servico" = 'LIMPEZA INTERNA E TROCA DE PASTA TÉRMICA' LIMIT 1
+  `;
+  const [ pecaMemoria ] = await sql`
+    SELECT "codPeca" FROM "Pecas" WHERE "peca" = 'MEMÓRIA RAM 8GB DDR4' LIMIT 1
+  `;
+
+  if ( !ana || !carlos || !servicoLimpeza || !pecaMemoria )
+  {
+    throw new Error ( 'Clientes/Serviços/Peças de referência não encontrados — rode seedParceiros e seedRecursosHumanos primeiro.' );
+  }
+
+  const checklist = PROCEDIMENTOS_LISTA.slice ( 0, 3 ).map ( ( procedimento ) => codProcedimentoMap [ procedimento ] );
+
+  // OS_1 — recém-aberta
+  const existeOS1 = await sql`SELECT 1 FROM "OrdemDeServicos" WHERE "numOdS" = ${ OS_1 } LIMIT 1`;
+  if ( existeOS1.length === 0 )
+  {
+    const [ aparelho1 ] = await sql`
+      INSERT INTO "Aparelhos" ( "aparelho", "serie", "modelo", "voltagem", "garantia" )
+      VALUES ( 'NOTEBOOK', 'SN12345ABC', 'INSPIRON 15 3520', 'BIVOLT', '12 MESES' )
+      RETURNING "codAparelho"
+    `;
+    const [ equipamento1 ] = await sql`
+      INSERT INTO "Equipamentos"
+        ( "equipamento", "grupoUser", "soEq", "socketEq", "memoriaRam", "tipoOffice",
+         "placaMae", "bios", "capacidadeRam", "possuiSSD", "possuiHD", "capacidadeArmz", "usoArmz" )
+      VALUES
+        ( 'NOTEBOOK DELL INSPIRON 15', 'CASA', 'WIN11', 'BGA', '16GB', 'M365',
+         'DELL 0XYZ123', 'DELL BIOS 2.14', '16GB', true, false, '512GB', '60%' )
+      RETURNING "codEquipamento"
+    `;
+
+    await sql`
+      INSERT INTO "OrdemDeServicos"
+        ( "numOdS", "codCliente", "atendente", "codAparelho", "acessorio", "defeito",
+         "obsBalcao", "tipoOdS", "codEquipamento", "solicitante", "dtAtendimento" )
+      VALUES
+        ( ${ OS_1 }, ${ ana.codCliente }, 'JULIANA PEREIRA DIAS', ${ aparelho1.codAparelho }, 'CARREGADOR',
+         'NÃO LIGA', 'CLIENTE RELATA QUE PAROU DE FUNCIONAR APÓS QUEDA DE ENERGIA', 'MANUTENÇÃO',
+         ${ equipamento1.codEquipamento }, 'ANA PAULA LIMA', now() )
+    `;
+
+    for ( let indice = 0; indice < checklist.length; indice++ )
+    {
+      await sql`
+        INSERT INTO "ProcedimentosOdS" ( "numOdS", "codProcedimento", "ordem" )
+        VALUES ( ${ OS_1 }, ${ checklist [ indice ] }, ${ indice + 1 } )
+      `;
+    }
+  }
+
+  // OS_2 — fluxo completo (diagnóstico + execução)
+  const existeOS2 = await sql`SELECT 1 FROM "OrdemDeServicos" WHERE "numOdS" = ${ OS_2 } LIMIT 1`;
+  if ( existeOS2.length === 0 )
+  {
+    const [ aparelho2 ] = await sql`
+      INSERT INTO "Aparelhos" ( "aparelho", "serie", "modelo", "voltagem", "garantia" )
+      VALUES ( 'DESKTOP', 'SN99887766', 'MASTER D570', '220V', '90 DIAS' )
+      RETURNING "codAparelho"
+    `;
+    const [ equipamento2 ] = await sql`
+      INSERT INTO "Equipamentos"
+        ( "equipamento", "grupoUser", "soEq", "socketEq", "memoriaRam", "tipoOffice",
+         "placaMae", "bios", "capacidadeRam", "possuiSSD", "possuiHD", "capacidadeArmz", "usoArmz" )
+      VALUES
+        ( 'DESKTOP POSITIVO MASTER D570', 'ESCRITÓRIO', 'WIN10', 'LGA1151', '8GB', 'M365',
+         'POSITIVO H310', 'AMI BIOS 1.02', '8GB', true, true, '1TB', '80%' )
+      RETURNING "codEquipamento"
+    `;
+
+    await sql`
+      INSERT INTO "OrdemDeServicos"
+        ( "numOdS", "codCliente", "atendente", "codAparelho", "defeito", "obsBalcao", "tipoOdS",
+         "codEquipamento", "situacao", "dtAtendimento", "dtExecucao", "historicoManutencao", "obsTecnica" )
+      VALUES
+        ( ${ OS_2 }, ${ carlos.codCliente }, 'JULIANA PEREIRA DIAS', ${ aparelho2.codAparelho },
+         'LENTIDÃO EXCESSIVA', 'CLIENTE RELATA LENTIDÃO AO ABRIR PROGRAMAS', 'MANUTENÇÃO',
+         ${ equipamento2.codEquipamento }, 'Em execução', now() - interval '2 days', now(),
+         'MEMÓRIA RAM INSUFICIENTE PARA O USO RELATADO — RECOMENDADA TROCA/AMPLIAÇÃO.',
+         'MEMÓRIA SUBSTITUÍDA E SISTEMA OTIMIZADO; DESEMPENHO NORMALIZADO NOS TESTES.' )
+    `;
+
+    for ( let indice = 0; indice < checklist.length; indice++ )
+    {
+      const checagem = indice < 2;
+      await sql`
+        INSERT INTO "ProcedimentosOdS"
+          ( "numOdS", "codProcedimento", "ordem", "posicao", "checagem", "obsProcedimento", "dthFim" )
+        VALUES
+          ( ${ OS_2 }, ${ checklist [ indice ] }, ${ indice + 1 }, 'INTERNO', ${ checagem },
+           ${ checagem ? null : 'RESPOSTA INTERMITENTE — ENCAMINHADO PARA SUBSTITUIÇÃO FUTURA.' }, now() )
+      `;
+    }
+
+    await sql`
+      INSERT INTO "OrcamentoPecasOdS" ( "codPeca", "numOdS", "vlrPv", "aprovado" )
+      VALUES ( ${ pecaMemoria.codPeca }, ${ OS_2 }, '180.00', true )
+    `;
+
+    await sql`
+      INSERT INTO "ServicosOdS" ( "codServico", "numOdS", "qtdServico" )
+      VALUES ( ${ servicoLimpeza.codServico }, ${ OS_2 }, 1 )
+    `;
+
+    await sql`
+      INSERT INTO "SubstituirPecasOdS" ( "codPeca", "numOdS", "qtdPeca", "vlrUnitarioPeca" )
+      VALUES ( ${ pecaMemoria.codPeca }, ${ OS_2 }, 1, 180.00 )
+    `;
+  }
+}
+
 async function main()
 {
   console.log ( 'Iniciando seed...' );
@@ -853,11 +1140,23 @@ async function main()
 
   console.log ( '  Contas a Pagar...' );
   await seedContasAPagar();
-  console.log ( '  -> 2 contas a pagar.' );
+  console.log ( '  -> 3 contas a pagar.' );
+
+  console.log ( '  Contas a Receber...' );
+  await seedContasAReceber();
+  console.log ( '  -> 2 contas a receber.' );
 
   console.log ( '  Recursos Humanos (Cargos, Funcionários, Serviços, Peças)...' );
   await seedRecursosHumanos();
   console.log ( '  -> 3 cargos, 3 funcionários, 3 serviços, 4 peças.' );
+
+  console.log ( '  Procedimentos...' );
+  const codProcedimentoMap = await seedProcedimentos();
+  console.log ( `  -> ${PROCEDIMENTOS_LISTA.length} procedimentos.` );
+
+  console.log ( '  Ordens de Serviço (Aparelhos, Equipamentos, OS)...' );
+  await seedOrdensServico ( codProcedimentoMap );
+  console.log ( '  -> 2 ordens de serviço (uma aberta, uma com diagnóstico e execução completos).' );
 
   console.log ( 'Seed concluído.' );
 }
