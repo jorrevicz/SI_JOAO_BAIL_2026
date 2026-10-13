@@ -86,6 +86,10 @@ export default function FornecedoresPage ()
       { header: 'Apelido', cell: ( info ) => info.getValue() ?? '—' }
     ),
     columnHelper.accessor (
+      'rg',
+      { header: 'RG', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
       'dtNascimento',
       { header: 'Nascimento',
         cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ?? '' ) }</InfoBlock>

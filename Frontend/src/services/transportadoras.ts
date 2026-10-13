@@ -1,4 +1,5 @@
 import api from './api';
+import { type Genero } from './clientes';
 
 export interface Transportadora
 {
@@ -11,6 +12,16 @@ export interface Transportadora
   enderecoTransp: string | null;
   cpfCnpjTransp:  string | null;
   inscEstTransp:  string | null;
+  bairroTransp:   string | null;
+  cepTransp:      string | null;
+  foneTransp:     string | null;
+  foneFixo:       string | null;
+  email:          string | null;
+  apelido:        string | null;
+  rg:             string | null;
+  dtNascimento:   string | null;
+  dtFundacao:     string | null;
+  genero:         Genero | null;
   dtCriacao:      string;
   dtEdicao:       string;
   codUser:        number | null;
@@ -27,6 +38,16 @@ export interface CreateTransportadoraInput
   enderecoTransp?: string;
   cpfCnpjTransp:   string;
   inscEstTransp:   string;
+  bairroTransp?:   string;
+  cepTransp:       string;
+  foneTransp:      string;
+  foneFixo?:       string;
+  email:           string;
+  apelido?:        string;
+  rg?:             string;
+  dtNascimento?:   string;
+  dtFundacao?:     string;
+  genero?:         Genero;
   isActive:        boolean;
 }
 

@@ -3,6 +3,7 @@
 
 import type { CidadesCodCidade } from './Cidades';
 import type { VeiculosCodVeiculo } from './Veiculos';
+import type { default as Genero } from './Genero';
 
 /** Identifier type for public.Transportadoras */
 export type TransportadorasCodTransp = number & { __brand: 'public.Transportadoras' };
@@ -34,6 +35,26 @@ export default interface Transportadoras {
   codUser: number | null;
 
   isActive: boolean;
+
+  bairroTransp: string | null;
+
+  cepTransp: string | null;
+
+  foneTransp: string | null;
+
+  foneFixo: string | null;
+
+  email: string | null;
+
+  apelido: string | null;
+
+  rg: string | null;
+
+  dtNascimento: Date | null;
+
+  dtFundacao: Date | null;
+
+  genero: Genero | null;
 }
 
 /** Represents the initializer for the table public.Transportadoras */
@@ -66,6 +87,26 @@ export interface TransportadorasInitializer {
 
   /** Default value: true */
   isActive?: boolean;
+
+  bairroTransp?: string | null;
+
+  cepTransp?: string | null;
+
+  foneTransp?: string | null;
+
+  foneFixo?: string | null;
+
+  email?: string | null;
+
+  apelido?: string | null;
+
+  rg?: string | null;
+
+  dtNascimento?: Date | null;
+
+  dtFundacao?: Date | null;
+
+  genero?: Genero | null;
 }
 
 /** Represents the mutator for the table public.Transportadoras */
@@ -95,4 +136,24 @@ export interface TransportadorasMutator {
   codUser?: number | null;
 
   isActive?: boolean;
+
+  bairroTransp?: string | null;
+
+  cepTransp?: string | null;
+
+  foneTransp?: string | null;
+
+  foneFixo?: string | null;
+
+  email?: string | null;
+
+  apelido?: string | null;
+
+  rg?: string | null;
+
+  dtNascimento?: Date | null;
+
+  dtFundacao?: Date | null;
+
+  genero?: Genero | null;
 }

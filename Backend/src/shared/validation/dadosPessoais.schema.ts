@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Campos de dados pessoais comuns a Clientes e Fornecedores. O que vale para cada
 // pessoa depende do tipoPessoa (ver validarDadosPessoais):
-//  - FISICA:   apelido, dtNascimento, genero (e rg, só em Clientes)
+//  - FISICA:   apelido, rg, dtNascimento, genero
 //  - JURIDICA: nomeFantasia, dtFundacao
 // foneFixo e email valem para os dois tipos.
 
@@ -31,6 +31,11 @@ export const camposDadosPessoais =
         .string()
         .trim()
         .max ( 60, 'O apelido deve ter no máximo 60 caracteres.' )
+        .nullish(),
+    rg: z
+        .string()
+        .trim()
+        .max ( 20, 'O RG deve ter no máximo 20 caracteres.' )
         .nullish(),
     nomeFantasia: z
         .string()

@@ -43,11 +43,16 @@ const camposCliente =
         .trim()
         .regex ( /^[0-9]{10,15}$/, 'O telefone deve conter apenas números, com DDI/DDD e o número (ex: 5511988887777).')
         .refine ( ( valor ) => valor.length < 10 || valor.length > 15 || !/^0+$/.test ( valor ), 'O telefone não pode ser preenchido apenas com zeros.' ),
-    rg: z
-        .string()
+    cpfCnpjCl: z
+        .string ( { message: 'O CPF/CNPJ é obrigatório.' } )
         .trim()
-        .max ( 20, 'O RG deve ter no máximo 20 caracteres.' )
-        .nullish(),
+        .regex ( /^([0-9]{11}|[0-9]{14})$/, 'O CPF/CNPJ deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ).')
+        .refine ( ( valor ) => ! ( valor.length === 11 || valor.length === 14 ) || !/^0+$/.test ( valor ), 'O CPF/CNPJ não pode ser preenchido apenas com zeros.' ),
+    inscEstCl: z
+        .string ( { message: 'A inscrição estadual é obrigatória.' } )
+        .trim()
+        .min ( 1, 'A inscrição estadual é obrigatória.' )
+        .max ( 15,  'A inscrição estadual deve ter no máximo 15 caracteres.' ),
     ...camposDadosPessoais,
 };
 

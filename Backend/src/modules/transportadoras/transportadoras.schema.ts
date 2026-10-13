@@ -1,8 +1,8 @@
 import { z } from 'zod';
+import { camposDadosPessoais, validarDadosPessoais, limparCamposDoOutroTipo } from '../../shared/validation/dadosPessoais.schema';
 
-export const createTransportadoraSchema = z.object
-(
-    {
+const camposTransportadora =
+{
         codCidade: z
             .number ( { 
                 message: 'A cidade é obrigatória.' 
@@ -20,11 +20,6 @@ export const createTransportadoraSchema = z.object
             .number()
             .int()
             .positive()
-            .optional(),
-        nomeFantasia: z
-            .string()
-            .trim()
-            .max ( 60,  'O nome fantasia deve ter no máximo 60 caracteres.' )
             .optional(),
         tipoPessoa: z
             .enum ( ['FISICA', 'JURIDICA'], {
@@ -45,15 +40,34 @@ export const createTransportadoraSchema = z.object
             .trim()
             .min ( 1, 'A inscrição estadual é obrigatória.' )
             .max ( 15,  'A inscrição estadual deve ter no máximo 15 caracteres.' ),
-    }
-);
+        bairroTransp: z
+            .string()
+            .trim()
+            .max ( 100, 'O bairro deve ter no máximo 100 caracteres.' )
+            .optional(),
+        cepTransp: z
+            .string ( { message: 'O CEP é obrigatório.' } )
+            .trim()
+            .length ( 8, 'O CEP deve ter 8 dígitos.' )
+            .regex ( /^[0-9]+$/, 'O CEP deve conter apenas números.')
+            .refine ( ( valor ) => valor.length !== 8 || !/^0+$/.test ( valor ), 'O CEP não pode ser preenchido apenas com zeros.' ),
+        foneTransp: z
+            .string ( { message: 'O telefone é obrigatório.' } )
+            .trim()
+            .regex ( /^[0-9]{10,15}$/, 'O telefone deve conter apenas números, com DDI/DDD e o número (ex: 5511988887777).')
+            .refine ( ( valor ) => valor.length < 10 || valor.length > 15 || !/^0+$/.test ( valor ), 'O telefone não pode ser preenchido apenas com zeros.' ),
+        ...camposDadosPessoais,
+    };
 
-export const updateTransportadoraSchema = createTransportadoraSchema.extend
-(
-    {
-        isActive: z.boolean()
-    }
-);
+export const createTransportadoraSchema = z
+    .object ( camposTransportadora )
+    .superRefine ( validarDadosPessoais )
+    .transform ( limparCamposDoOutroTipo );
+
+export const updateTransportadoraSchema = z
+    .object ( { ...camposTransportadora, isActive: z.boolean() } )
+    .superRefine ( validarDadosPessoais )
+    .transform ( limparCamposDoOutroTipo );
 
 export type CreateTransportadoraInput = z.infer < typeof createTransportadoraSchema >;
 export type UpdateTransportadoraInput = z.infer < typeof updateTransportadoraSchema >;

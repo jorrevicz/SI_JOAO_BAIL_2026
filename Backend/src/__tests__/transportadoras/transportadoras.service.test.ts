@@ -42,7 +42,7 @@ describe ( 'TransportadorasService', () =>
 
         const dados = {
             codCidade: 1, transportadora: 'Rápida Transportes',
-            tipoPessoa: 'JURIDICA' as const, cpfCnpjTransp: '11111111000101', inscEstTransp: '111111111111',
+            tipoPessoa: 'JURIDICA' as const, cpfCnpjTransp: '11111111000101', inscEstTransp: '111111111111', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
         };
 
         await service.CreateTransportadora ( dados, 7 );
@@ -56,7 +56,7 @@ describe ( 'TransportadorasService', () =>
 
         await expect ( service.UpdateTransportadora ( 99, {
             codCidade: 1, transportadora: 'X',
-            tipoPessoa: 'JURIDICA', cpfCnpjTransp: '11111111000101', inscEstTransp: '111111111111',
+            tipoPessoa: 'JURIDICA', cpfCnpjTransp: '11111111000101', inscEstTransp: '111111111111', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
             isActive: true,
         }, 1 ) )
             .rejects.toMatchObject ( { status: 404 } );
@@ -68,7 +68,7 @@ describe ( 'TransportadorasService', () =>
 
         await expect ( service.UpdateTransportadora ( 1, {
             codCidade: 1, transportadora: 'X',
-            tipoPessoa: 'JURIDICA', cpfCnpjTransp: '11111111000101', inscEstTransp: '111111111111',
+            tipoPessoa: 'JURIDICA', cpfCnpjTransp: '11111111000101', inscEstTransp: '111111111111', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
             isActive: true,
         }, 1 ) ).rejects.toMatchObject ( { status: 409 } );
 

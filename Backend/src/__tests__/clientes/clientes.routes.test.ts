@@ -44,7 +44,7 @@ describe ( 'Clientes routes', () =>
             .post ( '/api/clientes' )
             .send ({
                 codCidade: 1, cliente: 'Cliente Teste', tipoPessoa: 'FISICA',
-                cepCl: '00000000', foneCl: '5511988887777',
+                cepCl: '00000000', cpfCnpjCl: '12345678901', inscEstCl: '123456', foneCl: '5511988887777',
             });
         expect ( res.status ).toBe ( 400 );
         expect ( res.body.erros ).toHaveProperty ( 'cepCl' );
@@ -56,17 +56,30 @@ describe ( 'Clientes routes', () =>
             .post ( '/api/clientes' )
             .send ({
                 codCidade: 1, cliente: 'Cliente Teste', tipoPessoa: 'FISICA',
-                cepCl: '20511120', foneCl: '0000000000',
+                cepCl: '20511120', cpfCnpjCl: '12345678901', inscEstCl: '123456', foneCl: '0000000000',
             });
         expect ( res.status ).toBe ( 400 );
         expect ( res.body.erros ).toHaveProperty ( 'foneCl' );
+    });
+
+    it ( 'POST /api/clientes sem CPF/CNPJ e inscrição estadual retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/clientes' )
+            .send ({
+                codCidade: 1, cliente: 'Cliente Teste', tipoPessoa: 'JURIDICA',
+                cepCl: '20511120', foneCl: '5521988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'cpfCnpjCl' );
+        expect ( res.body.erros ).toHaveProperty ( 'inscEstCl' );
     });
 
     describe ( 'dados pessoais por tipo de pessoa', () =>
     {
         const base =
         {
-            codCidade: 1, cliente: 'Cliente Teste', cepCl: '20511120',
+            codCidade: 1, cliente: 'Cliente Teste', cepCl: '20511120', cpfCnpjCl: '12345678901', inscEstCl: '123456',
             foneCl: '5521988887777', email: 'teste@kaneko.com.br',
         };
 

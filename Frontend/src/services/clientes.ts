@@ -13,6 +13,8 @@ export interface Cliente
   bairroCl:     string | null;
   cepCl:        string | null;
   foneCl:       string | null;
+  cpfCnpjCl:    string | null;
+  inscEstCl:    string | null;
   foneFixo:     string | null;
   email:        string | null;
   apelido:      string | null;
@@ -37,6 +39,8 @@ export interface CreateClienteInput
   bairroCl?:     string;
   cepCl:         string;
   foneCl:        string;
+  cpfCnpjCl:     string;
+  inscEstCl:     string;
   foneFixo?:     string;
   email:         string;
   apelido?:      string;

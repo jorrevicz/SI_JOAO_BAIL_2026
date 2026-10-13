@@ -18,6 +18,7 @@ export interface Fornecedor
   foneFixo:       string | null;
   email:          string | null;
   apelido:        string | null;
+  rg:             string | null;
   dtNascimento:   string | null;
   dtFundacao:     string | null;
   genero:         Genero | null;
@@ -43,6 +44,7 @@ export interface CreateFornecedorInput
   foneFixo?:       string;
   email:           string;
   apelido?:        string;
+  rg?:             string;
   dtNascimento?:   string;
   dtFundacao?:     string;
   genero?:         Genero;

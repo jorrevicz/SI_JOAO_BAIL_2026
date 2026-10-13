@@ -62,6 +62,16 @@ export class TransportadorasRepository
                 "enderecoTransp",
                 "cpfCnpjTransp",
                 "inscEstTransp",
+                "bairroTransp",
+                "cepTransp",
+                "foneTransp",
+                "foneFixo",
+                "email",
+                "apelido",
+                "rg",
+                "dtNascimento",
+                "dtFundacao",
+                "genero",
                 "codUser"
             )
             VALUES
@@ -74,6 +84,16 @@ export class TransportadorasRepository
                 ${ trasp.enderecoTransp  ?? null },
                 ${ trasp.cpfCnpjTransp   ?? null },
                 ${ trasp.inscEstTransp   ?? null },
+                ${ trasp.bairroTransp    ?? null },
+                ${ trasp.cepTransp       ?? null },
+                ${ trasp.foneTransp      ?? null },
+                ${ trasp.foneFixo        ?? null },
+                ${ trasp.email           ?? null },
+                ${ trasp.apelido         ?? null },
+                ${ trasp.rg              ?? null },
+                ${ trasp.dtNascimento    ?? null },
+                ${ trasp.dtFundacao      ?? null },
+                ${ trasp.genero          ?? null },
                 ${ codUser }
             )
             RETURNING *
@@ -102,6 +122,16 @@ export class TransportadorasRepository
                 "enderecoTransp" = ${ trasp.enderecoTransp  ?? null },
                 "cpfCnpjTransp"  = ${ trasp.cpfCnpjTransp   ?? null },
                 "inscEstTransp"  = ${ trasp.inscEstTransp   ?? null },
+                "bairroTransp"   = ${ trasp.bairroTransp    ?? null },
+                "cepTransp"      = ${ trasp.cepTransp       ?? null },
+                "foneTransp"     = ${ trasp.foneTransp      ?? null },
+                "foneFixo"       = ${ trasp.foneFixo        ?? null },
+                "email"          = ${ trasp.email           ?? null },
+                "apelido"        = ${ trasp.apelido         ?? null },
+                "rg"             = ${ trasp.rg              ?? null },
+                "dtNascimento"   = ${ trasp.dtNascimento    ?? null },
+                "dtFundacao"     = ${ trasp.dtFundacao      ?? null },
+                "genero"         = ${ trasp.genero          ?? null },
                 "codUser"        = ${ codUser },
                 "dtEdicao"       = CURRENT_TIMESTAMP,
                 "isActive"       = ${ trasp.isActive }

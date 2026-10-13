@@ -26,7 +26,7 @@ describe ( 'TransportadorasRepository (rollback)', () =>
                     transportadora: 'Expressa Logística Ltda',
                     tipoPessoa:     'JURIDICA',
                     cpfCnpjTransp:  '11111111000101',
-                    inscEstTransp:  '111111111111',
+                    inscEstTransp:  '111111111111', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
                 },
                 1,
                 transaction
@@ -53,7 +53,7 @@ describe ( 'TransportadorasRepository (rollback)', () =>
                     transportadora: 'Transportadora Original',
                     tipoPessoa:     'JURIDICA',
                     cpfCnpjTransp:  '22222222000102',
-                    inscEstTransp:  '222222222222',
+                    inscEstTransp:  '222222222222', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
                 },
                 1,
                 transaction
@@ -67,7 +67,7 @@ describe ( 'TransportadorasRepository (rollback)', () =>
                     transportadora: 'Transportadora Atualizada',
                     tipoPessoa:     'JURIDICA',
                     cpfCnpjTransp:  '22222222000102',
-                    inscEstTransp:  '222222222222',
+                    inscEstTransp:  '222222222222', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
                     isActive:       true,
                 },
                 1,
@@ -92,7 +92,7 @@ describe ( 'TransportadorasRepository (rollback)', () =>
                     transportadora: 'Para Excluir',
                     tipoPessoa:     'JURIDICA',
                     cpfCnpjTransp:  '33333333000103',
-                    inscEstTransp:  '333333333333',
+                    inscEstTransp:  '333333333333', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
                 },
                 1,
                 transaction
@@ -125,7 +125,7 @@ describe ( 'TransportadorasRepository (rollback)', () =>
                     transportadora: 'Sem Dependentes',
                     tipoPessoa:     'JURIDICA',
                     cpfCnpjTransp:  '44444444000104',
-                    inscEstTransp:  '444444444444',
+                    inscEstTransp:  '444444444444', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
                 },
                 1,
                 transaction
@@ -133,6 +133,33 @@ describe ( 'TransportadorasRepository (rollback)', () =>
 
             const temDependentes = await repo.HasDependents ( nova.codTransp, transaction );
             expect ( temDependentes ).toBe ( false );
+        });
+    });
+
+    it ( 'Create persiste os dados de pessoa física (RG, apelido, nascimento, gênero)', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codCidade = await criarCidadeDeTeste ( transaction );
+
+            const nova = await repo.Create
+            (
+                {
+                    codCidade, transportadora: 'Carlos Frete', tipoPessoa: 'FISICA',
+                    cpfCnpjTransp: '12345678901', inscEstTransp: '111111',
+                    cepTransp: '01310100', foneTransp: '5511988887777', foneFixo: '551133334444',
+                    email: 'carlos@kaneko.com.br', apelido: 'CARLINHOS', rg: '123456789',
+                    dtNascimento: '1980-03-20', genero: 'MASCULINO',
+                },
+                1,
+                transaction
+            );
+
+            expect ( nova.rg ).toBe ( '123456789' );
+            expect ( nova.apelido ).toBe ( 'CARLINHOS' );
+            expect ( nova.genero ).toBe ( 'MASCULINO' );
+            expect ( nova.cepTransp ).toBe ( '01310100' );
+            expect ( nova.foneFixo ).toBe ( '551133334444' );
         });
     });
 });

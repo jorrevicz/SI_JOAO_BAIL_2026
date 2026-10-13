@@ -60,8 +60,6 @@ export default function TransportadorasPage ()
 
   const columns = [
     columnHelper.accessor ( 'codTransp', { header: 'Código' } ),
-    columnHelper.accessor ( 'codCidade', { header: 'Código Cidade' } ),
-    columnHelper.accessor ( 'codVeiculo', { header: 'Código Veículo' } ),
     columnHelper.accessor ( 
       'transportadora', 
       { 
@@ -88,6 +86,7 @@ export default function TransportadorasPage ()
       'tipoPessoa',
       { header: 'Tipo Pessoa', cell: ( info ) => info.getValue() === 'FISICA' ? 'Física' : info.getValue() === 'JURIDICA' ? 'Jurídica' : '—' }
     ),
+    columnHelper.accessor ( 'codCidade', { header: 'Código Cidade' } ),
     columnHelper.accessor ( 
       'enderecoTransp', 
       { 
@@ -98,11 +97,18 @@ export default function TransportadorasPage ()
         )
       } 
     ),
+    columnHelper.accessor ( 'codVeiculo', { header: 'Código Veículo' } ), 
     columnHelper.accessor (
       'cpfCnpjTransp',
       { header: 'CPF / CNPJ', cell: ( info ) => info.getValue() ?? '—' }
     ),
     columnHelper.accessor ( 'inscEstTransp', { header: 'Inscrição Estadual' } ),
+    columnHelper.accessor ( 'cepTransp', { header: 'CEP', cell: ( info ) => info.getValue() ?? '—' } ),
+    columnHelper.accessor ( 'bairroTransp', { header: 'Bairro', cell: ( info ) => info.getValue() ?? '—' } ),
+    columnHelper.accessor ( 'foneTransp', { header: 'Telefone', cell: ( info ) => info.getValue() ?? '—' } ),
+    columnHelper.accessor ( 'email', { header: 'E-mail', cell: ( info ) => info.getValue() ?? '—' } ),
+    columnHelper.accessor ( 'apelido', { header: 'Apelido', cell: ( info ) => info.getValue() ?? '—' } ),
+    columnHelper.accessor ( 'rg', { header: 'RG', cell: ( info ) => info.getValue() ?? '—' } ),
     columnHelper.accessor (
       'dtCriacao',
       { header: 'Criação', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }

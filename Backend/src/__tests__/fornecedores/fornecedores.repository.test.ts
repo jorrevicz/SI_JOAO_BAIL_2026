@@ -69,6 +69,29 @@ describe ( 'FornecedoresRepository (rollback)', () =>
         });
     });
 
+    it ( 'Create persiste o RG de pessoa física', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codCidade    = await criarCidadeDeTeste ( transaction );
+            const codCondDePag = await criarCondicaoDePagamentoDeTeste ( transaction );
+
+            const novo = await repo.Create
+            (
+                {
+                    codCidade, codCondDePag, fornecedor: 'Joao Autonomo', tipoPessoa: 'FISICA',
+                    cepForn: '01310100', cpfCnpjForn: '12345678901', foneForn: '11912345678',
+                    email: 'joao@kaneko.com.br', inscEstSubTrib: '123456', rg: '123456789',
+                    dtNascimento: '1990-05-10', genero: 'MASCULINO',
+                },
+                1,
+                transaction
+            );
+
+            expect ( novo.rg ).toBe ( '123456789' );
+        });
+    });
+
     it ( 'Update altera os dados do fornecedor dentro da transação', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>

@@ -51,6 +51,10 @@ export default interface Clientes {
   foneFixo: string | null;
 
   email: string | null;
+
+  cpfCnpjCl: string | null;
+
+  inscEstCl: string | null;
 }
 
 /** Represents the initializer for the table public.Clientes */
@@ -99,6 +103,10 @@ export interface ClientesInitializer {
   foneFixo?: string | null;
 
   email?: string | null;
+
+  cpfCnpjCl?: string | null;
+
+  inscEstCl?: string | null;
 }
 
 /** Represents the mutator for the table public.Clientes */
@@ -144,4 +152,8 @@ export interface ClientesMutator {
   foneFixo?: string | null;
 
   email?: string | null;
+
+  cpfCnpjCl?: string | null;
+
+  inscEstCl?: string | null;
 }

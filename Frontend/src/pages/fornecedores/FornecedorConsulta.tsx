@@ -279,9 +279,19 @@ export function FornecedorConsulta ( { onSelecionar, onCancelar }: Props )
                 edit !== null && (
                     <FornecedorForm
                         inicial={ edit }
-                        onSalvo={ () =>
+                        onSalvo={ ( salvo ) =>
                         {
+                            // Cadastro novo feito dentro da consulta já volta selecionado ao formulário de origem.
+                            const novo = edit !== null && Object.keys ( edit ).length === 0;
+
                             setEdit ( null );
+
+                            if ( novo )
+                            {
+                                onSelecionar ( salvo );
+                                return;
+                            }
+
                             Carregar();
                         }}
                         onCancelar={ () => setEdit ( null ) }

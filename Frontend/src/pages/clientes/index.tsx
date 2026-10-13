@@ -62,8 +62,6 @@ export default function ClientesPage ()
 
   const columns = [
     columnHelper.accessor ( 'codCliente', { header: 'Código' } ),
-    columnHelper.accessor ( 'codCidade', { header: 'Código Cidade' } ),
-    columnHelper.accessor ( 'codCondDePag', { header: () => <>Código<br/>Condição de Pagamento</> } ),
     columnHelper.accessor ( 
       'cliente', 
       { 
@@ -75,6 +73,8 @@ export default function ClientesPage ()
         ),
        } 
     ),
+    columnHelper.accessor ( 'codCidade', { header: 'Código Cidade' } ),
+    columnHelper.accessor ( 'codCondDePag', { header: () => <>Código<br/>Condição de Pagamento</> } ), 
     columnHelper.accessor (
       'tipoPessoa',
       { 
@@ -85,6 +85,14 @@ export default function ClientesPage ()
     columnHelper.accessor (
       'foneCl',
       { header: 'Telefone', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
+      'cpfCnpjCl',
+      { header: 'CPF / CNPJ', cell: ( info ) => info.getValue() ?? '—' }
+    ),
+    columnHelper.accessor (
+      'inscEstCl',
+      { header: 'Inscrição estadual', cell: ( info ) => info.getValue() ?? '—' }
     ),
     columnHelper.accessor (
       'apelido',
