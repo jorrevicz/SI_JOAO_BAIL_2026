@@ -150,8 +150,12 @@ ser validado — formato e inexistência prévia no banco — antes de liberar a
 demais campos, o padrão é uma rota de consulta dedicada, sem efeito colateral:
 
 ```
-GET /api/compras/validar?numero=...&modelo=...&serie=...   → valida antes de criar
+GET /api/compras/validar?numero=...&modelo=...&serie=...&codForn=...   → valida antes de criar
 ```
+
+A chave validada é a **chave completa** da entidade: nas compras inclui o fornecedor
+(`codForn`) e nas contas a pagar/receber, o fornecedor/cliente e a `parcela` — o mesmo
+número de nota pode existir para parceiros diferentes, e cada parcela é um registro.
 
 Ver [Compras](05-modelo-de-dominio.md#6-compras) (RN007) para o primeiro uso desse
 padrão.

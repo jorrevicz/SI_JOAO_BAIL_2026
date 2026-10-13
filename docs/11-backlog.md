@@ -8,8 +8,9 @@ Passo-a-passo de desenvolvimento do sistema, organizado em **épicos** (`EP-NN`)
 
 - Execute os épicos **em ordem**: EP-00 → EP-03, depois **EP-13** (transição da camada de
   dados), e então EP-04 → EP-09. EP-12 é contínuo/transversal; EP-10/EP-11 conforme suas notas.
-  **Concluídos até aqui:** EP-00→EP-03, EP-13, EP-11 (bootstrap do frontend) e EP-04 (backend
-  e telas geográficas). **Foco atual:** EP-05 (Catálogo).
+  **Concluídos até aqui:** EP-00→EP-07, EP-11 e EP-13 (cadastros, financeiro e Contas
+  a Pagar/Receber com telas). **Foco atual:** EP-08 (Compras — Fase 4; T-079
+  a T-082 concluídas, próximo: EP-09 / T-083).
 - Dentro de um CRUD, siga sempre **consultas (Read) primeiro**, depois Create/Update/Delete.
 - Marque `[x]` ao concluir. Uma task só está "pronta" quando seus **critérios de aceite**
   passam (inclui testes Vitest quando aplicável).
@@ -334,10 +335,35 @@ soft-delete, auditoria e paginação por cursor.
 **Fase:** 4 · **Docs:** [Casos de Uso](07-casos-de-uso.md#gerenciar-compras), [Domínio](05-modelo-de-dominio.md#6-compras)
 **Objetivo:** registrar compras e itens (`CompraProduto`) atomicamente. Depende de fornecedores, produtos, condição de pagamento, transportadoras.
 
-- [ ] **T-080 — Compras: consultas** — `GET /api/compras[/:id]` com itens, fornecedor, transportadora; testes. **Dep:** EP-05, EP-06, EP-07
-- [ ] **T-081 — `realizarCompra` (transacional)** — cria Compra + itens `CompraProduto` em **uma transação** (RNF06); atualiza `saldoProd`/`custoMedioProd`.
-  - **Aceite:** falha em qualquer item faz rollback total; saldo atualizado só no sucesso. **Dep:** T-080, T-032
-- [ ] **T-082 — Cancelar compra** — `cancelarCompra` com regras de estorno; RN002. **Dep:** T-081
+> Ordem de execução detalhada em lotes (C-0 a C-5) na
+> [Fase 4 do Roadmap](09-roadmap.md#fase-4--compras-e-nf-e--prioridade-sobre-a-fase-os).
+
+- [x] **T-079 — Correção de Produtos (Lote C-0)** — o "Custo inicial" do cadastro passa a
+      ter coluna própria (`custoProd`) e deixa de definir `custoMedioProd`, que nasce 0 e só
+      as compras lançadas calculam; nova coluna `precoVenda` (obrigatória, editável);
+      `saldoProd` removida (duplicava `estoque`). Migration `produtos-custo-preco-venda`,
+      schema/repository/testes de Produtos, formulário e listagem do frontend, seed.
+- [x] **T-080 — Compras: consultas (Lote C-1)** — migration `compras-itens-situacao`
+      (`Compras.situacao`, `vlrTotal` decimal, datas obrigatórias; `CompraProduto` com
+      `quantidade`/`valorUnitario`/`desconto`/`percentualRateio`/`valorRateio`);
+      `GET /api/compras` (cursor sobre a chave natural, filtro `codForn`),
+      `GET /api/compras/validar` (RN007), `GET /api/compras/:numero/:modelo/:serie/:codForn`
+      (cabeçalho + itens); testes TDD (service,
+      repository rollback, routes supertest); seed com uma compra lançada. **Dep:** EP-05, EP-06, EP-07
+- [x] **T-081a — Cadastro da compra (Lote C-2)** — `POST` da compra com itens e parcelas
+      embutidos; rateio, custo unitário final e `vlrTotal` calculados no service (RN011–
+      RN012, RN016). `PUT`/`DELETE` foram removidos com o estado "aberto" (RN013).
+  - **Aceite:** não existem rotas de edição/exclusão (404); totais recalculados pelo
+        Backend independentemente do que o cliente enviar. **Dep:** T-080
+- [x] **T-081b — Lançamento transacional (Lote C-3)** — o cadastro da compra já a lança numa
+      **única transação** (RNF06): soma `quantidade` ao `estoque`, recalcula `custoMedioProd`
+      (média ponderada), atualiza `custoProd` com o custo da compra e grava `dtEntrada`
+      (RN018). **Não** gera Contas a Pagar (continuam manuais).
+  - **Aceite:** falha em qualquer item faz rollback total; estoque/custo alterados só no sucesso. **Dep:** T-081a, T-032
+- [x] **T-082 — Cancelar compra (Lote C-3)** — `cancelarCompra` grava a justificativa e
+      estorna estoque e custo médio (409 se o estoque atual for
+      menor que a quantidade comprada); RN002; fluxo consulta → justificativa → popup de
+      reautenticação **só no Frontend** até o EP-10 (RN014). **Dep:** T-081b
 - [ ] **T-083 — `gerarNotaFiscal` (gatilho)** — disponível só **após validação completa** da compra (RN002); compra com NF gerada expõe só consultar/solicitar (RN003).
   - **Aceite:** opção de gerar NF aparece/oculta conforme estado da compra. **Dep:** T-081, EP-09
 
@@ -353,9 +379,12 @@ soft-delete, auditoria e paginação por cursor.
 - [ ] **T-093 — Fluxos por ator** — `solicitarNotaFiscal`, `confirmarEntregaProduto`, `vincularVeiculoNfe` (Fornecedor/Cliente/Transportadora). **Dep:** T-091
 - [ ] **T-094 — Emissão (RNF10)** — interface de emissão; integração real com SEFAZ marcada como fora do MVP ([Visão Geral](01-visao-geral.md#fora-de-escopo-por-enquanto)). **Dep:** T-091
 
-### Frontend — executar após T-083 (EP-08) e T-094 completos
+### Frontend
 
-- [ ] **T-115B — Telas de compras e NF-e** — registrar, consultar e cancelar compras; consultar e gerenciar notas fiscais. **Dep:** T-083, T-094, EP-11 (T-112)
+- [ ] **T-115B — Telas de compras e NF-e** — ✓ parte de compras concluída (Lote C-4):
+      registrar (botão Lançar compra no lugar do salvar), consultar e cancelar compras, com prévia dos totais
+      calculada pelo Backend (`POST /api/compras/calculo`). Falta: consultar e gerenciar
+      notas fiscais (após T-094). **Dep:** T-082 (parte compras), T-094 (parte NF-e), EP-11 (T-112)
 
 ---
 

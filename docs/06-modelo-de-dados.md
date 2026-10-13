@@ -16,16 +16,17 @@ conforme DER) e ao requisito de **formas normais**.
   dependem da chave inteira (2FN); sem dependências transitivas (3FN).
 - **Relações N:N via tabelas associativas com FK puras:** `ProdutoFornecedor`,
   `ProdutoCategoria`, `CompraProduto`, `ProdutoNfe`, `VeiculoNfe` — nenhuma carrega
-  atributos redundantes copiados da entidade-pai; a exceção justificada é
-  `CompraProduto.custoMedioProduto`, que é dado histórico (custo no momento da compra,
-  que pode divergir do custo médio atual), e `CompraProduto.percentualRateio`/
-  `valorRateio`, dado calculado por item a partir dos custos adicionais da própria
-  compra (`frete`/`seguro`/`despesas`), não uma cópia de outra entidade.
+  atributos redundantes copiados da entidade-pai nem valores calculados. Valores
+  derivados — `Compras.vlrTotal` e, em `CompraProduto`, `percentualRateio`/`valorRateio`/
+  `custoMedioProduto` — **não são colunas**: o Backend os calcula a cada leitura
+  (`compras.calculo.ts`) e apenas os expõe ao Frontend.
 - **Chaves substitutas:** cada entidade tem um identificador próprio auto-incrementado
   (`codX`). Esse mesmo `codX` serve como **cursor para paginação baseada em cursor**
   (*cursor-based pagination*) — sem uso de `OFFSET`. A exceção é `Compras`, que usa
-  **chave primária composta natural** (`numero` VarChar(28), `modelo` VarChar(2),
-  `serie` VarChar(2)) — o próprio documento de compra, sem `codCompra` substituto. 
+  **chave primária composta natural** (`numero` VarChar(9), `modelo` VarChar(2),
+  `serie` VarChar(2), `codForn`) — o próprio documento de compra (número, modelo, série e
+  fornecedor emitente), sem `codCompra` substituto; `ContasAPagar` e `ContasAReceber`
+  seguem o mesmo padrão, com o parceiro e a `parcela` na chave. 
 - **Sufixo de contexto nos campos de endereço:** campos homônimos entre entidades
   (endereço, bairro, CEP, fone, CPF/CNPJ) recebem sufixo do subdomínio (`Forn`, `Cl`,
   `Transp`) para evitar ambiguidade em JOINs e respostas de API.
@@ -52,8 +53,8 @@ conforme DER) e ao requisito de **formas normais**.
   (auditoria `dtCriacao`/`dtEdicao` e datas de negócio) de `Timestamp(3)` para
   `TimestampTz(3)`; qualquer coluna de data/hora nova nasce direto como `TimestampTz`.
   O Backend sempre retorna/recebe ISO 8601 em UTC (sufixo `Z`); o Frontend formata para
-  exibição no padrão brasileiro `DD-MM-AAAA` (e `DD-MM-AAAA HH:mm` onde a hora é
-  relevante) a partir dos componentes UTC da data, nunca do fuso do navegador — ver
+  exibição no padrão brasileiro `dd/mm/aa` (e `dd/mm/aa HH:mm` onde a hora é
+  relevante — [RNF14](04-requisitos.md#requisitos-não-funcionais)) a partir dos componentes UTC da data, nunca do fuso do navegador — ver
   `formatarData`/`formatarDataHora` em `Frontend/src/utils/formatters.ts`.
 
 ## Tabelas e chaves
@@ -70,14 +71,14 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 ### Parceiros
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Fornecedores` | `codForn` | `codCidade` → `Cidades` | `nomeFantasia`, `enderecoForn`, `bairroForn`, `cepForn` (8 díg.), `foneForn`, `cpfCnpjForn` (14 díg.), `inscEstSubTrib`, `tipoPessoa`, `apelido`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
-| `Clientes` | `codCliente` | `codCidade` → `Cidades`, `codCondDePag` → `CondicaoDePagamento` | `enderecoCl`, `bairroCl`, `cepCl` (8 díg.), `foneCl`, `tipoPessoa`, `apelido`, `nomeFantasia`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
-| `Transportadoras` | `codTransp` | `codCidade` → `Cidades`, `codVeiculo` → `Veiculos` | `nomeFantasia`, `tipoPessoa`, `enderecoTransp`, `cpfCnpjTransp`, `inscEstTransp` |
+| `Fornecedores` | `codForn` | `codCidade` → `Cidades` | `nomeFantasia`, `enderecoForn`, `bairroForn`, `cepForn` (8 díg.), `foneForn`, `cpfCnpjForn` (14 díg.), `inscEstSubTrib`, `tipoPessoa`, `apelido`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
+| `Clientes` | `codCliente` | `codCidade` → `Cidades`, `codCondDePag` → `CondicaoDePagamento` | `enderecoCl`, `bairroCl`, `cepCl` (8 díg.), `foneCl`, `cpfCnpjCl` (11/14 díg.), `inscEstCl`, `tipoPessoa`, `apelido`, `nomeFantasia`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
+| `Transportadoras` | `codTransp` | `codCidade` → `Cidades`, `codVeiculo` → `Veiculos` | `nomeFantasia`, `tipoPessoa`, `enderecoTransp`, `bairroTransp`, `cepTransp` (8 díg.), `foneTransp`, `cpfCnpjTransp`, `inscEstTransp`, `apelido`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
 
 ### Produtos e Catálogo
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Produtos` | `codProd` | — (a categoria é N:N, via `ProdutoCategoria`) | `estoque` INTEGER (def. 0), `saldoProd` Decimal(10,3), `custoMedioProd` Decimal(10,2) |
+| `Produtos` | `codProd` | — (a categoria é N:N, via `ProdutoCategoria`) | `estoque` INTEGER (def. 0) — é o saldo do produto (a antiga `saldoProd` foi removida por duplicá-lo); `custoProd` Decimal(10,2) (custo inicial / da última compra); `custoMedioProd` Decimal(10,2) (def. 0, só calculado pelas compras lançadas); `precoVenda` Decimal(10,2) obrigatório |
 | `Categorias` | `codCategoria` | — | `categoria` VarChar(40) |
 | `ProdutoCategoria` | (`codProduto`, `codCategoria`) | → `Produtos`, → `Categorias` | associativa N:N — FK puras, sem auditoria nem `isActive`; remoção é exclusão física. Índice `ProdutoCategoria_codCategoria_idx` cobre o caminho categoria → produtos |
 | `ProdutoFornecedor` | (`codProd`, `codForn`) | → `Produtos`, → `Fornecedores` | associativa N:N — FK puras |
@@ -93,9 +94,9 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 |--------|----|-----|-----------------|
 | `CondicaoDePagamento` | `codCondDePag` | — | `descricao` VarChar(60), `juroCondPag`, `multaCondPag`, `descontoCondPag` |
 | `FormaDePagamento` | `codFormaDePag` | — | `formaDePag` VarChar(50), `prazoCompensacao` |
-| `Parcelas` | `codParcela` | `codCondDePag` → `CondicaoDePagamento`, `codFormaDePag` → `FormaDePagamento` | `percentual` Decimal(5,2), `numDias` |
-| `ContasAPagar` | (`numero`, `modelo`, `serie`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`/`dtVencimento` `TimestampTz(3)` obrigatórias (`dtVencimento` ≥ `dtEmissao`), `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
-| `ContasAReceber` | (`numero`, `modelo`, `serie`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`/`dtVencimento` `TimestampTz(3)` obrigatórias (`dtVencimento` ≥ `dtEmissao`), `dtPagamento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento` VarChar(255) |
+| `Parcelas` | (`codCondDePag`, `numParcela`) | `codCondDePag` → `CondicaoDePagamento`, `codFormaDePag` → `FormaDePagamento` | `numParcela` Int **informado manualmente, sem identity** (por condição, único), `percentual` Decimal(5,2), `numDias` |
+| `ContasAPagar` | (`numero`, `modelo`, `serie`, `codFornecedor`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(9), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`/`dtVencimento` `TimestampTz(3)` obrigatórias (`dtVencimento` ≥ `dtEmissao`), `valor`, `juro`, `desconto`, `multa`, `valorBaixa`/`dtBaixa` obrigatórias (a conta nasce baixada), `justificativaCancelamento` VarChar(255) |
+| `ContasAReceber` | (`numero`, `modelo`, `serie`, `codCliente`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(9), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`/`dtVencimento` `TimestampTz(3)` obrigatórias (`dtVencimento` ≥ `dtEmissao`), `valor`, `juro`, `desconto`, `multa`, `valorBaixa`/`dtBaixa`/`dtPagamento` obrigatórias (a conta nasce baixada), `justificativaCancelamento` VarChar(255) |
 
 ### Atendimento (Ordem de Serviço)
 | Tabela | PK | FKs | Campos notáveis |
@@ -116,9 +117,9 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 ### Compras
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Compras` | (`numero`, `modelo`, `serie`) | `codForn` → `Fornecedores`, `codTransp` → `Transportadoras`, `codCondDePag` → `CondicaoDePagamento` (obrigatória), `codClassificacaoCompra` → `ClassificacoesCompra` (obrigatória) | `numero` VarChar(28), `modelo` VarChar(2), `serie` VarChar(2), `dtChegada`/`dtEmissao`/`dtEntrada` (datas da operação — `dtChegada` ≥ `dtEmissao` e ≤ data atual), `frete`, `seguro`, `despesas`, `vlrTotal` (valor final recalculado a partir do subtotal das parcelas, encargos da condição de pagamento, produtos vinculados e `frete`/`seguro`/`despesas`), `justificativaCancelamento` VarChar(255) |
-| `ClassificacoesCompra` | `codClassificacaoCompra` | — | `classificacaoCompra` VarChar(12) unique (`obra-prima`\|`revenda`\|`serviços`) — domínio fechado semeado, sustenta a RN005; uma compra tem exatamente uma classificação, por isso é FK 1:N e não associativa |
-| `CompraProduto` | (`numero`, `modelo`, `serie`, `codProduto`) | → `Compras` (composta), → `Produtos` | `custoMedioProduto` — dado histórico (custo no momento da compra); `percentualRateio` Decimal(5,2), `valorRateio` Decimal — rateio dos custos adicionais (`frete`/`seguro`/`despesas`) por item |
+| `Compras` | (`numero`, `modelo`, `serie`, `codForn`) | `codForn` → `Fornecedores`, `codTransp` → `Transportadoras`, `codCondDePag` → `CondicaoDePagamento` (obrigatória) | `numero` VarChar(9), `modelo` VarChar(2), `serie` VarChar(2), `dtEmissao`/`dtChegada` obrigatórias e `dtEntrada` (obrigatória, data do lançamento) — `dtChegada` ≥ `dtEmissao` e ≤ data atual, `frete`, `seguro`, `despesas`, `justificativaCancelamento` VarChar(255) |
+| `CompraProduto` | (`numero`, `modelo`, `serie`, `codForn`, `codProduto`) | → `Compras` (composta de 4 colunas), → `Produtos` | `quantidade` INTEGER (> 0), `valorUnitario` Decimal(10,2), `desconto` Decimal(10,2) (def. 0 — desconto só por item); `unidade` VarChar(4) obrigatória — unidade do item naquela compra (RN020), independente de `Produtos.undProduto` |
+| `CompraParcelas` | (`numero`, `modelo`, `serie`, `codForn`, `numParcela`) | → `Compras` (composta de 4 colunas), → `FormaDePagamento` | `valor` Decimal(10,2) (> 0), `dtVencimento` TimestampTz(3); parcelas próprias da compra (RN022/RN023), sem `isActive` |
 
 ### Fiscal
 | Tabela | PK | FKs | Campos notáveis |
@@ -149,7 +150,7 @@ As regras de negócio (RN002 dos [Casos de Uso](07-casos-de-uso.md)) determinam 
 |---------|--------------------|----------|
 | Produto ↔ Fornecedor | `ProdutoFornecedor` | ✓ |
 | Produto ↔ Categoria | `ProdutoCategoria` | ✓ — produto tem ao menos uma categoria; lista gerenciada embutida no formulário de produto |
-| Compra ↔ Produto | `CompraProduto` | ✓ (FK composta `numero`/`modelo`/`serie`) + `custoMedioProduto` (histórico) + `percentualRateio`/`valorRateio` (rateio de custos adicionais) |
+| Compra ↔ Produto | `CompraProduto` | ✓ (FK composta `numero`/`modelo`/`serie`/`codForn`) |
 | NF-e ↔ Produto | `ProdutoNfe` | ✓ + campos tributários por item |
 | NF-e ↔ Veículo | `VeiculoNfe` | ✓ |
 
@@ -161,7 +162,6 @@ DO NOTHING/UPDATE`), respeitando a ordem de dependências:
 ```
 Paises → Estados → Cidades
 Categorias → Produtos → ProdutoCategoria (vínculo produto × categoria)
-ClassificacoesCompra (domínio fechado — obra-prima, revenda, serviços)
 Fornecedores → CondicaoDePagamento → Clientes
 Veiculos → Transportadoras
 ProdutoFornecedor (vínculo produto × fornecedor)

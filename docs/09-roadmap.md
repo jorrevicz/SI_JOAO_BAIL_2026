@@ -15,7 +15,8 @@ referem-se ao [Modelo de Domínio](05-modelo-de-dominio.md) e os requisitos ao
    de cada módulo.
 4. **Criar o banco**, depois **scripts de seed**, depois **integrar** o backend às
    consultas.
-5. **Login, compra e venda** completos: decisão e detalhamento **adiados**.
+5. **Login e venda** completos: decisão e detalhamento **adiados**. **Compras** tem
+   prioridade sobre as Ordens de Serviço (ver [Fase 4](#fase-4--compras-e-nf-e--prioridade-sobre-a-fase-os)).
 6. **TDD obrigatório para services:** ao criar ou modificar qualquer *service* de
    backend, aplicar o ciclo Red → Green → Refactor antes de avançar para o próximo
    método. Detalhes em [CLAUDE.md](../CLAUDE.md#princípios-obrigatórios).
@@ -90,25 +91,109 @@ Pré-requisito de todo o resto (geografia). Implementadas **consultas primeiro**
 >
 > **▶ Próximo passo:** Fase 3B — Contas a Pagar (RF11) e Contas a Receber (RF12).
 
-## Fase 3B — Contas a Pagar e Contas a Receber
+## Fase 3B — Contas a Pagar e Contas a Receber ✓ concluída
 
 - [x] **Contas a Pagar** (RF11) — referencia Fornecedores, FormaDePagamento; chave natural
-      (`numero`, `modelo`, `serie`, `parcela`); `registrarBaixa`/`cancelar` dedicados.
-- [x] **Contas a Receber** (RF12) — referencia Clientes, FormaDePagamento; mesmo padrão de
-      chave natural e `registrarBaixa`/`cancelar`.
+      (`numero`, `modelo`, `serie`, `codFornecedor`, `parcela`); `registrarBaixa`/`cancelar` dedicados.
+- [x] **Contas a Receber** (RF12) — referencia Clientes, FormaDePagamento; chave natural
+      (`numero`, `modelo`, `serie`, `codCliente`, `parcela`) e `registrarBaixa`/`cancelar`.
 
 > **Backend concluído:** CRUDs em 4 camadas com testes TDD para as duas entidades (service
 > unitário, repository rollback, routes supertest); `RegistrarBaixa`/`Cancelar` como operações
 > dedicadas (não passam pelo `Update`); RN de bloqueio (não baixar conta cancelada, não
 > cancelar conta já baixada).
 >
-> **▶ Próximo passo:** Frontend de Fase 3B (T-115A — telas de Contas a Pagar e Contas a
-> Receber), depois Fase OS.
+> **Frontend concluído (T-115A):** telas de Contas a Pagar e Contas a Receber, com modais
+> dedicados de baixa e de cancelamento.
+>
+> **▶ Próximo passo:** Fase 4 (Compras). A Fase OS é retomada só após as fases de compras.
+
+## Fase 4 — Compras e NF-e ⭐ prioridade sobre a Fase OS
+
+Por decisão do responsável pelo projeto, o processo de **Compras** passa a ter
+prioridade sobre as Ordens de Serviço: é implementado logo após a Fase 3B (e a
+conclusão do frontend de Contas a Pagar/Receber) e **antes de retomar a Fase OS**, que
+só é terminada depois das fases de compras (Compras e NF-e).
+
+- **Compras** (RF13) — operação atômica
+  ([RNF06](04-requisitos.md#requisitos-não-funcionais)).
+- **Nota Fiscal Eletrônica** (RF14, RNF10) — depende de compras e do módulo fiscal.
+
+Regras em [Gerenciar Compras](07-casos-de-uso.md#gerenciar-compras) (RN004–RN018) e
+entidades em [Modelo de Domínio § Compras](05-modelo-de-dominio.md#6-compras). A fase é
+dividida em lotes, backend-first e consultas primeiro, com TDD em todo *service*:
+
+| Lote | Conteúdo | Backlog |
+|------|----------|---------|
+| **C-0** ✓ | Correção de Produtos: `custoProd` (custo inicial com coluna própria), `precoVenda` (editável), remoção de `saldoProd` — backend + frontend | T-079 |
+| **C-1** ✓ | Migration de Compras/CompraProduto, seed, consultas `GET` de compras e de classificações | T-080 |
+| **C-2** ✓ | Cadastro da compra: validar documento (RN007), criar com itens embutidos, rateio e totais calculados no service (a edição e a exclusão foram removidas junto com o estado "aberto") | T-081a |
+| **C-3** ✓ | Lançamento transacional no próprio cadastro (estoque + custo médio ponderado) e `cancelarCompra()` com estorno | T-081b, T-082 |
+| **C-4** ✓ | Frontend de Compras: listagem, formulário, lançar (substitui o salvar) e cancelar | T-115B (compras) |
+| **C-5** | NF-e: `gerarNotaFiscal` (RN002/RN003 de Compras) e EP-09 | T-083, T-090… |
+
+**Ciclo da compra (RN013):** sem rascunho — a compra nasce `lançada` e só pode ser cancelada
+(sem coluna `situacao`). O cadastro/lançamento, numa única transação, grava a compra e soma a quantidade ao
+`estoque`, recalcula `custoMedioProd` (média ponderada; se ainda for 0, parte de
+`custoProd`), grava `custoProd` com o custo unitário da compra e preenche `dtEntrada`
+(RN018). **Não gera Contas a Pagar** — elas continuam lançadas manualmente. Cancelar uma
+compra lançada estorna estoque e custo médio; "cancelada" é derivada de
+`justificativaCancelamento` (sem terceiro estado, RN005 transversal). A reautenticação do
+cancelamento (RN014) é, até o EP-10, só um popup no Frontend.
+
+**Cálculo — feito só no Backend, em TypeScript (`compras.calculo.ts`), nunca no SQL nem no
+Frontend.** O formulário pede a prévia a `POST /api/compras/calculo` a cada mudança de item
+ou despesa e apenas exibe o resultado; o repository só lê o produto com trava de linha
+(`FOR UPDATE`) e grava os valores já calculados:
+
+- `líquido do item = quantidade × valorUnitario − desconto` (desconto só por item, RN016);
+- `total dos produtos = Σ líquidos` (RN012);
+- rateio de `frete + seguro + despesas` proporcional ao líquido de cada item, em % e R$
+  (RN011), arredondado em 2 casas com os centavos residuais distribuídos pelos maiores
+  restos (as somas fecham em 100% e no total das despesas);
+- `percentualRateio`/`valorRateio` do item = fatia e valor do produto no total dos produtos (`valorRateio` = líquido); as despesas **não** entram no rateio dos produtos;
+- `custoMedioProduto` do item (histórico) = `valorRateio / quantidade`;
+- `vlrTotal = total dos produtos + frete + seguro + despesas` — os encargos da
+  condição de pagamento não entram (aplicam-se a títulos em atraso);
+- lançamento: `novoCustoMédio = ( estoque × base + qtd × custoUnitário ) / ( estoque + qtd )`,
+  com `base = custoMedioProd` (ou `custoProd` enquanto o médio for 0); estorno faz a conta
+  inversa e zera o custo médio quando o estoque zera.
+
+> **Lotes C-0 e C-1 concluídos:** Produtos corrigido (migration `produtos-custo-preco-venda`)
+> e schema de Compras pronto para as regras (migration `compras-itens-situacao`); módulos
+> `compras` (`GET /api/compras`, `/validar`, `/:numero/:modelo/:serie/:codForn` com itens)
+> com testes TDD; seed com uma compra (hoje já lançada).
+>
+> **Lotes C-2, C-3 e C-4 concluídos:** `POST /api/compras` (já lança: estoque + custo médio
+> na mesma transação — RN013/RN018) e `PATCH .../cancelar` (com estorno — RN014); `PUT`,
+> `DELETE` e `PATCH .../lancar` foram removidos com o estado "aberto" (migration
+> `compras-sem-estado-aberto`), além de `POST /api/compras/calculo` (prévia); testes TDD (cálculo puro, service,
+> repository rollback, routes supertest com o ciclo completo). Frontend: página **Compras**
+> (ações Consultar/Cancelar; o botão **Lançar compra** do formulário substitui o salvar),
+> formulário na ordem das RNs (documento validado → fornecedor/transportadora/classificação/
+> datas → frete, seguro e outras despesas → tabela de produtos com rateio e totais →
+> condição herdada do fornecedor → subtotais e total → saldo e preço de venda), consultas
+> de Produto e Transportadora (`ConsultaSelecao` genérica) e popup de senha
+> (`ConfirmarSenhaModal`, só visual até o EP-10).
+>
+> **Lote C-4B concluído (RN019–RN023 + RNF14):** bloqueio do documento fiscal após o
+> primeiro produto (RN019), unidade do produto definida por item (RN020 — migration
+> `compras-unidade-e-parcelas`, coluna `CompraProduto.unidade`), bloqueio de documento e
+> produtos com parcelas geradas, voltando só ao descartá-las com confirmação (RN021),
+> geração automática das parcelas pela condição (RN022 — `POST /api/compras/parcelas`,
+> `CalcularParcelasCompra` no Backend) e parcelas ajustáveis só na compra (RN023 — nova
+> tabela `CompraParcelas`, reconciliada por `numParcela`; soma = `vlrTotal`). Datas no
+> Frontend passaram a `dd/mm/aa` (RNF14). Ver
+> [Gerenciar Compras](07-casos-de-uso.md#gerenciar-compras).
+>
+> **▶ Próximo passo:** Lote C-5 — NF-e (EP-09) e o gatilho `gerarNotaFiscal` da compra.
 
 ## Fase OS — Ordem de Serviço ⭐ módulo central da Kaneko Informática
 
-A **Ordem de Serviço** é o coração operacional da Kaneko Informática e deve ser
-implementada logo após a Fase 3B, antes dos fluxos transacionais complexos.
+A **Ordem de Serviço** é o coração operacional da Kaneko Informática. Os Lotes OS-A
+(concluído) e OS-B (backend concluído) já foram entregues, mas, por decisão do
+responsável pelo projeto, o restante da fase (frontend do Lote OS-B e Lote OS-C) é
+**retomado e terminado somente após a Fase 4 — Compras e NF-e**, que tem prioridade.
 
 Ciclo de vida de uma OS:
 
@@ -192,7 +277,7 @@ de backend + frontend, consultas antes de escrita:
 > embutido e reconciliado (mesmo padrão de Parcelas × Condição de Pagamento, via um
 > `ProcedimentoOdSForm` que reaproveita um novo `ProcedimentoConsulta`).
 >
-> **▶ Próximo passo:** Lote OS-B — Execução (serviços e peças) e Aprovação.
+> **▶ Próximo passo:** Lote OS-B — Execução (serviços e peças) e Aprovação (após a Fase 4).
 
 ### Lote OS-B — Execução (serviços e peças) e Aprovação
 
@@ -216,7 +301,8 @@ de backend + frontend, consultas antes de escrita:
 > documentado como classificação livre da OS, não status — ver
 > [Modelo de Domínio § Atendimento](05-modelo-de-dominio.md#8-atendimento-ordem-de-serviço).
 >
-> **▶ Próximo passo:** frontend do Lote OS-B (tela de execução/aprovação da OS).
+> **▶ Próximo passo:** frontend do Lote OS-B (tela de execução/aprovação da OS) — após a
+> Fase 4 (Compras e NF-e).
 
 ### Lote OS-C — Encerramento (cobrança) e Entrega
 
@@ -226,19 +312,12 @@ de backend + frontend, consultas antes de escrita:
        de OS.
 3. [ ] **Frontend:** tela de encerramento/entrega e cobrança.
 
-## Fase 4 — Transacional
-
-- **Compras** (RF13) — operação atômica
-  ([RNF06](04-requisitos.md#requisitos-não-funcionais)).
-- **Nota Fiscal Eletrônica** (RF14, RNF10) — depende de compras e do módulo fiscal.
-
-> **Frontend desta fase** (após backend pronto): telas de Compras e NF-e.
-
 ## Fase 5 — Acesso e fluxos adiados
 
 - **Gerenciamento de Usuários** e **Login** (RF15) —
   ver [Segurança](08-seguranca-e-autenticacao.md).
-- Fluxos completos de **compra** e **venda** (a decidir).
+- Fluxo completo de **venda** (a decidir). O fluxo de **compra** foi antecipado para a
+  [Fase 4](#fase-4--compras-e-nf-e--prioridade-sobre-a-fase-os).
 
 > **Frontend desta fase** (após backend pronto): telas de login e conta de usuário.
 

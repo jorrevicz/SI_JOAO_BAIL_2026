@@ -28,8 +28,10 @@ ação destrutiva sobre documentos financeiros/fiscais, não uma nova sessão co
 - **Backend:** a rota de cancelamento exige, além do `authMiddleware`, a senha atual
   do usuário no corpo da requisição; a senha é validada antes de executar
   `cancelarX()` — falha retorna 401.
-- **Frontend:** o formulário de cancelamento pede a senha num passo de confirmação
-  antes de habilitar o botão de confirmar.
+- **Frontend:** o fluxo de cancelamento é: botão **Cancelar** → formulário em modo de
+  consulta (botão de salvar vira **Confirmar cancelamento**) → justificativa → **popup de
+  login/confirmação** pedindo a senha. O cancelamento só é efetivado depois desse popup
+  (ver RN014 de [Gerenciar Compras](07-casos-de-uso.md#gerenciar-compras)).
 - Ver [Casos de Uso](07-casos-de-uso.md#regras-de-negócio-transversais) (RN003) para
   a lista completa de operações afetadas.
 

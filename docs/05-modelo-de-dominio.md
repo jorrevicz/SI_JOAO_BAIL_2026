@@ -55,27 +55,26 @@ Pessoas/empresas com quem a empresa transaciona. Todos referenciam **Cidade**
 > Todos armazenados sem máscara — dígitos puros (ver [Modelo de Dados](06-modelo-de-dados.md#princípios-de-modelagem)).
 
 ### Fornecedores
-- **Atributos:** `codForn`, `codCidade`, `fornecedor`, `nomeFantasia`, `enderecoForn`, `bairroForn`, `cepForn`, `foneForn`, `cpfCnpjForn`, `inscEstSubTrib`, `tipoPessoa`, `apelido`, `dtNascimento`, `dtFundacao`, `genero`, `foneFixo`, `email`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `codForn`, `codCidade`, `fornecedor`, `nomeFantasia`, `enderecoForn`, `bairroForn`, `cepForn`, `foneForn`, `cpfCnpjForn`, `inscEstSubTrib`, `tipoPessoa`, `apelido`, `rg`, `dtNascimento`, `dtFundacao`, `genero`, `foneFixo`, `email`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Operações:** `consultarFornecedores()`, `adicionarFornecedor()`, `editarFornecedor()`, `removerFornecedor()`, `listarProdutosFornecedor()`, `listarContasPagarFornecedor()`
 - **Liga-se a:** [Produtos](#3-produtos-e-catálogo) (via [ProdutoFornecedor](#produtofornecedor)), [Contas a Pagar](#contasapagar), [Compras](#6-compras), [NF-e](#7-fiscal-nf-e).
 
 ### Clientes
-- **Atributos:** `codCliente`, `codCidade`, `codCondDePag`, `cliente`, `enderecoCl`, `bairroCl`, `cepCl`, `foneCl`, `tipoPessoa`, `apelido`, `nomeFantasia`, `rg`, `dtNascimento`, `dtFundacao`, `genero`, `foneFixo`, `email`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `codCliente`, `codCidade`, `codCondDePag`, `cliente`, `enderecoCl`, `bairroCl`, `cepCl`, `foneCl`, `cpfCnpjCl`, `inscEstCl`, `tipoPessoa`, `apelido`, `nomeFantasia`, `rg`, `dtNascimento`, `dtFundacao`, `genero`, `foneFixo`, `email`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Relacionamento:** referencia **Cidade** (`codCidade`) e **Condição de Pagamento** (`codCondDePag`).
 - **Operações:** `consultarClientes()`, `adicionarCliente()`, `editarCliente()`, `removerCliente()`
 - **Liga-se a:** [Contas a Receber](#contasareceber), [NF-e](#7-fiscal-nf-e).
 
 > **Dados pessoais por tipo de pessoa (Clientes e Fornecedores):** `tipoPessoa` (`FISICA`/`JURIDICA`)
-> é o primeiro campo do formulário e decide o que se preenche. **Física:** `apelido`, `dtNascimento`
-> (obrigatória), `genero` (obrigatório; enum `Genero`: `MASCULINO`/`FEMININO`/`OUTRO`) e, só em
-> Clientes, `rg`. **Jurídica:** `nomeFantasia` (em Fornecedores já existia) e `dtFundacao`
+> é o primeiro campo do formulário e decide o que se preenche. **Física:** `apelido`, `rg` (opcional), `dtNascimento`
+> (obrigatória) e `genero` (obrigatório; enum `Genero`: `MASCULINO`/`FEMININO`/`OUTRO`). Clientes e Fornecedores também exigem `cpfCnpjCl`/`cpfCnpjForn` (11 ou 14 dígitos) e `inscEstCl`/`inscEstSubTrib`. **Jurídica:** `nomeFantasia` (em Fornecedores já existia) e `dtFundacao`
 > (obrigatória). `foneFixo` (opcional) e `email` (obrigatório) valem para os dois tipos. A obrigatoriedade
 > condicional é validada no Zod (`superRefine`); campos do outro tipo são descartados (gravados como
 > `NULL`). Datas são `DATE`, não podem estar no futuro.
 
 
 ### Transportadoras
-- **Atributos:** `codTransp`, `codCidade`, `codVeiculo`, `transportadora`, `nomeFantasia`, `tipoPessoa`, `enderecoTransp`, `cpfCnpjTransp`, `inscEstTransp`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `codTransp`, `codCidade`, `codVeiculo`, `transportadora`, `nomeFantasia`, `tipoPessoa`, `enderecoTransp`, `bairroTransp`, `cepTransp`, `foneTransp`, `cpfCnpjTransp`, `inscEstTransp`, `tipoPessoa`, `apelido`, `rg`, `dtNascimento`, `dtFundacao`, `genero`, `foneFixo`, `email`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Operações:** `consultarTransportadoras()`, `adicionarTransportadora()`, `editarTransportadora()`, `removerTransportadora()`, `consultarVeiculos()`
 - **Liga-se a:** [Veículos](#4-logística-e-veículos), [NF-e](#7-fiscal-nf-e).
 
@@ -87,9 +86,18 @@ Núcleo de mercadorias da empresa (equipamentos, periféricos, acessórios e cor
 removida do escopo do MVP — ver [Modelo de Dados](06-modelo-de-dados.md#princípios-de-modelagem).
 
 ### Produtos
-- **Atributos:** `codProd`, `produto`, `undProduto`, `estoque`, `pesoBruto`, `pesoLiq`, `saldoProd`, `custoMedioProd`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `codProd`, `produto`, `undProduto`, `estoque`, `pesoBruto`, `pesoLiq`, `custoProd`, `custoMedioProd`, `precoVenda`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Operações:** `consultarProdutos()`, `adicionarProduto()`, `editarProduto()`, `removerProduto()`, `consultarFornecedores()`, `consultarCategorias()`
-- **Imutáveis na edição:** `estoque` e `custoMedioProd` são definidos no cadastro (custo inicial); após a criação só são alterados por **compras** (movimentação de estoque / custo médio ponderado) — nunca por edição direta.
+- `custoProd` — custo unitário de referência: nasce com o **custo inicial** informado no
+  cadastro e passa a ser o custo unitário da última compra lançada.
+- `custoMedioProd` — custo médio ponderado; **nasce 0** e só é calculado pelas compras
+  lançadas (o custo inicial não o define — Fase 4, Lote C-0).
+- `precoVenda` — preço de venda, obrigatório e **editável** no cadastro, sujeito ao mesmo
+  bloqueio de edição dos demais campos quando o produto tem compra ou NF-e vinculada
+  (RN004 transversal / RN005 de Produtos); exibido no rodapé da compra (RN015 de Compras).
+- `estoque` é o saldo do produto — a antiga coluna `saldoProd` duplicava esse valor e foi
+  removida (3FN).
+- **Imutáveis na edição:** `estoque`, `custoProd` e `custoMedioProd` são definidos no cadastro (estoque e custo iniciais); após a criação só são alterados por **compras** (movimentação de estoque / custo médio ponderado) — nunca por edição direta.
 - O produto **não carrega código de categoria**: a relação com Categorias é **N:N** e vive
   na associativa `ProdutoCategoria`. Um produto tem **ao menos uma** categoria; a lista é
   gerenciada de forma embutida e atômica dentro do formulário de produto (mesmo padrão de
@@ -98,8 +106,7 @@ removida do escopo do MVP — ver [Modelo de Dados](06-modelo-de-dados.md#princ�
 ### Categorias
 - **Atributos:** `codCategoria`, `categoria`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
 - **Operações:** `consultarCategorias()`, `adicionarCategoria()`, `editarCategoria()`, `removerCategoria()`
-- Taxonomia **aberta**, mantida pelo usuário. Não se confunde com
-  [ClassificacoesCompra](#6-compras), que é um domínio fechado de propósito de compra.
+- Taxonomia **aberta**, mantida pelo usuário.
 
 ### ProdutoCategoria *(associativa Produto × Categoria — FK puras)*
 - **Atributos:** `codProduto`, `codCategoria`
@@ -138,6 +145,7 @@ Condições/formas de pagamento, parcelamento e contas. Estrutura compartilhada 
 - **Invariantes do plano de parcelamento** (validadas no backend, Zod):
   - Toda condição deve ter **≥ 1 parcela** (RN003).
   - Os `numDias` das parcelas devem ser **estritamente crescentes** — sem dias repetidos (RN004).
+  - Os `numParcela` (informados manualmente) devem ser **únicos** na condição; a regra de dias crescentes acima é avaliada na ordem do `numParcela`.
   - **À vista = 1 dia** — `numDias` mínimo é 1; 0 não é permitido (RN005).
   - A soma dos `percentual` de todas as parcelas deve ser exatamente **100%** (RN006).
 
@@ -146,15 +154,22 @@ Condições/formas de pagamento, parcelamento e contas. Estrutura compartilhada 
 - **Operações:** `consultarFormasDePagamento()`, `adicionarFormasDePagamento()`, `removerFormasDePagamento()`, `editarFormasDePagamento()`
 
 ### Parcelas
-- **Atributos:** `codParcela`, `codCondDePag`, `codFormaDePag`, `percentual`, `numDias`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Atributos:** `codCondDePag`, `numParcela`, `codFormaDePag`, `percentual`, `numDias`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- **Chave primária composta:** (`codCondDePag`, `numParcela`). O `numParcela` é **definido manualmente** (1, 2, 3…), por condição, **sem geração automática** (sem identity/sequence): o usuário informa o número de cada parcela e o backend não o atribui.
+- **Número único por condição:** o `numParcela` não pode repetir dentro da condição (Zod no conjunto embutido; 409 no `POST /api/parcelas` avulso). Não há restrição de ordem de registro — pode-se cadastrar a parcela 1 depois da 3.
+- **Dias seguem o número:** a parcela de número maior não pode ter `numDias` menor (nem igual) ao da parcela de número imediatamente anterior (validado nos dois caminhos, conjunto embutido e avulso).
 - **Relacionamento:** liga **Condição** e **Forma** de pagamento; gerenciadas **dentro** do formulário de condição (persistência atômica via `WithTransaction`).
+- **Cancelamento:** uma parcela só pode ser cancelada **antes de ter sido paga** (RN007 de Parcelas).
 - **Operações:** `consultarParcelas()`, `adicionarParcelas()`, `removerParcelas()`, `editarParcelas()`
 
 ### ContasAPagar
 - **Atributos:** `numero`, `modelo`, `serie`, `parcela`, `codFornecedor`, `codFormaDePag`, `dtEmissao`, `dtVencimento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
-- `numero` (VarChar(28)), `modelo` (VarChar(2)), `serie` (VarChar(2)) e `parcela` (Int) formam
-  a **chave primária composta** — chave natural do documento de compra parcelado, substituindo
-  o antigo identificador substituto `codContasAPag`; mesmo tratamento aplicado a
+- `numero` (VarChar(9) — número da nota), `modelo` (VarChar(2)), `serie` (VarChar(2)),
+  `codFornecedor` (FK para o fornecedor emitente) e `parcela` (Int) formam a **chave primária
+  composta** — chave natural do documento de compra parcelado, substituindo o antigo
+  identificador substituto `codContasAPag`. O fornecedor entra na chave porque o mesmo
+  número de nota pode existir para emitentes diferentes; por isso `codFornecedor` **não é
+  editável** (vem da URL na edição). Mesmo tratamento aplicado a
   [ContasAReceber](#contasareceber) e [Compras](#compras).
 - Conta a pagar **não referencia mais NF-e diretamente** (`codNfe` removido) — o vínculo com
   a nota fiscal deixa de ser uma FK formal em `ContasAPagar`.
@@ -165,35 +180,40 @@ Condições/formas de pagamento, parcelamento e contas. Estrutura compartilhada 
 - `dtVencimento` e `valor` são a nomenclatura unificada dos antigos `vencFatura`/`vlrFatura`
   — mesmo nome usado em `ContasAReceber`.
 - `juro`, `desconto` e `multa` são os encargos apurados no título. `valorBaixa` e `dtBaixa`
-  registram o valor e a data em que o título foi efetivamente quitado — anuláveis, só
-  preenchidos por `registrarContaPaga()`, nunca no cadastro. `justificativaCancelamento`
+  registram o valor e a data em que o título foi efetivamente quitado — **obrigatórios no
+  cadastro**: a conta nasce já baixada (sem estado "em aberto") e não há baixa posterior. `justificativaCancelamento`
   é preenchida por `cancelarContaPagar()` (mesma dinâmica de `Compras`/`ContasAReceber`).
-- **Cancelamento só antes da baixa:** `cancelarContaPagar()` só é permitido enquanto
-  `valorBaixa`/`dtBaixa` ainda estiverem nulos (título não pago); exige também
+- **Cancelamento:** `cancelarContaPagar()` é a única operação após o cadastro (sem edição,
+  exclusão ou baixa) e vale mesmo para conta baixada, uma única vez; exige também
   **reautenticação** do usuário (RN003 transversal, ver
   [Segurança](08-seguranca-e-autenticacao.md#reautenticação-para-cancelamento-rn003)).
-- **Operações:** `consultarContasPagar()`, `adicionarContaPagar()`, `editarContaPagar()`, `removerContaPagar()`, `registrarContaPaga()`, `cancelarContaPagar()`
+- **Ordenação da listagem:** fornecedor → número da nota (`numero`) → número da parcela (`parcela`).
+- `vlrTotal` *(calculado, não persistido — 3FN)* — `valor + juro + multa − desconto`, calculado pelo Backend a cada leitura (`shared/conta/contaTotal.ts`) e devolvido junto da conta; `POST .../calcular` dá a prévia ao formulário, que o exibe sob os campos de valor e encargos.
+- **Operações:** `consultarContasPagar()`, `adicionarContaPagar()` (já baixada), `cancelarContaPagar()`
 
 ### ContasAReceber
 - **Atributos:** `numero`, `modelo`, `serie`, `parcela`, `codCliente`, `codFormaDePag`, `dtEmissao`, `dtVencimento`, `dtPagamento`, `valor`, `juro`, `desconto`, `multa`, `valorBaixa`, `dtBaixa`, `justificativaCancelamento`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
-- `numero` (VarChar(28)), `modelo` (VarChar(2)), `serie` (VarChar(2)) e `parcela` (Int) formam
-  a **chave primária composta** — chave natural do documento de venda parcelado, substituindo
-  o antigo identificador substituto `codContasARec`; mesmo tratamento aplicado a
+- `numero` (VarChar(9) — número da nota), `modelo` (VarChar(2)), `serie` (VarChar(2)),
+  `codCliente` (FK para o cliente) e `parcela` (Int) formam a **chave primária composta** —
+  chave natural do documento de venda parcelado, substituindo o antigo identificador
+  substituto `codContasARec`. O cliente entra na chave e **não é editável** (vem da URL na
+  edição). Mesmo tratamento aplicado a
   [Compras](#compras).
 - Conta a receber **não referencia mais NF-e diretamente** (`codNfe` removido) — o vínculo com
   a nota fiscal deixa de ser uma FK formal em `ContasAReceber`.
 - `dtVencimento` e `valor` são a nomenclatura unificada dos antigos `vencRecibo`/`vlrRecibo`
   — mesmo nome usado em `ContasAPagar`.
 - `juro`, `desconto` e `multa` são os encargos apurados no título. `valorBaixa` e `dtBaixa`
-  registram o valor e a data em que o título foi efetivamente quitado — anuláveis, assim como
-  `dtPagamento`, só preenchidos por `registrarPagamentoRecebido()`, nunca no cadastro.
+  registram o valor e a data em que o título foi efetivamente quitado — **obrigatórios no
+  cadastro**, assim como `dtPagamento`: a conta nasce já baixada (sem estado "em aberto").
   `justificativaCancelamento` é preenchida por `cancelarContaReceber()` (mesma dinâmica de
   `Compras`/`ContasAPagar`).
-- **Cancelamento só antes da baixa:** `cancelarContaReceber()` só é permitido enquanto
-  `valorBaixa`/`dtBaixa`/`dtPagamento` ainda estiverem nulos (título não recebido);
-  exige também **reautenticação** do usuário (RN003 transversal, ver
+- **Cancelamento:** `cancelarContaReceber()` é a única operação após o cadastro (sem edição,
+  exclusão ou baixa) e vale mesmo para conta baixada, uma única vez; exige também **reautenticação** do usuário (RN003 transversal, ver
   [Segurança](08-seguranca-e-autenticacao.md#reautenticação-para-cancelamento-rn003)).
-- **Operações:** `consultarContasReceber()`, `adicionarContaReceber()`, `editarContaReceber()`, `removerContaReceber()`, `registrarPagamentoRecebido()`, `cancelarContaReceber()`
+- **Ordenação da listagem:** cliente → número da nota (`numero`) → número da parcela (`parcela`).
+- `vlrTotal` *(calculado, não persistido — 3FN)* — `valor + juro + multa − desconto`, calculado pelo Backend a cada leitura (`shared/conta/contaTotal.ts`) e devolvido junto da conta; `POST .../calcular` dá a prévia ao formulário, que o exibe sob os campos de valor e encargos.
+- **Operações:** `consultarContasReceber()`, `adicionarContaReceber()` (já baixada), `cancelarContaReceber()`
 
 ---
 
@@ -203,31 +223,46 @@ Registro de compras a fornecedores e os itens comprados. Operação transacional
 (ver [RNF06](04-requisitos.md#requisitos-não-funcionais)).
 
 ### Compras
-- **Atributos:** `numero`, `modelo`, `serie`, `codForn`, `codTransp`, `codCondDePag`, `codClassificacaoCompra`, `dtChegada`, `dtEmissao`, `dtEntrada`, `frete`, `seguro`, `despesas`, `vlrTotal`, `justificativaCancelamento`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
-- `numero` (VarChar(28)), `modelo` (VarChar(2)) e `serie` (VarChar(2)) formam a **chave
-  primária composta** — chave natural do documento de compra, substituindo o antigo
-  identificador substituto `codCompra`.
-- `codClassificacaoCompra` — FK obrigatória para `ClassificacoesCompra`, que define o
-  propósito da compra: **obra-prima**, **revenda** ou **serviços**. Uma compra tem
-  **exatamente uma** classificação (RN005) — por isso é FK 1:N, não associativa; não se
-  mistura produtos de propósitos diferentes numa mesma compra/nota fiscal.
+- **Atributos:** `numero`, `modelo`, `serie`, `codForn`, `codTransp`, `codCondDePag`, `dtChegada`, `dtEmissao`, `dtEntrada`, `frete`, `seguro`, `despesas`, `justificativaCancelamento`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
+- `numero` (VarChar(9) — número da nota), `modelo` (VarChar(2)), `serie` (VarChar(2)) e
+  `codForn` (FK para o fornecedor emitente) formam a **chave primária composta** — chave
+  natural do documento de compra, substituindo o antigo identificador substituto
+  `codCompra`. O fornecedor entra na chave porque o mesmo número de nota pode existir para
+  emitentes diferentes; por isso `codForn` **não é editável** (vem da URL na edição) e
+  `CompraProduto` o replica na FK composta para `Compras`.
 - `dtChegada`, `dtEmissao` e `dtEntrada` — datas de chegada da mercadoria, emissão do
-  documento de compra e da operação de entrada (registro no estoque), respectivamente.
+  documento de compra e da operação de entrada (registro no estoque), respectivamente;
+  a data da operação equivale à entrada da compra (RN018). `dtEmissao`, `dtChegada` e
+  `dtEntrada` são obrigatórias; `dtEntrada` é preenchida com a data da operação no cadastro,
+  que já é o lançamento.
+- **Sem estado "aberto" (RN013):** a compra não tem rascunho nem edição e **não há coluna
+  `situacao`** (migration `compras-sem-estado-aberto`): toda compra existente está lançada.
+  Cancelada é derivada de `justificativaCancelamento`, como em Contas.
+- **Lançamento (`adicionarCompra()`):** o cadastro é o lançamento; numa única transação, soma a `quantidade`
+  de cada item ao `estoque` do produto, recalcula `custoMedioProd` (média ponderada; se
+  ainda for 0, a média parte de `custoProd`), grava `custoProd` com o custo unitário do
+  item e preenche `dtEntrada` (além de gravar cabeçalho, itens e parcelas). **Não gera Contas a Pagar** — os títulos continuam
+  cadastrados manualmente. Cancelar uma compra lançada estorna estoque e custo médio.
+- **Totais e fechamento (RN012, RN015):** o total dos produtos aparece logo após a
+  tabela de itens; o total da compra vem depois dos subtotais; ao final, o formulário
+  apresenta **saldo** e **preço de venda**.
+- **Cancelamento (RN014):** consulta → confirmar cancelamento → justificativa → popup
+  de login/confirmação.
 - **Invariante de datas (RN004):** `dtChegada` não pode ser **anterior** a `dtEmissao`
   (pode ser igual ou posterior) e deve estar **entre `dtEmissao` e a data atual**
   (sem data de chegada futura).
-- `frete`, `seguro` e `despesas` — custos adicionais da operação de compra, somados ao
-  custo dos produtos para compor o custo médio ponderado no recebimento. No formulário,
-  são apresentados **antes** da tabela de produtos, pois são a base do rateio de custo
-  de cada item (RN009); o total geral da compra é sempre apresentado **depois** dos
-  subtotais que o compõem — condição de pagamento, subtotal dos produtos, despesas etc.
-  (RN010).
-- `vlrTotal` — valor final da compra, recalculado sempre que qualquer fator do cálculo
-  muda: o subtotal das parcelas da condição de pagamento (`CondicaoDePagamento`/
-  `Parcelas`), os encargos da própria condição (`juroCondPag`/`multaCondPag`/
-  `descontoCondPag`), as características dos produtos vinculados (`CompraProduto` —
-  quantidade e `custoMedioProduto` de cada item) e `frete`/`seguro`/`despesas`. É o
-  campo exibido como total geral da compra (RN010, acima).
+- `frete`, `seguro` e `despesas` (outras despesas) — custos adicionais da operação de
+  compra, somados ao custo dos produtos para compor o custo médio ponderado no
+  recebimento. No formulário, os três (`frete`, `seguro` e `despesas`) são apresentados juntos
+  **depois** da tabela de produtos, assim que há ao menos um item, seguidos do total da
+  compra (`vlrTotal`); não entram no rateio dos produtos, só no `vlrTotal`. Ficam
+  bloqueados com as parcelas geradas (RN021).
+- `vlrTotal` *(calculado, não persistido — 3FN)* — valor final da compra, calculado pelo
+  Backend a cada leitura a partir dos itens e das despesas e só exibido ao Frontend: **total dos produtos** (Σ `quantidade × valorUnitario −
+  desconto` de cada `CompraProduto`) **+ `frete` + `seguro` + `despesas`**. Os encargos
+  da condição de pagamento (`juroCondPag`/`multaCondPag`/`descontoCondPag`) **não**
+  entram no total — aplicam-se a títulos em atraso, não ao valor da compra. É o campo
+  exibido como total geral da compra, logo abaixo das despesas.
 - `justificativaCancelamento` — preenchida por `cancelarCompra()`, registra o motivo do
   cancelamento da compra; `cancelarCompra()` exige **reautenticação** do usuário
   (RN003 transversal, ver [Segurança](08-seguranca-e-autenticacao.md#reautenticação-para-cancelamento-rn003)).
@@ -236,33 +271,43 @@ Registro de compras a fornecedores e os itens comprados. Operação transacional
   `codCondDePag` é pré-preenchido com a condição cadastrada nele; o usuário pode
   **alterá-la apenas para aquela compra** — a alteração não é gravada de volta no
   cadastro do fornecedor.
+- **Parcelas da compra (RN019–RN023):** após adicionar produtos o documento fiscal fica
+  bloqueado (RN019); com parcelas geradas, documento e produtos ficam bloqueados (RN021).
+  As parcelas são **geradas automaticamente** a partir da condição selecionada (RN022,
+  `gerarParcelas()` — `POST /api/compras/parcelas`, cálculo no Backend) numa tabela embutida
+  no formulário e podem ser **ajustadas só para a compra**, sem alterar a condição nem
+  suas `Parcelas` originais (RN023). Ficam persistidas em `CompraParcelas` (ver abaixo),
+  gravadas junto com a compra e sem edição posterior, como `CompraProduto`; a compra
+  exige **≥ 1 parcela**, vencimentos crescentes e posteriores à emissão e **soma = `vlrTotal`**
+  (400 se divergir). Continua valendo: lançar a compra **não gera Contas a Pagar**.
 - **Validação prévia do documento (RN007):** numa compra nova, `numero`/`modelo`/`serie`
   devem ser validados (formato e inexistência prévia no banco, via
   `validarDocumentoCompra()`) antes de liberar os demais campos do formulário.
-- **Exclusão consultável (RN008):** excluir uma compra abre o formulário em modo de
-  **consulta** antes de confirmar a remoção da lista.
 - Compra **não referencia mais NF-e diretamente** (`codNfe` removido) — o vínculo com a
   nota fiscal, quando existir, deixa de ser uma FK formal em `Compras`.
-- **Operações:** `consultarCompras()`, `validarDocumentoCompra()`, `adicionarCompra()`, `cancelarCompra()`, `consultarNotaFiscal()`, `consultarCondicoesPagamento()`, `consultarProdutos()`, `consultarFornecedores()`, `consultarClientes()`, `consultarTransportadoras()`, `realizarCompra()`, `gerarNotaFiscal()`
-- **Liga-se a:** [Fornecedores](#fornecedores), [Transportadoras](#transportadoras), [Condição de Pagamento](#condicaodepagamento), ClassificacoesCompra.
-
-### ClassificacoesCompra *(domínio fechado do propósito da compra)*
-- **Atributos:** `codClassificacaoCompra`, `classificacaoCompra`, `dtCriacao`, `dtEdicao`, `codUser`, `isActive`
-- **Operações:** `consultarClassificacoesCompra()`
-- Os três valores — **obra-prima**, **revenda** e **serviços** — são semeados pelo script
-  de seed e sustentam a RN005. Não são uma "categoria": diferente de
-  [Categorias](#3-produtos-e-catálogo), que é taxonomia aberta do catálogo de produtos,
-  este é um domínio fechado do qual depende regra de negócio — renomear ou desativar um
-  valor aqui muda o significado de compras já registradas.
+- **Operações:** `consultarCompras()`, `validarDocumentoCompra()`, `adicionarCompra()` (já lança), `cancelarCompra()`, `consultarNotaFiscal()`, `consultarCondicoesPagamento()`, `consultarProdutos()`, `consultarFornecedores()`, `consultarClientes()`, `consultarTransportadoras()`, `realizarCompra()`, `gerarNotaFiscal()`
+- **Liga-se a:** [Fornecedores](#fornecedores), [Transportadoras](#transportadoras), [Condição de Pagamento](#condicaodepagamento).
 
 ### CompraProduto *(associativa Compra × Produto)*
-- **Atributos:** `numero`, `modelo`, `serie`, `codProduto`, `custoMedioProduto`, `percentualRateio`, `valorRateio`, `dtCriacao`, `dtEdicao`, `codUser`
+- **Atributos:** `numero`, `modelo`, `serie`, `codProduto`, `quantidade`, `valorUnitario`, `desconto`, `unidade`, `dtCriacao`, `dtEdicao`, `codUser`
 - `numero`, `modelo`, `serie` — chave estrangeira composta para [Compras](#compras) (substitui `codCompra`).
-- `custoMedioProduto` — dado histórico: custo unitário no momento da compra (pode divergir do custo médio atual).
-- `percentualRateio` e `valorRateio` — rateio dos custos adicionais da compra
-  (`frete`/`seguro`/`despesas`) aplicado ao item, exibido na tabela de produtos tanto em
-  **percentual** quanto em **valor** (RN011).
-- **Operações:** `consultarCompraProdutos()`, `adicionarCompraProduto()`, `editarCompraProduto()`, `removerCompraProduto()`
+- `quantidade` (inteiro > 0, como `Produtos.estoque`) e `valorUnitario` — quantidade
+  comprada e preço unitário do documento.
+- `unidade` *(RN020)* — tipo de unidade do produto **naquela
+  compra**, informado pelo usuário porque pode diferir de `Produtos.undProduto` (forma como
+  o fornecedor vende × forma como a loja vende). Pré-preenchido com `undProduto`, editável
+  só no item, sem gravar de volta no cadastro do produto.
+- `desconto` — desconto em R$ aplicado **apenas por item** (RN016), entre 0 e
+  `quantidade × valorUnitario`; a compra não tem desconto geral.
+- `percentualRateio` e `valorRateio` *(calculados, não persistidos)* — rateio **do produto** (RN011): o percentual é a
+  fatia do item no total dos produtos e o valor é essa fatia em R$ (= valor líquido do
+  item). **As despesas (`frete`/`seguro`/`despesas`) não entram no rateio dos produtos**;
+  entram só no `vlrTotal`. Os centavos que sobram do arredondamento do percentual vão para
+  os itens de maior resto (método dos maiores restos), para que a soma feche em 100%.
+- `custoMedioProduto` *(calculado, não persistido)* — custo unitário final do item,
+  `valorRateio / quantidade` (sem despesas; pode divergir do custo médio atual do
+  produto). É recalculado a cada leitura e é o valor usado no lançamento.
+- **Operações:** `consultarCompraProdutos()`, `adicionarCompraProduto()`
 
 ---
 
@@ -272,6 +317,11 @@ Modelagem da **Nota Fiscal Eletrônica** com campos tributários brasileiros. Te
 fiscais explicados no [Glossário](10-glossario.md). Suporte à emissão é
 [RNF10](04-requisitos.md#requisitos-não-funcionais).
 
+
+### CompraParcelas *(parcelas próprias da compra — RN022/RN023)*
+- **Atributos:** `numero`, `modelo`, `serie`, `codForn`, `numParcela`, `codFormaDePag`, `valor`, `dtVencimento`, `dtCriacao`, `dtEdicao`, `codUser`
+- Chave composta (`numero`, `modelo`, `serie`, `codForn`, `numParcela`); FK composta para [Compras](#compras) e FK para `FormaDePagamento`. Filha embutida da compra (sem `isActive`; remoção física na reconciliação), como `CompraProduto`.
+- Nasce da condição de pagamento (`valor = vlrTotal × percentual`, maiores restos; `dtVencimento = dtEmissao + numDias`), mas é **independente** dela: ajustar uma parcela da compra nunca altera `CondicaoDePagamento`/`Parcelas`.
 ### NotasFiscaisEletronicas
 - **Atributos (identificação/transporte):** `codNfe`, `modelo`, `numSerie`, `codFornecedor`, `codTransportadora`, `codProduto`, `codVeiculo`, `dtReciboNfe`, `dhEmiNfe`, `dhSaiNfe`, `naturezaOp`, `inscEstadualNfe`, `cpfCnpjNfe`, `infoCompl`, `chaveAcessoNfe`, `fretePorConta`, `dtAcessoProduto`
 - `dhEmiNfe` e `dhSaiNfe` — DateTime (data + hora unificados); substituem os campos separados `dtEmissaoNfe`/`hrEmissaoNfe`/`dtSaidaNfe`/`hrSaidaNfe` do diagrama original.

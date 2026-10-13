@@ -39,10 +39,21 @@ compra e financeiro. Web API REST + SPA.
 > formulário de produto — mesmo padrão de Condição de Pagamento × Parcelas, porém com
 > reconciliação por **diferença de conjuntos** (o vínculo não tem payload além das duas FKs).
 >
-> **`ClassificacoesCompra`:** domínio fechado (`obra-prima`, `revenda`, `serviços`) semeado
-> pelo seed, referenciado por `Compras.codClassificacaoCompra` (FK obrigatória, RN005). Não
-> reaproveita `Categorias` — aquela é taxonomia aberta do catálogo, esta sustenta regra de
-> negócio. Só schema e seed por enquanto; o endpoint de leitura nasce com o módulo de Compras.
+> **Número do documento com 9 dígitos:** `numero` de `Compras`/`CompraProduto`/`ContasAPagar`/
+> `ContasAReceber` passou de `VarChar(8)` para `VarChar(9)` (migration
+> `numero-documento-9-digitos`, com backfill de um zero à esquerda); o `documentoFiscalSchema`
+> compartilhado exige exatamente 9 dígitos.
+>
+> **Parceiro na chave do documento:** a chave natural passou a incluir o emitente — `Compras`
+> = (`numero`, `modelo`, `serie`, `codForn`); `CompraProduto` replica `codForn` na FK
+> composta; `ContasAPagar` = (…, `codFornecedor`, `parcela`); `ContasAReceber` = (…,
+> `codCliente`, `parcela`) — migration `chave-documento-com-parceiro`. O parceiro deixou de
+> ser editável (vem da URL no `PUT`) e as rotas ganharam o segmento correspondente
+> (`/api/compras/:numero/:modelo/:serie/:codForn`, `/api/contas-pagamento/:numero/:modelo/:serie/:codFornecedor/:parcela`,
+> idem `contas-receber` com `:codCliente`). `GET .../validar` valida a chave **completa**
+> (inclusive `parcela` nas contas — antes só o documento, o que impedia cadastrar a 2ª
+> parcela). No Frontend, o fornecedor/cliente fica ao lado de "Validar chave" e é travado
+> depois de validado. `ValidarDocumentoFiscalInexistente` virou genérico na chave.
 >
 > **Lote 2B concluído:** Veículos, Fornecedores, Clientes e Transportadoras com CRUDs em
 > 4 camadas, testes TDD (service unitário, repository rollback, routes supertest), soft delete,
@@ -57,8 +68,8 @@ compra e financeiro. Web API REST + SPA.
 > permitido (RN005), soma dos percentuais = 100% (RN006). Frontend exibe total ao vivo e bloqueia
 > "Salvar" enquanto o total ≠ 100% ou não há parcelas.
 >
-> **Regras de imutabilidade na edição (RN004/RN007/RN008):** `estoque` e `custoMedioProd` de
-> Produtos, os custos de Condição de Pagamento (`juroCondPag`, `multaCondPag`, `descontoCondPag`)
+> **Regras de imutabilidade na edição (RN004/RN007/RN008):** `estoque`, `custoProd` e
+> `custoMedioProd` de Produtos, os custos de Condição de Pagamento (`juroCondPag`, `multaCondPag`, `descontoCondPag`)
 > e o `prazoCompensacao` de Forma de Pagamento são definidos no cadastro e **não podem ser
 > editados** — backend omite esses campos do schema de update; frontend exibe os campos travados
 > (`disabled`/`readOnly`) na edição. Ver
@@ -68,7 +79,7 @@ compra e financeiro. Web API REST + SPA.
 > 4 camadas com testes TDD para as duas entidades; chave primária natural composta (`numero`,
 > `modelo`, `serie`, `parcela`), como em `Compras`; `RegistrarBaixa`/`Cancelar` são operações
 > dedicadas (não passam pelo `Update`), com RN de bloqueio (não baixar conta cancelada, não
-> cancelar conta já baixada). Ainda falta o frontend (T-115A).
+> cancelar conta já baixada). Frontend (T-115A) também concluído.
 >
 > **Endurecimento de validação (campos obrigatórios e formato):** vários campos que eram
 > opcionais viraram `NOT NULL` — `tipoPessoa`/`cepCl`/`foneCl` (Clientes), `modeloVeiculo`/
@@ -171,8 +182,7 @@ compra e financeiro. Web API REST + SPA.
 > toda coluna `timestamp without time zone` de `information_schema.columns` (exceto
 > `pgmigrations`, tabela interna do node-pg-migrate). O Backend continua
 > retornando/recebendo ISO 8601 em UTC; o Frontend passou a formatar exibição no padrão
-> brasileiro `DD-MM-AAAA` (`formatarData`) e `DD-MM-AAAA HH:mm` onde a hora importa
-> (`formatarDataHora`), sempre a partir dos componentes UTC da data — nunca do fuso do
+> brasileiro **`dd/mm/aa`** em `formatarData` e `dd/mm/aa HH:mm` em `formatarDataHora` (RNF14); A formatação parte sempre dos componentes UTC da data — nunca do fuso do
 > navegador (`Frontend/src/utils/formatters.ts`). Os campos `datetime-local` de
 > emissão/vencimento também usam esse truque (dígitos UTC no lugar de dígitos locais,
 > via `paraDataHoraInputUtc`/`doInputUtcParaIso`), já que o widget nativo do navegador
@@ -215,8 +225,90 @@ compra e financeiro. Web API REST + SPA.
 > inexistente bloqueia o envio com erro no campo (404 → "Código N não encontrado.").
 > O técnico digitado também precisa ter cargo Técnico, como na consulta.
 >
-> **Próximo passo: telas de cadastro de Cargos/Funcionarios/Servicos/Pecas e a UI de
-> aprovação/reprovação de orçamento de peças.**
+> **Fase 4 — Compras (prioridade sobre o restante da Fase OS), Lotes C-0 a C-4 concluídos:**
+> plano em lotes C-0 a C-5 no [roadmap](docs/09-roadmap.md#fase-4--compras-e-nf-e--prioridade-sobre-a-fase-os).
+> **C-0 (Produtos corrigido):** o "Custo inicial" do cadastro ganhou coluna própria
+> (`custoProd`) e deixou de definir `custoMedioProd`, que nasce 0 e só as compras lançadas
+> calculam; nova coluna `precoVenda` (obrigatória, editável); `saldoProd` removida
+> (duplicava `estoque`) — migration `produtos-custo-preco-venda`. **C-1:** migration
+> `compras-itens-situacao` (`Compras.situacao` `aberto`|`lançado`, `vlrTotal` decimal,
+> `dtEmissao`/`dtChegada` obrigatórias; `CompraProduto` com `quantidade`/`valorUnitario`/
+> `desconto`/`percentualRateio`/`valorRateio`) e módulo `compras` (`GET` lista com filtros
+> `codForn`/`situacao` e cursor sobre a chave natural, `/validar` — RN007, detalhe com
+> itens), com testes TDD. Decisões: lançar a
+> compra só movimenta estoque/custo médio (**não gera Contas a Pagar**); `vlrTotal` = total
+> dos produtos + frete + seguro + despesas (sem encargos da condição); reautenticação do
+> cancelamento é só um popup no Frontend até o EP-10.
+>
+> **C-2/C-3 (backend):** `POST`/`PUT` só de compra em aberto (itens reconciliados por
+> diferença de conjuntos), `DELETE` só em aberto (soft delete, RN008), `PATCH .../lancar`
+> (aberto → lançado, estoque + custo médio ponderado + `dtEntrada`, numa transação) e
+> `PATCH .../cancelar` (só lançada; estorna estoque/custo, 409 se o estoque não comportar).
+> **Todo cálculo da compra é feito no Backend, em TypeScript** (`compras/compras.calculo.ts`:
+> rateio pelos maiores restos, custo unitário, totais, entrada/estorno de estoque) — nunca
+> no SQL nem no Frontend: o repository só lê o produto com `FOR UPDATE` e grava valores
+> prontos; o formulário pede a prévia a `POST /api/compras/calculo`. `HasDependents` de
+> Produtos continua contando qualquer `CompraProduto` (proteção com soft delete) e o
+> `precoVenda` segue o bloqueio da RN004 transversal. **C-4 (frontend):** página Compras,
+> `CompraForm` (modos novo/editar/consulta/excluir/cancelar, campos na ordem das RNs),
+> `CompraItemForm`, consultas de Produto/Transportadora sobre o genérico
+> `components/consultaSelecao` e `components/confirmarSenha` (popup só visual até o EP-10).
+>
+> **Compra sem estado "aberto" (lançamento direto):** a regra do rascunho (RN013/RN008) foi
+> removida — migration `compras-sem-estado-aberto` apaga rascunhos pré-existentes, **remove
+> `Compras.situacao`** e torna `dtEntrada` obrigatória. `POST /api/compras` agora já lança
+> (cabeçalho, itens, parcelas e entrada em estoque/custo médio numa só transação); `PUT`,
+> `DELETE` e `PATCH .../lancar` e os métodos correspondentes de service/repository foram
+> removidos, restando só `cancelar` (com estorno). No Frontend, o botão **Lançar compra** do
+> `CompraForm` substitui o "Salvar" (com confirmação), e a listagem perdeu o filtro de
+> situação e as ações Editar/Lançar/Excluir (modos `editar`/`excluir` removidos).
+>
+> **Contas a Pagar/Receber nascem já baixadas (sem estado "em aberto"):** migration
+> `contas-nascem-baixadas` torna `valorBaixa`/`dtBaixa` (e `dtPagamento`, em Receber)
+> `NOT NULL`, com backfill das contas ainda abertas. `POST` exige os campos de baixa; `PUT`,
+> `DELETE` e `PATCH .../baixa` (e os métodos de service/repository) foram removidos — restam
+> consultar, `calcular`, `validar`, criar e `cancelar` (agora permitido também para conta
+> baixada; 409 se já cancelada). No Frontend, o botão **Lançar conta** substitui o "Salvar"
+> (valor da baixa em branco = `vlrTotal`), a listagem só tem Consultar/Cancelar e os modais
+> `RegistrarBaixaModal`/`RegistrarPagamentoModal` foram excluídos.
+>
+> **Parcelas com número manual (chave composta):** `Parcelas.codParcela` (identity) virou
+> `numParcela`, informado **manualmente** por condição, sem geração automática; a PK passou a ser
+> (`codCondDePag`, `numParcela`) — migration `parcelas-numero-manual` (backfill renumera por
+> condição). O número só não pode repetir na condição (sem exigência de ordem de registro); os
+> `numDias` é que devem crescer com o número da parcela (Zod no conjunto embutido; service no
+> `POST/PUT /api/parcelas`). Reutilizar o número de uma parcela removida a reativa. Rotas avulsas:
+> `/api/parcelas/:codCondDePag/:numParcela`. **Frontend ajustado:** `ParcelaForm` ganhou o campo
+> "Nº da parcela" (manual, bloqueia número já existente na lista), `CondicaoPagamentoForm`
+> envia `numParcela` e `services/parcelas.ts` usa a rota composta.
+>
+> **Lote C-4B — requisitos RN019–RN023 de Compras e RNF14 concluídos:** migration
+> `compras-unidade-e-parcelas` (`CompraProduto.unidade` com backfill do cadastro do produto e
+> nova tabela `CompraParcelas`, chave composta com a compra, remoção física na reconciliação).
+> **RN019/RN021:** no `CompraForm`, o documento fiscal (chave, fornecedor, transportadora, datas)
+> bloqueia com o 1º produto; as despesas ficam depois da tabela de produtos (RN009/RN010/RN017
+> removidas da documentação). Com parcelas geradas, documento, produtos, despesas e condição de
+> pagamento bloqueiam e só as datas de emissão/chegada são liberadas; voltar exige "Descartar parcelas" (confirmação). **RN020:** campo
+> Unidade no `CompraItemForm`, pré-preenchido com `undProduto` e gravado só no item.
+> **RN022/RN023:** `POST /api/compras/parcelas` (`CalcularParcelasCompra`, em
+> `compras.calculo.ts`) gera as parcelas pela condição escolhida; `CompraParcelas.tsx` permite
+> ajustar valor/vencimento/forma e adicionar/remover linhas só na compra; `POST`/`PUT` exigem
+> ≥ 1 parcela, vencimentos crescentes e posteriores à emissão (Zod) e soma = `vlrTotal`
+> (service, 400). Detalhe/`PUT` da compra devolvem `parcelas`. Lançar continua **não** gerando
+> Contas a Pagar. Observação: `CalcularCompra` hoje não soma frete/seguro/despesas ao `vlrTotal`
+> nem as rateia (decisão em andamento, coberta pelos testes atuais); as parcelas fecham no
+> `vlrTotal` que o Backend calcula.
+>
+> **Valores calculados não são persistidos (3FN):** migration `remover-campos-calculados-compras`
+> removeu `Compras.vlrTotal` e `CompraProduto.percentualRateio`/`valorRateio`/`custoMedioProduto`.
+> O Backend os calcula a cada leitura (`ComprasService`, via `CalcularCompra`) e só os devolve
+> ao Frontend — o contrato da API não mudou. `Produtos.custoMedioProd` e `valorBaixa` das
+> contas foram mantidos por decisão do responsável (estado de movimentação / valor pago real).
+> Migration `remover-classificacoes-compra` também eliminou a tabela `ClassificacoesCompra`.
+>
+> **Próximo passo: Lote C-5 — NF-e (EP-09) e `gerarNotaFiscal` da compra.** Só então a
+> Fase OS é retomada (telas de Cargos/Funcionarios/Servicos/Pecas e UI de aprovação de
+> orçamento de peças).
 
 ## Fonte de verdade: leia `docs/` primeiro
 

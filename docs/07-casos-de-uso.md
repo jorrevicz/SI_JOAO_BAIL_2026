@@ -38,6 +38,15 @@ Aplicam-se a praticamente todos os casos de uso:
     Pagamento) — nesse caso o filho embutido não conta como bloqueio, senão a própria
     edição do formulário pai (RN003–RN006 de Condição de Pagamento) ficaria impossível.
 
+- **RN005 — Sem estado "pendente":** compras, contas (a pagar/receber) e ordens de
+  serviço **não possuem estado intermediário "pendente"** (meio-termo). Cada documento
+  está sempre em um estado definido do seu ciclo — Compras: nascem `lançadas`
+  e só podem ser canceladas (ver [Gerenciar Compras](#gerenciar-compras), RN013); Contas: nascem baixadas
+  e só podem ser canceladas (cancelamento derivado de `justificativaCancelamento`, sem coluna
+  de status "pendente"); OS: máquina de estados própria (ver [Gerenciar Ordem de Serviço](#gerenciar-ordem-de-serviço)).
+- **RN006 — Datas no padrão `dd/mm/aa`:** toda data exibida na interface segue o padrão
+  brasileiro `dd/mm/aa` ([RNF14](04-requisitos.md#requisitos-não-funcionais)).
+
 Pré-condição comum: **usuário previamente cadastrado** (respeitando RN001).
 Ativação comum: **clicar no item de menu** correspondente.
 
@@ -76,6 +85,7 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **RN002:** não excluir condição relacionada a clientes ou compras. As **parcelas não bloqueiam** a exclusão: não existem sem a condição, então são removidas (soft delete) junto com ela, na mesma transação.
 - **RN003 — Parcela obrigatória:** toda condição deve ter ao menos uma parcela; condição sem parcelas é rejeitada (400).
 - **RN004 — Ordenação de dias:** os `numDias` das parcelas devem ser estritamente crescentes (sem dias repetidos).
+- **Número da parcela manual:** cada parcela tem `numParcela` **informado manualmente** (sem geração automática), único por condição (chave composta com `codCondDePag`); número repetido é rejeitado. Não há exigência de ordem de registro, mas os `numDias` devem crescer com o número: a parcela de número maior não pode ter dias menores (nem iguais) aos da anterior (400).
 - **RN005 — À vista:** `numDias` mínimo é 1 (0 não permitido); parcela com 1 dia é exibida como "À vista".
 - **RN006 — Percentual total:** a soma dos percentuais de todas as parcelas deve ser exatamente 100%; condição não pode ser salva se o total divergir.
 - **RN007 — Custos imutáveis:** `juroCondPag`, `multaCondPag` e `descontoCondPag` são definidos no cadastro e **não podem ser alterados** na edição. O backend rejeita qualquer valor enviado no `PUT` (campos omitidos do schema de update).
@@ -98,9 +108,15 @@ Ativação comum: **clicar no item de menu** correspondente.
 ### Gerenciar Parcelas
 - **Ator:** Usuário · **RF:** RF06
 - **RN002:** não excluir parcela relacionada a condições de pagamento ou contas.
-- Parcelas são gerenciadas **dentro** do formulário de Condição de Pagamento (RN003–RN006 aplicadas no conjunto); o endpoint standalone `/api/parcelas` permanece para consultas e ajustes avulsos.
+- Parcelas são gerenciadas **dentro** do formulário de Condição de Pagamento (RN003–RN006 aplicadas no conjunto); o endpoint standalone `/api/parcelas` permanece para consultas e ajustes avulsos (`/api/parcelas/:codCondDePag/:numParcela`).
+- **Código manual, sem geração automática:** o `numParcela` é digitado pelo usuário; o banco não o gera. Número repetido é rejeitado (409); reutilizar o número de uma parcela removida (soft delete) a reativa.
 - **RN003 (transversal):** cancelar uma parcela exige reautenticação — ver
   [regras transversais](#regras-de-negócio-transversais).
+- **RN007 — Cancelamento só antes do pagamento:** uma parcela só pode ser **cancelada
+  enquanto não tiver sido paga** — isto é, enquanto o título gerado a partir dela
+  (conta a pagar/receber) não tiver `valorBaixa`/`dtBaixa`. *Observação:* como as contas
+  agora nascem já baixadas, esta regra deixou de ter efeito prático para títulos novos
+  (ver [Contas a Pagar](#gerenciar-contas-a-pagar), RN004).
 - Parcela **não** é alvo do [RN004 transversal](#regras-de-negócio-transversais):
   `ContasAPagar`/`ContasAReceber` guardam apenas `codFormaDePag` (não `codParcela` — o
   vínculo formal foi removido, ver migration `fix-contas-a-pagar`), então nenhuma tabela
@@ -132,11 +148,13 @@ Ativação comum: **clicar no item de menu** correspondente.
   dentro do formulário de produto (mesmo padrão de Condição de Pagamento × Parcelas).
   Categoria repetida na mesma lista é recusada com 400. O botão "Salvar" fica bloqueado
   enquanto não houver ao menos uma categoria.
-- **RN004 — Estoque e custo imutáveis na edição:** `estoque` e `custoMedioProd` são informados no cadastro (valor inicial) e **não podem ser alterados** por edição direta. Após a criação, somente **compras** alteram esses valores (movimentação de estoque / custo médio ponderado). O backend omite esses campos do schema de update.
+- **RN004 — Estoque e custo imutáveis na edição:** `estoque` e o custo inicial (`custoProd`) são informados no cadastro e **não podem ser alterados** por edição direta; `custoMedioProd` nasce 0 e não é informado. Após a criação, somente **compras lançadas** alteram esses valores (movimentação de estoque / custo médio ponderado / custo da última compra). O backend omite esses campos do schema de update. O **preço de venda** (`precoVenda`) é obrigatório e editável, mas segue o bloqueio da RN005 abaixo (RN004 transversal), como os demais campos.
 - **RN005 (transversal, ver [RN004 transversal](#regras-de-negócio-transversais)):** os
-  demais campos (`produto`, `undProduto`, `pesoBruto`, `pesoLiq`, `isActive`, lista de
-  categorias) ficam bloqueados para edição enquanto houver compra ou nota fiscal ativas
-  vinculadas ao produto. A categoria (`Categorias`) segue a mesma regra: sua edição fica
+  demais campos (`produto`, `undProduto`, `pesoBruto`, `pesoLiq`, `precoVenda`, `isActive`,
+  lista de categorias) ficam bloqueados para edição — e o produto não pode ser excluído —
+  quando houver compra ou nota fiscal vinculada ao produto. Como o sistema trabalha com
+  soft delete, o vínculo em `CompraProduto` permanece mesmo depois que a compra
+  é cancelada, e continua protegendo o produto (decisão do responsável pelo projeto). A categoria (`Categorias`) segue a mesma regra: sua edição fica
   bloqueada enquanto houver produto ativo vinculado a ela.
 - **Pós-condição:** cadastrar, consultar, editar, remover produtos e fornecedores/categorias vinculados.
 
@@ -151,9 +169,12 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **Ator:** Usuário · **RF:** RF11
 - **RN003 (transversal):** `cancelarContaPagar()` exige reautenticação — ver
   [regras transversais](#regras-de-negócio-transversais).
-- **RN004 — Cancelamento só antes da baixa:** `cancelarContaPagar()` só é permitido
-  enquanto `valorBaixa`/`dtBaixa` ainda estiverem nulos (título não pago); um título já
-  baixado não pode ser cancelado.
+- **RN004 — Conta nasce já baixada (sem estado "em aberto"):** `valorBaixa` e `dtBaixa`
+  são **obrigatórios no cadastro** — o botão do formulário passa a ser **Lançar conta** e
+  grava a conta já baixada (valor em branco = `vlrTotal` calculado pelo Backend). Não há
+  edição, exclusão nem baixa posterior (`PUT`, `DELETE` e `PATCH .../baixa` removidos): a
+  conta só pode ser **cancelada** (`cancelarContaPagar()`, 409 se já cancelada), inclusive
+  depois de baixada.
 - **RN005 — Emissão e vencimento obrigatórios e consistentes:** `dtEmissao` e
   `dtVencimento` são obrigatórios (não são mais opcionais), armazenados como
   `TimestampTz(3)` (data **e hora**, com fuso explícito — não mais `Timestamp`
@@ -167,18 +188,24 @@ Ativação comum: **clicar no item de menu** correspondente.
   pré-preenche, na criação, a emissão com a data/hora atual e o vencimento com o fim
   do dia de hoje (23:59 UTC) — combinação que já nasce válida e o usuário ajusta se
   precisar.
-- **Pós-condição:** cadastrar, consultar, editar, remover e **cancelar** contas a pagar.
+- **RN006 — Ordenação da listagem:** a listagem é ordenada por **fornecedor**, depois
+  por **número da nota** (`numero`) e, por fim, por **número da parcela** (`parcela`).
+- **Pós-condição:** cadastrar (já baixada), consultar e **cancelar** contas a pagar.
 
 ### Gerenciar Contas a Receber
 - **Ator:** Usuário · **RF:** RF12
 - **RN003 (transversal):** `cancelarContaReceber()` exige reautenticação — ver
   [regras transversais](#regras-de-negócio-transversais).
-- **RN004 — Cancelamento só antes da baixa:** `cancelarContaReceber()` só é permitido
-  enquanto `valorBaixa`/`dtBaixa`/`dtPagamento` ainda estiverem nulos (título não
-  recebido); um título já baixado não pode ser cancelado.
+- **RN004 — Conta nasce já baixada (sem estado "em aberto"):** `valorBaixa`, `dtBaixa` e
+  `dtPagamento` são **obrigatórios no cadastro** (botão **Lançar conta**); não há edição,
+  exclusão nem baixa posterior — mesma regra de
+  [Contas a Pagar](#gerenciar-contas-a-pagar). Só o cancelamento
+  (`cancelarContaReceber()`, 409 se já cancelada) é permitido.
 - **RN005 — Emissão e vencimento obrigatórios e consistentes:** mesma regra de Contas a
   Pagar (`dtEmissao`/`dtVencimento` obrigatórios; `dtVencimento` estritamente posterior a
   `dtEmissao`) — ver RN005 de [Gerenciar Contas a Pagar](#gerenciar-contas-a-pagar).
+- **RN006 — Ordenação da listagem:** a listagem é ordenada por **cliente**, depois por
+  **número da nota** (`numero`) e, por fim, por **número da parcela** (`parcela`).
 - **Pós-condição:** cadastrar, consultar, editar, remover e **cancelar** contas a receber.
 
 ### Gerenciar Ordem de Serviço
@@ -246,12 +273,6 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **RN004 — Data de chegada:** `dtChegada` não pode ser **anterior** a `dtEmissao`
   (pode ser igual ou posterior a ela) e deve estar **entre `dtEmissao` e a data
   atual** — não é permitida data de chegada futura.
-- **RN005 — Classificação única da compra:** toda compra tem exatamente uma
-  classificação (`codClassificacaoCompra` → `ClassificacoesCompra`: **obra-prima**,
-  **revenda** ou **serviços**); não é permitido misturar produtos de
-  classificações/propósitos diferentes numa mesma compra (nota fiscal). Por ser
-  "exatamente uma", a relação é FK 1:N — não uma associativa, que tornaria o estado
-  proibido representável no banco.
 - **RN006 — Condição de pagamento herdada do fornecedor:** ao selecionar o
   fornecedor, `codCondDePag` é pré-preenchido com a condição de pagamento cadastrada
   nele; o usuário pode **alterá-la apenas para aquela compra** — a alteração não é
@@ -261,17 +282,86 @@ Ativação comum: **clicar no item de menu** correspondente.
   demais campos do formulário só são liberados para edição depois que `numero`/
   `modelo`/`serie` forem validados (formato e inexistência prévia no banco) via
   consulta dedicada.
-- **RN008 — Exclusão consultável:** ao excluir uma compra, o formulário é
-  apresentado em **modo de consulta** antes de confirmar a exclusão da lista de
-  compras.
-- **RN009 — Custos adicionais antes dos produtos:** os custos adicionais (`frete`,
-  `seguro`, `despesas`) são apresentados **antes** da tabela de produtos no
-  formulário, pois compõem o rateio de custo aplicado a cada item.
-- **RN010 — Total após os subtotais:** o total geral da compra é apresentado
-  **depois** dos subtotais que o compõem (condição de pagamento, subtotal dos
-  produtos, despesas e demais cálculos que impactem a nota final).
-- **RN011 — Rateio de produtos:** a tabela de produtos apresenta o rateio dos
-  custos adicionais por item tanto em **percentual** quanto em **valor**.
+- **RN008 — (removida):** a compra não é mais excluída — sem estado "aberto", não há
+  rascunho a descartar; a compra lançada só é cancelada (RN014). O número é mantido para
+  não renumerar as demais regras.
+- **RN009 — (removida):** a regra de posição das despesas (frete, seguro e outras
+  despesas) deixou de existir; no formulário atual elas aparecem **depois** da tabela de
+  produtos (ver RN019 e RN021). Não entram no rateio dos produtos (RN011); somam-se apenas
+  ao total da compra. O número é mantido para não renumerar as demais regras.
+- **RN010 — (removida):** a regra de apresentação do total da compra foi retirada. O total
+  (`vlrTotal` = total dos produtos + frete + seguro + outras despesas) é exibido logo abaixo
+  das despesas. O número é mantido para não renumerar as demais regras.
+- **RN011 — Rateio de produtos:** a tabela de produtos apresenta o rateio de cada
+  produto tanto em **percentual** (fatia no total dos produtos) quanto em **valor**, sem
+  considerar as despesas.
+- **RN012 — Total dos produtos junto à tabela:** o **total dos produtos**
+  (Σ quantidade × valor unitário de cada item) é exibido **logo após a tabela de
+  produtos**, visível junto aos totais por coluna da própria tabela. A linha de totais cobre todas as colunas numéricas: quantidade, valor unitário,
+  desconto, valor líquido, rateio (% e R$) e custo unitário — calculados no Backend.
+- **RN013 — Lançamento direto, sem estado "aberto":** a compra **não tem rascunho nem
+  edição**: não existe estado "aberto" (nem "pendente" — RN005 transversal) e a coluna
+  `situacao` não existe. No formulário, o botão **Lançar compra** substitui o antigo
+  "Salvar": ele cadastra a compra e efetiva a entrada numa única transação (RNF06) —
+  grava cabeçalho, itens e parcelas, soma as quantidades ao estoque, recalcula o custo
+  médio ponderado, atualiza o custo da última compra de cada produto e preenche
+  `dtEntrada` — e **não gera Contas a Pagar** (cadastradas à parte). Antes de lançar o
+  Frontend pede confirmação. Não há `PUT`, `DELETE` nem `PATCH .../lancar`: a compra
+  lançada só pode ser **cancelada** (com estorno de estoque e custo médio — RN014).
+- **RN014 — Fluxo de cancelamento:** o botão **Cancelar** abre o formulário da compra
+  em **modo de consulta**; o botão de lançar é trocado por **Confirmar cancelamento**;
+  o usuário informa a **justificativa** (`justificativaCancelamento`) e, por fim, um
+  **popup de login/confirmação** valida a identidade — só então o cancelamento é
+  efetivado (RN003 transversal). **Antes de qualquer operação de cancelamento é
+  necessário fazer login novamente** (reautenticação). Toda compra ainda
+  não cancelada pode ser cancelada; o cancelamento estorna estoque e custo médio de cada item (409 se o
+  estoque atual já não comportar a quantidade comprada). Até o EP-10 o popup de senha
+  é só do Frontend (o Backend ainda não confere a senha).
+- **RN015 — Saldo e preço de venda ao final:** ao final do formulário a compra
+  apresenta, por item, o **saldo** (estoque resultante do produto após a entrada) e o
+  **preço de venda** cadastrado no produto (`Produtos.precoVenda`), ao lado do novo
+  custo unitário, para conferência da margem.
+- **RN016 — Desconto apenas por item:** o desconto é aplicado **somente por item** da
+  compra (`CompraProduto`); não existe desconto geral sobre a compra.
+- **RN017 — (removida):** o frete não é mais definido acima da tabela de produtos; fica
+  junto de `seguro` e `despesas`, depois dela. O número é mantido para não renumerar as
+  demais regras.
+- **RN018 — Data da operação:** a data da operação equivale à **entrada da compra**
+  (`dtEntrada`).
+- **RN019 — Bloqueio do documento fiscal após adicionar produto:** assim que o usuário
+  adiciona o **primeiro produto** à compra, os campos do documento fiscal
+  (`numero`/`modelo`/`serie`, fornecedor, transportadora e as datas de emissão e chegada)
+  ficam **bloqueados para edição**; as despesas (`frete`, `seguro`, `despesas`) passam a
+  aparecer, editáveis, abaixo da tabela de produtos, seguidas do total da compra. O
+  documento só volta a ser editável se todos os produtos forem removidos (ou, no caso das
+  datas, após gerar as parcelas — RN021).
+- **RN020 — Unidade do produto definida na compra:** o usuário pode **informar o tipo de
+  unidade** (`unidade`, ex.: `UN`, `CX`, `KG`) de cada produto na compra, pois a unidade
+  em que o fornecedor vende pode diferir da unidade de venda cadastrada em
+  `Produtos.undProduto`. O campo é pré-preenchido com `undProduto` ao selecionar o
+  produto, é editável **apenas naquele item da compra** e **não sobrescreve** o cadastro
+  do produto (mesma filosofia da RN006).
+- **RN021 — Bloqueio após gerar as parcelas:** depois de **gerar as parcelas** da
+  compra, tudo o que está acima delas — **documento fiscal (RN019), produtos** (incluindo
+  adicionar, editar e remover itens), **despesas** (`frete`, `seguro`, `despesas`) e
+  **condição de pagamento** — fica **bloqueado para edição**, pois o parcelamento é
+  calculado sobre o total já fechado (`vlrTotal`). Só os campos de **data de emissão e de
+  chegada** (ao final do formulário) são liberados para preenchimento. Voltar à edição das
+  seções bloqueadas exige **descartar as parcelas geradas** (com confirmação).
+- **RN022 — Geração automática das parcelas da compra** (`POST /api/compras/parcelas`): a partir da **condição de
+  pagamento selecionada pela consulta** (RN006), o usuário pode **gerar automaticamente
+  as parcelas** numa **tabela dentro do formulário de compras**. Cada parcela da
+  condição (`Parcelas`: `numParcela`, `percentual`, `numDias`, `codFormaDePag`) vira uma
+  linha com `valor = vlrTotal × percentual` (centavos residuais distribuídos pelos
+  maiores restos, para a soma fechar no `vlrTotal`) e vencimento = data de emissão +
+  `numDias`. O cálculo é feito **no Backend** (mesma regra do cálculo da compra).
+- **RN023 — Parcelas ajustáveis só na compra:** o usuário pode **ajustar as parcelas**
+  geradas (valor, vencimento, forma de pagamento, adicionar ou remover linhas), assim
+  como edita os produtos. As edições valem **somente para aquela compra** e **nunca
+  sobrescrevem** a condição de pagamento original nem suas `Parcelas` cadastradas.
+  Invariantes: ao menos 1 parcela, vencimentos estritamente crescentes e **soma dos
+  valores igual ao `vlrTotal`**; o Frontend exibe o total ao vivo e bloqueia o salvamento
+  enquanto a soma divergir (padrão de Condição de Pagamento × Parcelas).
 - **RN003 (transversal):** `cancelarCompra()` exige reautenticação — ver
   [regras transversais](#regras-de-negócio-transversais).
 - **Pós-condição:** cadastrar, consultar, editar, cancelar compras e **gerar nota

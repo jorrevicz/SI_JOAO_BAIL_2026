@@ -38,7 +38,7 @@ Cada item abaixo é um módulo "Manter/Gerenciar" (CRUD + operações específic
 |-----|-----------|----------------|
 | RNF01 | Todas as telas devem ser **responsivas** (desktop e mobile). | [Stack](03-stack-tecnologica.md) (styled-components) |
 | RNF02 | Tempo de resposta das consultas **≤ 2 segundos**. | [Arquitetura](02-arquitetura.md) |
-| RNF03 | **Autenticação obrigatória** em todos os módulos, exceto login/cadastro; operações de **cancelamento** exigem reautenticação (RN003). | [Segurança](08-seguranca-e-autenticacao.md) |
+| RNF03 | **Autenticação obrigatória** em todos os módulos, exceto login/cadastro; operações de **cancelamento** exigem **novo login** (reautenticação, RN003) antes de serem executadas. | [Segurança](08-seguranca-e-autenticacao.md) |
 | RNF04 | **Logs de auditoria** para toda inserção, alteração e exclusão. | [Segurança](08-seguranca-e-autenticacao.md) |
 | RNF05 | Proteção contra **SQL Injection, XSS e CSRF**. | [Segurança](08-seguranca-e-autenticacao.md) |
 | RNF06 | Transações críticas (compras, NF, contas) devem ser **atômicas** (rollback em falha). | [Arquitetura](02-arquitetura.md) |
@@ -49,6 +49,7 @@ Cada item abaixo é um módulo "Manter/Gerenciar" (CRUD + operações específic
 | RNF11 | Código com **clean code** e documentação inline. | Convenção de código |
 | RNF12 | Sistema deve permitir **fácil extensão de novos módulos**. | [Arquitetura](02-arquitetura.md) (modularização por subdomínio) |
 | RNF13 | **Edição protegida:** campos de valor/cálculo já consumidos por outra operação são **imutáveis desde o cadastro**; os demais campos de um registro ficam **bloqueados para edição** enquanto ele estiver referenciado por um dependente **ativo** em outra tabela (volta a ser editável quando o dependente for desativado). | [Casos de Uso](07-casos-de-uso.md#regras-de-negócio-transversais) (RN004 transversal) |
+| RNF14 | **Datas no padrão brasileiro `dd/mm/aa`** em toda a interface (telas, tabelas, formulários e relatórios); onde a hora importa, `dd/mm/aa HH:mm`. O armazenamento e a API continuam em ISO 8601 UTC. | [Modelo de Dados](06-modelo-de-dados.md#princípios-de-modelagem) |
 
 ## Documentos relacionados
 
