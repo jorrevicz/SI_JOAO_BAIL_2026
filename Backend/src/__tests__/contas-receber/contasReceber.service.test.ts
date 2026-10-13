@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ContasReceberService } from '../../modules/contas-receber/contasReceber.service';
 import type { ContaAReceberId } from '../../modules/contas-receber/contasReceber.repository';
 
-const ID_TESTE: ContaAReceberId = { numero: '00000001', modelo: '01', serie: '01', parcela: 1 };
+const ID_TESTE: ContaAReceberId = { numero: '000000001', modelo: '01', serie: '01', codCliente: 1, parcela: 1 };
 
 function MakeRepo
 (
@@ -14,10 +14,7 @@ function MakeRepo
         FindById:                   vi.fn(),
         ExisteDocumento:            vi.fn(),
         Create:                     vi.fn(),
-        Update:                     vi.fn(),
-        RegistrarPagamentoRecebido: vi.fn(),
         Cancelar:                   vi.fn(),
-        Delete:                     vi.fn(),
         ...over,
     };
 }
@@ -70,16 +67,16 @@ describe ( 'ContasReceberService', () =>
 
         it ( 'retorna a conta quando existe', async () =>
         {
-            const conta = { ...ID_TESTE, codCliente: 1 };
+            const conta = ID_TESTE;
             repo.FindById.mockResolvedValue ( conta );
 
-            await expect ( service.FindConta ( ID_TESTE ) ).resolves.toEqual ( conta );
+            await expect ( service.FindConta ( ID_TESTE ) ).resolves.toMatchObject ( conta );
         });
     });
 
     describe ( 'CreateConta', () =>
     {
-        const dados = { ...ID_TESTE, codCliente: 1, codFormaDePag: 2 } as never;
+        const dados = { ...ID_TESTE, codFormaDePag: 2 } as never;
 
         it ( 'lança 400 quando o cliente informado não existe', async () =>
         {
@@ -98,7 +95,7 @@ describe ( 'ContasReceberService', () =>
             expect ( repo.Create ).not.toHaveBeenCalled();
         });
 
-        it ( 'lança 409 quando já existe um documento com este número, modelo e série', async () =>
+        it ( 'lança 409 quando já existe um documento com esta chave (número, modelo, série, cliente e parcela)', async () =>
         {
             clientesRepo.FindById.mockResolvedValue ( { codCliente: 1 } );
             formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 2 } );
@@ -110,7 +107,7 @@ describe ( 'ContasReceberService', () =>
 
         it ( 'delega ao repositório quando cliente e forma de pagamento existem e o documento é inédito', async () =>
         {
-            const criada = { ...ID_TESTE, codCliente: 1 };
+            const criada = ID_TESTE;
             clientesRepo.FindById.mockResolvedValue ( { codCliente: 1 } );
             formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 2 } );
             repo.ExisteDocumento.mockResolvedValue ( false );
@@ -120,97 +117,10 @@ describe ( 'ContasReceberService', () =>
 
             expect ( repo.ExisteDocumento ).toHaveBeenCalledWith
             (
-                { numero: ID_TESTE.numero, modelo: ID_TESTE.modelo, serie: ID_TESTE.serie }
+                ID_TESTE
             );
             expect ( repo.Create ).toHaveBeenCalledWith ( dados, 1 );
-            expect ( resultado ).toEqual ( criada );
-        });
-    });
-
-    describe ( 'UpdateConta', () =>
-    {
-        const dados = { ...ID_TESTE, codCliente: 1, codFormaDePag: 2, isActive: true } as never;
-
-        it ( 'lança 400 quando o cliente informado não existe', async () =>
-        {
-            clientesRepo.FindById.mockResolvedValue ( null );
-
-            await expect ( service.UpdateConta ( ID_TESTE, dados, 1 ) ).rejects.toMatchObject ( { status: 400 } );
-            expect ( repo.Update ).not.toHaveBeenCalled();
-        });
-
-        it ( 'lança 400 quando a forma de pagamento informada não existe', async () =>
-        {
-            clientesRepo.FindById.mockResolvedValue ( { codCliente: 1 } );
-            formasRepo.FindById.mockResolvedValue ( null );
-
-            await expect ( service.UpdateConta ( ID_TESTE, dados, 1 ) ).rejects.toMatchObject ( { status: 400 } );
-            expect ( repo.Update ).not.toHaveBeenCalled();
-        });
-
-        it ( 'lança 404 quando a conta não existe', async () =>
-        {
-            clientesRepo.FindById.mockResolvedValue ( { codCliente: 1 } );
-            formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 2 } );
-            repo.Update.mockResolvedValue ( null );
-
-            await expect ( service.UpdateConta ( ID_TESTE, dados, 1 ) ).rejects.toMatchObject ( { status: 404 } );
-        });
-
-        it ( 'retorna a conta atualizada quando existe', async () =>
-        {
-            const atualizada = { ...ID_TESTE, codCliente: 1 };
-            clientesRepo.FindById.mockResolvedValue ( { codCliente: 1 } );
-            formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 2 } );
-            repo.Update.mockResolvedValue ( atualizada );
-
-            await expect ( service.UpdateConta ( ID_TESTE, dados, 1 ) ).resolves.toEqual ( atualizada );
-        });
-    });
-
-    describe ( 'RegistrarPagamentoRecebido', () =>
-    {
-        it ( 'lança 404 quando a conta não existe', async () =>
-        {
-            repo.FindById.mockResolvedValue ( null );
-
-            await expect
-            (
-                service.RegistrarPagamentoRecebido ( ID_TESTE, '100.00', new Date(), new Date(), 1 )
-            ).rejects.toMatchObject ( { status: 404 } );
-        });
-
-        it ( 'lança 409 quando a conta já foi baixada', async () =>
-        {
-            repo.FindById.mockResolvedValue ( { ...ID_TESTE, valorBaixa: '100.00', dtBaixa: new Date(), dtPagamento: new Date(), justificativaCancelamento: null } );
-
-            await expect
-            (
-                service.RegistrarPagamentoRecebido ( ID_TESTE, '100.00', new Date(), new Date(), 1 )
-            ).rejects.toMatchObject ( { status: 409 } );
-        });
-
-        it ( 'lança 409 quando a conta está cancelada', async () =>
-        {
-            repo.FindById.mockResolvedValue ( { ...ID_TESTE, valorBaixa: null, dtBaixa: null, dtPagamento: null, justificativaCancelamento: 'Cancelada' } );
-
-            await expect
-            (
-                service.RegistrarPagamentoRecebido ( ID_TESTE, '100.00', new Date(), new Date(), 1 )
-            ).rejects.toMatchObject ( { status: 409 } );
-        });
-
-        it ( 'delega ao repositório quando a conta é elegível para baixa', async () =>
-        {
-            const dtBaixa = new Date ( '2026-01-15' );
-            const dtPagamento = new Date ( '2026-01-15' );
-            repo.FindById.mockResolvedValue ( { ...ID_TESTE, valorBaixa: null, dtBaixa: null, dtPagamento: null, justificativaCancelamento: null } );
-            repo.RegistrarPagamentoRecebido.mockResolvedValue ( { ...ID_TESTE, valorBaixa: '100.00', dtBaixa, dtPagamento } );
-
-            const resultado = await service.RegistrarPagamentoRecebido ( ID_TESTE, '100.00', dtBaixa, dtPagamento, 1 );
-
-            expect ( repo.RegistrarPagamentoRecebido ).toHaveBeenCalledWith ( ID_TESTE, '100.00', dtBaixa, dtPagamento, 1 );
-            expect ( resultado ).toEqual ( { ...ID_TESTE, valorBaixa: '100.00', dtBaixa, dtPagamento } );
+            expect ( resultado ).toMatchObject ( criada );
         });
     });
 
@@ -223,28 +133,28 @@ describe ( 'ContasReceberService', () =>
             await expect ( service.CancelarConta ( ID_TESTE, 'motivo', 1 ) ).rejects.toMatchObject ( { status: 404 } );
         });
 
-        it ( 'lança 409 quando a conta já foi baixada', async () =>
+        it ( 'lança 409 quando a conta já foi cancelada', async () =>
         {
-            repo.FindById.mockResolvedValue ( { ...ID_TESTE, valorBaixa: '100.00', dtBaixa: new Date(), dtPagamento: new Date() } );
+            repo.FindById.mockResolvedValue ( { ...ID_TESTE, justificativaCancelamento: 'Duplicada' } );
 
             await expect ( service.CancelarConta ( ID_TESTE, 'motivo', 1 ) ).rejects.toMatchObject ( { status: 409 } );
         });
 
-        it ( 'delega ao repositório quando a conta ainda não foi baixada', async () =>
+        it ( 'delega ao repositório e cancela a conta baixada (a conta nasce já baixada)', async () =>
         {
             const cancelada = { ...ID_TESTE, justificativaCancelamento: 'motivo' };
-            repo.FindById.mockResolvedValue ( { ...ID_TESTE, valorBaixa: null, dtBaixa: null, dtPagamento: null } );
+            repo.FindById.mockResolvedValue ( { ...ID_TESTE, valorBaixa: '100.00', dtBaixa: new Date(), dtPagamento: new Date(), justificativaCancelamento: null } );
             repo.Cancelar.mockResolvedValue ( cancelada );
 
-            await expect ( service.CancelarConta ( ID_TESTE, 'motivo', 1 ) ).resolves.toEqual ( cancelada );
+            await expect ( service.CancelarConta ( ID_TESTE, 'motivo', 1 ) ).resolves.toMatchObject ( cancelada );
         });
     });
 
     describe ( 'ValidarChave', () =>
     {
-        const CHAVE = { numero: ID_TESTE.numero, modelo: ID_TESTE.modelo, serie: ID_TESTE.serie };
+        const CHAVE = ID_TESTE;
 
-        it ( 'lança 409 quando já existe um documento com este número, modelo e série', async () =>
+        it ( 'lança 409 quando já existe um documento com esta chave (número, modelo, série, cliente e parcela)', async () =>
         {
             repo.ExisteDocumento.mockResolvedValue ( true );
 
@@ -260,22 +170,4 @@ describe ( 'ContasReceberService', () =>
         });
     });
 
-    describe ( 'DeleteConta', () =>
-    {
-        it ( 'lança 404 quando a conta não existe', async () =>
-        {
-            repo.FindById.mockResolvedValue ( null );
-
-            await expect ( service.DeleteConta ( ID_TESTE, 1 ) ).rejects.toMatchObject ( { status: 404 } );
-        });
-
-        it ( 'delega ao repositório quando a conta existe', async () =>
-        {
-            repo.FindById.mockResolvedValue ( { ...ID_TESTE, codCliente: 1 } );
-
-            await service.DeleteConta ( ID_TESTE, 1 );
-
-            expect ( repo.Delete ).toHaveBeenCalledWith ( ID_TESTE, 1 );
-        });
-    });
 });

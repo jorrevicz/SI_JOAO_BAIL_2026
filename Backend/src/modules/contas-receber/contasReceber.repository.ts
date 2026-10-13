@@ -1,15 +1,15 @@
 import type postgres from 'postgres';
 import sql from '../../lib/db';
 import type ContasAReceber from '../../db/types/public/ContasAReceber';
-import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
-import type { CreateContasAReceberInput, UpdateContasAReceberInput } from './contasReceber.schema';
+import type { CreateContasAReceberInput, ChaveContaAReceber } from './contasReceber.schema';
 
 export interface ContaAReceberId
 {
-    numero:  string;
-    modelo:  string;
-    serie:   string;
-    parcela: number;
+    numero:     string;
+    modelo:     string;
+    serie:      string;
+    codCliente: number;
+    parcela:    number;
 }
 
 export class ContasReceberRepository
@@ -29,9 +29,9 @@ export class ContasReceberRepository
                 SELECT *
                 FROM   "ContasAReceber"
                 WHERE  "isActive" = true
-                AND    ( "numero", "modelo", "serie", "parcela" ) >
-                       ( ${ afterCursor.numero }, ${ afterCursor.modelo }, ${ afterCursor.serie }, ${ afterCursor.parcela } )
-                ORDER BY "numero", "modelo", "serie", "parcela"
+                AND    ( "numero", "modelo", "serie", "codCliente", "parcela" ) >
+                       ( ${ afterCursor.numero }, ${ afterCursor.modelo }, ${ afterCursor.serie }, ${ afterCursor.codCliente }, ${ afterCursor.parcela } )
+                ORDER BY "numero", "modelo", "serie", "codCliente", "parcela"
                 LIMIT  ${ limit }
             `;
         }
@@ -40,7 +40,7 @@ export class ContasReceberRepository
             SELECT *
             FROM   "ContasAReceber"
             WHERE  "isActive" = true
-            ORDER BY "numero", "modelo", "serie", "parcela"
+            ORDER BY "numero", "modelo", "serie", "codCliente", "parcela"
             LIMIT  ${ limit }
         `;
     }
@@ -58,6 +58,7 @@ export class ContasReceberRepository
             WHERE  "numero"  = ${ id.numero }
             AND    "modelo"  = ${ id.modelo }
             AND    "serie"   = ${ id.serie }
+            AND    "codCliente" = ${ id.codCliente }
             AND    "parcela" = ${ id.parcela }
             AND    "isActive" = true
         `;
@@ -67,7 +68,7 @@ export class ContasReceberRepository
 
     async ExisteDocumento
     (
-        chave: DocumentoFiscalChave,
+        chave: ChaveContaAReceber,
         transaction?: postgres.TransactionSql
     ): Promise < boolean >
     {
@@ -78,6 +79,8 @@ export class ContasReceberRepository
             WHERE  "numero" = ${ chave.numero }
             AND    "modelo" = ${ chave.modelo }
             AND    "serie"  = ${ chave.serie }
+            AND    "codCliente" = ${ chave.codCliente }
+            AND    "parcela" = ${ chave.parcela }
             AND    "isActive" = true
             LIMIT  1
         `;
@@ -108,6 +111,9 @@ export class ContasReceberRepository
                 "juro",
                 "desconto",
                 "multa",
+                "valorBaixa",
+                "dtBaixa",
+                "dtPagamento",
                 "codUser"
             )
             VALUES
@@ -124,74 +130,15 @@ export class ContasReceberRepository
                 ${ conta.juro ?? null },
                 ${ conta.desconto ?? null },
                 ${ conta.multa ?? null },
+                ${ conta.valorBaixa },
+                ${ conta.dtBaixa },
+                ${ conta.dtPagamento },
                 ${ codUser }
             )
             RETURNING *
         `;
 
         return row;
-    }
-
-    async Update
-    (
-        id: ContaAReceberId,
-        conta: UpdateContasAReceberInput,
-        codUser: number,
-        transaction?: postgres.TransactionSql
-    ): Promise < ContasAReceber | null >
-    {
-        const client = transaction ?? sql;
-        const [ row ] = await client < ContasAReceber[] >`
-            UPDATE "ContasAReceber"
-            SET    "codCliente"    = ${ conta.codCliente },
-                   "codFormaDePag" = ${ conta.codFormaDePag },
-                   "dtEmissao"     = ${ conta.dtEmissao },
-                   "dtVencimento"  = ${ conta.dtVencimento },
-                   "valor"         = ${ conta.valor ?? null },
-                   "juro"          = ${ conta.juro ?? null },
-                   "desconto"      = ${ conta.desconto ?? null },
-                   "multa"         = ${ conta.multa ?? null },
-                   "codUser"       = ${ codUser },
-                   "dtEdicao"      = CURRENT_TIMESTAMP,
-                   "isActive"      = ${ conta.isActive }
-            WHERE  "numero"  = ${ id.numero }
-            AND    "modelo"  = ${ id.modelo }
-            AND    "serie"   = ${ id.serie }
-            AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
-            RETURNING *
-        `;
-
-        return row ?? null;
-    }
-
-    async RegistrarPagamentoRecebido
-    (
-        id: ContaAReceberId,
-        valorBaixa: string,
-        dtBaixa: Date,
-        dtPagamento: Date,
-        codUser: number,
-        transaction?: postgres.TransactionSql
-    ): Promise < ContasAReceber | null >
-    {
-        const client = transaction ?? sql;
-        const [ row ] = await client < ContasAReceber[] >`
-            UPDATE "ContasAReceber"
-            SET    "valorBaixa"  = ${ valorBaixa },
-                   "dtBaixa"     = ${ dtBaixa },
-                   "dtPagamento" = ${ dtPagamento },
-                   "codUser"     = ${ codUser },
-                   "dtEdicao"    = CURRENT_TIMESTAMP
-            WHERE  "numero"  = ${ id.numero }
-            AND    "modelo"  = ${ id.modelo }
-            AND    "serie"   = ${ id.serie }
-            AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
-            RETURNING *
-        `;
-
-        return row ?? null;
     }
 
     async Cancelar
@@ -211,6 +158,7 @@ export class ContasReceberRepository
             WHERE  "numero"  = ${ id.numero }
             AND    "modelo"  = ${ id.modelo }
             AND    "serie"   = ${ id.serie }
+            AND    "codCliente" = ${ id.codCliente }
             AND    "parcela" = ${ id.parcela }
             AND    "isActive" = true
             RETURNING *
@@ -219,27 +167,4 @@ export class ContasReceberRepository
         return row ?? null;
     }
 
-    async Delete
-    (
-        id: ContaAReceberId,
-        codUser: number,
-        transaction?: postgres.TransactionSql
-    ): Promise < ContaAReceberId | null >
-    {
-        const client = transaction ?? sql;
-        const [ row ] = await client < ContaAReceberId[] >`
-            UPDATE "ContasAReceber"
-            SET    "isActive" = false,
-                   "codUser"  = ${ codUser },
-                   "dtEdicao" = CURRENT_TIMESTAMP
-            WHERE  "numero"  = ${ id.numero }
-            AND    "modelo"  = ${ id.modelo }
-            AND    "serie"   = ${ id.serie }
-            AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
-            RETURNING "numero", "modelo", "serie", "parcela"
-        `;
-
-        return row ?? null;
-    }
 }

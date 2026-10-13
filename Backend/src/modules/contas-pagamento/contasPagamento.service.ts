@@ -1,11 +1,12 @@
+import { ComVlrTotal, CalcularVlrTotalConta } from '../../shared/conta/contaTotal';
+import type { ValoresConta } from '../../shared/conta/contaTotal';
 import { AppError } from '../../shared/errors/AppError';
 import { ContasPagamentoRepository } from './contasPagamento.repository';
 import type { ContaAPagarId } from './contasPagamento.repository';
 import { FornecedoresRepository } from '../fornecedores/fornecedores.repository';
 import { FormasPagamentoRepository } from '../formas-pagamento/formasPagamento.repository';
 import { ValidarDocumentoFiscalInexistente } from '../../shared/documento-fiscal/documentoFiscal.service';
-import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
-import type { CreateContasAPAgarInput, UpdateContasAPagarInput } from './contasPagamento.schema';
+import type { CreateContasAPAgarInput, ChaveContaAPagar } from './contasPagamento.schema';
 
 export class ContasPagamentoService
 {
@@ -18,7 +19,7 @@ export class ContasPagamentoService
 
     async ListContas ( limit = 50, afterCursor?: ContaAPagarId )
     {
-        return this.repo.List ( limit, afterCursor );
+        return ( await this.repo.List ( limit, afterCursor ) ).map ( ComVlrTotal );
     }
 
     async FindConta ( id: ContaAPagarId )
@@ -30,7 +31,13 @@ export class ContasPagamentoService
             throw new AppError ( 'Conta a pagar não encontrada.', 404 );
         }
 
-        return conta;
+        return ComVlrTotal ( conta );
+    }
+
+    // Prévia para o formulário: nada é gravado e o Frontend não faz a conta.
+    CalcularTotal ( valores: ValoresConta )
+    {
+        return { vlrTotal: CalcularVlrTotalConta ( valores ) };
     }
 
     async CreateConta ( data: CreateContasAPAgarInput, codUser: number )
@@ -44,66 +51,18 @@ export class ContasPagamentoService
 
         const forma = await this.formasRepo.FindById ( data.codFormaDePag );
 
-        if ( !forma )
-        {
+            if ( !forma )
+            {
             throw new AppError ( 'Forma de pagamento informada não existe.', 400 );
         }
 
         await ValidarDocumentoFiscalInexistente
         (
-            { numero: data.numero, modelo: data.modelo, serie: data.serie },
+            { numero: data.numero, modelo: data.modelo, serie: data.serie, codFornecedor: data.codFornecedor, parcela: data.parcela },
             ( chave ) => this.repo.ExisteDocumento ( chave )
         );
 
-        return this.repo.Create ( data, codUser );
-    }
-
-    async UpdateConta ( id: ContaAPagarId, data: UpdateContasAPagarInput, codUser: number )
-    {
-        const fornecedor = await this.fornecedoresRepo.FindById ( data.codFornecedor );
-
-        if ( !fornecedor )
-        {
-            throw new AppError ( 'Fornecedor informado não existe.', 400 );
-        }
-
-        const forma = await this.formasRepo.FindById ( data.codFormaDePag );
-
-        if ( !forma )
-        {
-            throw new AppError ( 'Forma de pagamento informada não existe.', 400 );
-        }
-
-        const atualizada = await this.repo.Update ( id, data, codUser );
-
-        if ( !atualizada )
-        {
-            throw new AppError ( 'Conta a pagar não encontrada.', 404 );
-        }
-
-        return atualizada;
-    }
-
-    async RegistrarBaixa ( id: ContaAPagarId, valorBaixa: string, dtBaixa: Date, codUser: number )
-    {
-        const conta = await this.repo.FindById ( id );
-
-        if ( !conta )
-        {
-            throw new AppError ( 'Conta a pagar não encontrada.', 404 );
-        }
-
-        if ( conta.valorBaixa !== null || conta.dtBaixa !== null )
-        {
-            throw new AppError ( 'Esta conta a pagar já foi baixada.', 409 );
-        }
-
-        if ( conta.justificativaCancelamento !== null )
-        {
-            throw new AppError ( 'Não é possível baixar uma conta a pagar cancelada.', 409 );
-        }
-
-        return this.repo.RegistrarBaixa ( id, valorBaixa, dtBaixa, codUser );
+        return ComVlrTotal ( await this.repo.Create ( data, codUser ) );
     }
 
     async CancelarConta ( id: ContaAPagarId, justificativaCancelamento: string, codUser: number )
@@ -115,15 +74,15 @@ export class ContasPagamentoService
             throw new AppError ( 'Conta a pagar não encontrada.', 404 );
         }
 
-        if ( conta.valorBaixa !== null || conta.dtBaixa !== null )
+        if ( conta.justificativaCancelamento !== null )
         {
-            throw new AppError ( 'Não é possível cancelar uma conta a pagar já baixada.', 409 );
+            throw new AppError ( 'Esta conta a pagar já foi cancelada.', 409 );
         }
 
-        return this.repo.Cancelar ( id, justificativaCancelamento, codUser );
+        return ComVlrTotal ( await this.repo.Cancelar ( id, justificativaCancelamento, codUser ) );
     }
 
-    async ValidarChave ( chave: DocumentoFiscalChave )
+    async ValidarChave ( chave: ChaveContaAPagar )
     {
         await ValidarDocumentoFiscalInexistente
         (
@@ -134,15 +93,4 @@ export class ContasPagamentoService
         return { valido: true };
     }
 
-    async DeleteConta ( id: ContaAPagarId, codUser: number )
-    {
-        const conta = await this.repo.FindById ( id );
-
-        if ( !conta )
-        {
-            throw new AppError ( 'Conta a pagar não encontrada.', 404 );
-        }
-
-        await this.repo.Delete ( id, codUser );
-    }
 }

@@ -1,42 +1,32 @@
 import { z } from "zod";
-import { documentoFiscalSchema } from '../../shared/documento-fiscal/documentoFiscal.schema';
-
-// RN: o vencimento precisa ser estritamente posterior à emissão — datas e horários
-// iguais (ou o vencimento antes) não são permitidos, nem no mesmo dia. Comparação
-// cruzada entre campos, por isso vive num superRefine (mesmo padrão de
-// validarParcelas em condicoes-pagamento.schema.ts), aplicado tanto no create quanto
-// no update.
-function validarDatas
-(
-    dados: { dtEmissao: Date; dtVencimento: Date },
-    ctx:   z.RefinementCtx
-): void
+import
 {
-    if ( dados.dtVencimento <= dados.dtEmissao )
+    documentoFiscalSchema,
+    vencimentoDocumentoFiscalSchema,
+    ValidarVencimentoDocumentoFiscal,
+} from '../../shared/documento-fiscal/documentoFiscal.schema';
+
+// Chave natural da conta: o documento (número, modelo, série) mais o cliente e a parcela.
+export const chaveContaAReceberSchema = z.object
+(
     {
-        ctx.addIssue
-        ( {
-            code:    'custom',
-            path:    [ 'dtVencimento' ],
-            message: 'A data de vencimento não pode ser igual ou anterior à data de emissão.',
-        } );
+        ...documentoFiscalSchema.shape,
+        parcela: z
+            .coerce.number ( { message: "O código da parcela deve ser um número."})
+            .int()
+            .positive(),
+        codCliente: z
+            .coerce.number( { message: "O código do cliente deve ser um número."})
+            .int()
+            .positive(),
     }
-}
+);
+
+export type ChaveContaAReceber = z.infer < typeof chaveContaAReceberSchema >;
 
 const camposContaAReceber = {
-    ...documentoFiscalSchema.shape,
-    parcela: z
-        .coerce.number ( { message: "O código da parcela deve ser um número."})
-        .int()
-        .positive(),
-    codCliente: z
-        .coerce.number( { message: "O código do cliente deve ser um número."})
-        .int()
-        .positive(),
-    dtVencimento: z
-        .coerce.date ( { message: "A data de vencimento é inválida"}),
-    dtEmissao: z
-        .coerce.date ( { message: "A data de emissão é inválida"}),
+    ...chaveContaAReceberSchema.shape,
+    ...vencimentoDocumentoFiscalSchema.shape,
     codFormaDePag: z
         .coerce.number ( { message: "O código da forma de pagamento deve ser um número."})
         .int()
@@ -57,17 +47,11 @@ const camposContaAReceber = {
     valorBaixa: z
         .coerce.string ( { message: "O valor da baixa deve ser uma string decimal."})
         .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da baixa deve ser um decimal e positivo." )
-        .nullish(),
+        .refine ( ( valor ) => !/^[0-9]+\.[0-9]{2}$/.test ( valor ) || Number ( valor ) > 0, "O valor da baixa deve ser maior que zero." ),
     dtBaixa: z
-        .coerce.date ( { message: "A data da baixa é inválida"})
-        .nullish(),
+        .coerce.date ( { message: "A data da baixa é inválida"}),
     dtPagamento: z
-        .coerce.date ( { message: "A data de pagamento é inválida"})
-        .nullish(),
-    justificativaCancelamento: z
-        .coerce.string ( { message: "A justificativa deve ser uma string" } )
-        .max ( 255 )
-        .nullish(),
+        .coerce.date ( { message: "A data de pagamento é inválida"}),
     isActive: z
         .boolean()
         .default ( true )
@@ -75,30 +59,7 @@ const camposContaAReceber = {
 
 export const createContasAReceberSchema = z
     .object ( camposContaAReceber )
-    .superRefine ( validarDatas );
-
-const camposContaAReceberEdicao = {
-    ...camposContaAReceber,
-    isActive: z.boolean()
-};
-
-export const updateContasAReceberSchema = z
-    .object ( camposContaAReceberEdicao )
-    .superRefine ( validarDatas );
-
-export const registrarPagamentoRecebidoSchema = z.object
-(
-    {
-        valorBaixa: z
-            .coerce.string ( { message: "O valor da baixa deve ser uma string decimal."} )
-            .regex ( /^[0-9]+\.[0-9]{2}$/, "O valor da baixa deve ser um decimal e positivo." )
-            .refine ( ( valor ) => !/^[0-9]+\.[0-9]{2}$/.test ( valor ) || Number ( valor ) > 0, "O valor da baixa deve ser maior que zero." ),
-        dtBaixa: z
-            .coerce.date ( { message: "A data da baixa é inválida"} ),
-        dtPagamento: z
-            .coerce.date ( { message: "A data de pagamento é inválida"} ),
-    }
-);
+    .superRefine ( ValidarVencimentoDocumentoFiscal );
 
 export const cancelarContaReceberSchema = z.object
 (
@@ -111,7 +72,16 @@ export const cancelarContaReceberSchema = z.object
     }
 );
 
+// Prévia do valor total (valor + juro + multa − desconto): só os campos que entram na conta.
+export const calcularTotalContaSchema = z.object
+(
+    {
+        valor:    camposContaAReceber.valor,
+        juro:     camposContaAReceber.juro,
+        multa:    camposContaAReceber.multa,
+        desconto: camposContaAReceber.desconto,
+    }
+);
+
 export type CreateContasAReceberInput = z.infer < typeof createContasAReceberSchema >;
-export type UpdateContasAReceberInput = z.infer < typeof updateContasAReceberSchema >;
-export type RegistrarPagamentoRecebidoInput = z.infer < typeof registrarPagamentoRecebidoSchema >;
 export type CancelarContaReceberInput = z.infer < typeof cancelarContaReceberSchema >;

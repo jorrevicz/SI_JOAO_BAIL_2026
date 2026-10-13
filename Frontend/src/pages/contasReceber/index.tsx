@@ -11,21 +11,19 @@ import {
 } from '@tanstack/react-table';
 import { useTabelaOrdenada } from '../../hooks/tabela';
 import { formatarData, formatarDataHora } from '../../utils/formatters';
-import { contasReceberService, type ContaAReceber, type ContaAReceberId } from '../../services/contasReceber';
+import { contasReceberService, type ContaAReceber } from '../../services/contasReceber';
 import {
   Toolbar, GrupoBotoes, Botao, InputBusca,
   TabelaWrapper, Tabela, RodapeTabela, Paginacao, PaginacaoInfo, Alerta,
 } from './style';
-import ContaReceberForm from './ContaReceberForm';
-import RegistrarPagamentoModal from './RegistrarPagamentoModal';
-import CancelarContaModal from './CancelarContaModal';
+import ContaReceberForm, { type ModoConta } from './ContaReceberForm';
 import { InfoBlock } from '../../components/tabela/style';
 
 const columnHelper = createColumnHelper < ContaAReceber >();
 
 function ChaveConta ( conta: ContaAReceber )
 {
-  return `${ conta.numero }-${ conta.modelo }-${ conta.serie }-${ conta.parcela }`;
+  return `${ conta.numero }-${ conta.modelo }-${ conta.serie }-${ conta.codCliente }-${ conta.parcela }`;
 }
 
 export default function ContasReceberPage ()
@@ -33,10 +31,9 @@ export default function ContasReceberPage ()
   'use no memo';
   const [ dados, setDados ]           = useState < ContaAReceber[] > ( [] );
   const [ editando, setEditando ]     = useState < Partial < ContaAReceber > | null > ( null );
-  const [ recebendo, setRecebendo ]   = useState < ContaAReceber | null > ( null );
-  const [ cancelando, setCancelando ] = useState < ContaAReceber | null > ( null );
+  const [ modoForm, setModoForm ]   = useState < ModoConta | undefined > ( undefined );
   const [ erro, setErro ]             = useState ( '' );
-  const { sorting, setSorting }       = useTabelaOrdenada ( 'numero' );
+  const { sorting, setSorting }       = useTabelaOrdenada ( [ 'codCliente', 'numero', 'parcela' ] );
   const [ globalFilter, setGlobalFilter ] = useState ( '' );
   const [ pagination, setPagination ]     = useState < PaginationState > ( { pageIndex: 0, pageSize: 25 } );
 
@@ -50,28 +47,15 @@ export default function ContasReceberPage ()
     carregar();
   }, [ ] );
 
-  const excluir = async ( id: ContaAReceberId ) =>
+  const abrirForm = ( conta: Partial < ContaAReceber >, modo?: ModoConta ) =>
   {
-    if ( !confirm ( 'Confirma a exclusão desta conta a receber?' ) )
-    {
-      return;
-    }
-    setErro ( '' );
-
-    try
-    {
-      await contasReceberService.remover ( id );
-      carregar();
-    }
-    catch ( err )
-    {
-      setErro ( ( err as Error ).message );
-    }
+    setModoForm ( modo );
+    setEditando ( conta );
   };
 
   const columns = [
-    columnHelper.accessor ( 'numero', { header: 'Número' } ),
     columnHelper.accessor ( 'modelo', { header: 'Modelo' } ),
+    columnHelper.accessor ( 'numero', { header: 'Número' } ),
     columnHelper.accessor ( 'serie', { header: 'Série' } ),
     columnHelper.accessor ( 'parcela', { header: 'Parcela' } ),
     columnHelper.accessor ( 'codCliente', { header: () => <>Código<br/>Cliente</> } ),
@@ -121,46 +105,24 @@ export default function ContasReceberPage ()
       header: 'Ações',
       cell: ( { row } ) =>
       {
-        const conta = row.original;
-        const podeReceberOuCancelar = conta.valorBaixa === null && conta.justificativaCancelamento === null;
+        const conta     = row.original;
+        const cancelada = conta.justificativaCancelamento !== null;
 
         return (
           <GrupoBotoes>
             <Botao
               $variante="secundario"
-              onClick={ ( evento ) => { evento.stopPropagation(); setEditando ( conta ); } }
+              onClick={ ( evento ) => { evento.stopPropagation(); abrirForm ( conta, 'consulta' ); } }
             >
-              Editar
+              Consultar
             </Botao>
             {
-              podeReceberOuCancelar && (
-                <>
-                  <Botao
-                    $variante="secundario"
-                    onClick={ ( evento ) => { evento.stopPropagation(); setRecebendo ( conta ); } }
-                  >
-                    Registrar recebimento
-                  </Botao>
-                  <Botao
-                    $variante="perigo"
-                    onClick={ ( evento ) => { evento.stopPropagation(); setCancelando ( conta ); } }
-                  >
-                    Cancelar
-                  </Botao>
-                </>
-              )
-            }
-            {
-              !podeReceberOuCancelar && (
+              !cancelada && (
                 <Botao
                   $variante="perigo"
-                  onClick={ ( evento ) =>
-                  {
-                    evento.stopPropagation();
-                    excluir ( { numero: conta.numero, modelo: conta.modelo, serie: conta.serie, parcela: conta.parcela } );
-                  } }
+                  onClick={ ( evento ) => { evento.stopPropagation(); abrirForm ( conta, 'cancelar' ); } }
                 >
-                  Excluir
+                  Cancelar
                 </Botao>
               )
             }
@@ -191,7 +153,7 @@ export default function ContasReceberPage ()
       <Toolbar>
         <h2>Contas a Receber</h2>
         <GrupoBotoes>
-          <Botao onClick={ () => setEditando ( {} ) }>Nova Conta a Receber</Botao>
+          <Botao onClick={ () => abrirForm ( {} ) }>Nova Conta a Receber</Botao>
         </GrupoBotoes>
       </Toolbar>
 
@@ -253,6 +215,7 @@ export default function ContasReceberPage ()
 
       { editando !== null && (
         <ContaReceberForm
+          modo={ modoForm }
           inicial={ editando }
           onSalvo={ () =>
           {
@@ -263,29 +226,6 @@ export default function ContasReceberPage ()
         />
       )}
 
-      { recebendo !== null && (
-        <RegistrarPagamentoModal
-          conta={ recebendo }
-          onSalvo={ () =>
-          {
-            setRecebendo ( null );
-            carregar();
-          }}
-          onCancelar={ () => setRecebendo ( null ) }
-        />
-      )}
-
-      { cancelando !== null && (
-        <CancelarContaModal
-          conta={ cancelando }
-          onSalvo={ () =>
-          {
-            setCancelando ( null );
-            carregar();
-          }}
-          onCancelar={ () => setCancelando ( null ) }
-        />
-      )}
     </section>
   );
 }

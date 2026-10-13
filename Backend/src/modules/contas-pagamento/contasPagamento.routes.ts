@@ -2,9 +2,8 @@ import { Router } from 'express';
 import { Validate } from '../../shared/validation/validate';
 import
 {
+    calcularTotalContaSchema,
     createContasAPagarSchema,
-    updateContasaPagarSchema,
-    registrarBaixaContaPagarSchema,
     cancelarContaPagarSchema,
 } from './contasPagamento.schema';
 import { ContasPagamentoController } from './contasPagamento.controller';
@@ -12,15 +11,13 @@ import { ContasPagamentoController } from './contasPagamento.controller';
 const ContasPagamentoRouter = Router();
 const controller = new ContasPagamentoController();
 
-const ID_PATH = '/:numero/:modelo/:serie/:parcela';
+const ID_PATH = '/:numero/:modelo/:serie/:codFornecedor/:parcela';
 
 ContasPagamentoRouter.get    ( '/',                       controller.ListContasController      );
 ContasPagamentoRouter.get    ( '/validar',                controller.ValidarChaveController     );
+ContasPagamentoRouter.post   ( '/calcular',               Validate ( calcularTotalContaSchema ), controller.CalcularTotalController );
 ContasPagamentoRouter.get    ( ID_PATH,                   controller.GetByIdContasController   );
 ContasPagamentoRouter.post   ( '/',                       Validate ( createContasAPagarSchema ),      controller.CreateContaController    );
-ContasPagamentoRouter.put    ( ID_PATH,                   Validate ( updateContasaPagarSchema ),      controller.UpdateContaController    );
-ContasPagamentoRouter.patch  ( `${ ID_PATH }/baixa`,      Validate ( registrarBaixaContaPagarSchema ), controller.RegistrarBaixaController );
 ContasPagamentoRouter.patch  ( `${ ID_PATH }/cancelar`,   Validate ( cancelarContaPagarSchema ),       controller.CancelarContaController  );
-ContasPagamentoRouter.delete ( ID_PATH,                   controller.RemoveContaController     );
 
 export default ContasPagamentoRouter;

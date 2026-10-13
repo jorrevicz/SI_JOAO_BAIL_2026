@@ -19,7 +19,7 @@ function EsperarConta
 )
 {
     return {
-        numero:                     '00000000',
+        numero:                     '000000000',
         modelo:                     '01',
         serie:                      '01',
         parcela:                    1,
@@ -31,8 +31,9 @@ function EsperarConta
         juro:                       '0.00',
         desconto:                   '0.00',
         multa:                      '0.00',
-        valorBaixa:                 null,
-        dtBaixa:                    null,
+        vlrTotal:                   expect.any ( String ),
+        valorBaixa:                 '10.00',
+        dtBaixa:                    '2026-01-11T00:00:00.000Z',
         justificativaCancelamento:  null,
         codUser:                    1,
         isActive:                   true,
@@ -123,7 +124,7 @@ describe ( 'ContasPagamento routes', () =>
 
     it ( 'GET /api/contas-pagamento/:numero/:modelo/:serie/:parcela inexistente retorna 404', async () =>
     {
-        const res = await request ( app ).get ( `${ BASE }/99999999/99/99/99` );
+        const res = await request ( app ).get ( `${ BASE }/099999999/99/99/${ codFornecedor }/99` );
 
         expect ( res.status ).toBe ( 404 );
         expect ( res.body ).toEqual ( { mensagem: 'Conta a pagar não encontrada.' } );
@@ -131,7 +132,7 @@ describe ( 'ContasPagamento routes', () =>
 
     it ( 'GET /api/contas-pagamento/validar com formato inválido retorna 400 com erros por campo', async () =>
     {
-        const res = await request ( app ).get ( `${ BASE }/validar` ).query ( { numero: '1', modelo: 'ab', serie: '01' } );
+        const res = await request ( app ).get ( `${ BASE }/validar` ).query ( { numero: '1', modelo: 'ab', serie: '01', codFornecedor, parcela: 1 } );
 
         expect ( res.status ).toBe ( 400 );
         expect ( res.body.erros ).toHaveProperty ( 'numero' );
@@ -142,7 +143,7 @@ describe ( 'ContasPagamento routes', () =>
     {
         const res = await request ( app )
             .get ( `${ BASE }/validar` )
-            .query ( { numero: '00000209', modelo: '01', serie: '01' } );
+            .query ( { numero: '000000209', modelo: '01', serie: '01', codFornecedor, parcela: 1 } );
 
         expect ( res.status ).toBe ( 200 );
         expect ( res.body ).toEqual ( { valido: true } );
@@ -153,14 +154,15 @@ describe ( 'ContasPagamento routes', () =>
         await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000210', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000210', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '10.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         const res = await request ( app )
             .get ( `${ BASE }/validar` )
-            .query ( { numero: '00000210', modelo: '01', serie: '01' } );
+            .query ( { numero: '000000210', modelo: '01', serie: '01', codFornecedor, parcela: 1 } );
 
         expect ( res.status ).toBe ( 409 );
         expect ( res.body ).toEqual ( { mensagem: 'Já existe um documento cadastrado com este número, modelo e série.' } );
@@ -174,35 +176,38 @@ describe ( 'ContasPagamento routes', () =>
         expect ( res.body ).toEqual
         ({
             mensagem: [
-                'Too big: expected string to have <=8 characters',
-                'O identificador deve conter apenas números.',
                 'Too big: expected string to have <=2 characters',
+                'O identificador deve conter apenas números.',
                 'O identificador deve conter apenas números.',
                 'Too big: expected string to have <=2 characters',
                 'O identificador deve conter apenas números.',
                 'O código da parcela deve ser um número.',
                 'O código do fornecedor deve ser um número.',
-                'A data de vencimento é inválida',
-                'A data de emissão é inválida',
+                'A data de emissão é inválida.',
+                'A data de vencimento é inválida.',
                 'O código da forma de pagamento deve ser um número.',
                 'O valor do juro deve ser um decimal e positivo.',
                 'O valor do desconto deve ser um decimal e positivo.',
                 'O valor da multa deve ser um decimal e positivo.',
                 'O valor da conta deve ser um decimal e positivo.',
+                'O valor da baixa deve ser um decimal e positivo.',
+                'A data da baixa é inválida',
             ].join ( '; ' ),
             erros: {
-                numero:        'Too big: expected string to have <=8 characters',
+                numero:        'O identificador deve conter apenas números.',
                 modelo:        'Too big: expected string to have <=2 characters',
                 serie:         'Too big: expected string to have <=2 characters',
                 parcela:       'O código da parcela deve ser um número.',
                 codFornecedor: 'O código do fornecedor deve ser um número.',
-                dtVencimento:  'A data de vencimento é inválida',
-                dtEmissao:     'A data de emissão é inválida',
+                dtEmissao:     'A data de emissão é inválida.',
+                dtVencimento:  'A data de vencimento é inválida.',
                 codFormaDePag: 'O código da forma de pagamento deve ser um número.',
                 juro:          'O valor do juro deve ser um decimal e positivo.',
                 desconto:      'O valor do desconto deve ser um decimal e positivo.',
                 multa:         'O valor da multa deve ser um decimal e positivo.',
                 valor:         'O valor da conta deve ser um decimal e positivo.',
+                valorBaixa:    'O valor da baixa deve ser um decimal e positivo.',
+                dtBaixa:       'A data da baixa é inválida',
             },
         });
     });
@@ -212,9 +217,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000214', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000214', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: '2026-01-10', dtVencimento: '2026-01-01',
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -230,9 +236,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000216', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000216', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: '2026-01-05T10:00', dtVencimento: '2026-01-05T10:00',
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -244,9 +251,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000215', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000215', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: '2026-01-05T08:00', dtVencimento: '2026-01-05T23:59',
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 201 );
@@ -258,9 +266,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000000', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000000', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -272,9 +281,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000211', modelo: '00', serie: '00', parcela: 1,
+                numero: '000000211', modelo: '00', serie: '00', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -287,9 +297,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000212', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000212', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '0.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -301,9 +312,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000201', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000201', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor: 999999, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -315,9 +327,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000202', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000202', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag: 999999, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -329,9 +342,10 @@ describe ( 'ContasPagamento routes', () =>
         const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000203', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000203', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 201 );
@@ -339,119 +353,41 @@ describe ( 'ContasPagamento routes', () =>
         (
             EsperarConta
             ({
-                numero: '00000203', codFornecedor, codFormaDePag,
+                numero: '000000203', codFornecedor, codFormaDePag,
                 dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
                 valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             })
         );
     });
 
-    it ( 'PUT /api/contas-pagamento/:.../ atualiza a conta e retorna a versão completa', async () =>
+    it ( 'POST /api/contas-pagamento com a mesma chave (número, modelo, série, fornecedor e parcela) retorna 409', async () =>
     {
-        await request ( app )
+        const res = await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000204', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000203', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
-                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
-
-        const res = await request ( app )
-            .put ( `${ BASE }/00000204/01/01/1` )
-            .send ({
-                numero: '00000204', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag: outraFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
-                valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
-            });
-
-        expect ( res.status ).toBe ( 200 );
-        expect ( res.body ).toEqual
-        (
-            EsperarConta
-            ({
-                numero: '00000204', codFornecedor, codFormaDePag: outraFormaDePag,
-                dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
-                valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-            })
-        );
-    });
-
-    it ( 'PUT /api/contas-pagamento/:.../ inexistente retorna 404', async () =>
-    {
-        const res = await request ( app )
-            .put ( `${ BASE }/99999998/99/99/99` )
-            .send ({
-                numero: '99999998', modelo: '99', serie: '99', parcela: 99,
-                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
-                valor: '1.00', juro: '0.00', desconto: '0.00', multa: '0.00', isActive: true,
-            });
-
-        expect ( res.status ).toBe ( 404 );
-        expect ( res.body ).toEqual ( { mensagem: 'Conta a pagar não encontrada.' } );
-    });
-
-    it ( 'PATCH /api/contas-pagamento/:.../baixa com valor zero-preenchido retorna 400', async () =>
-    {
-        await request ( app )
-            .post ( BASE )
-            .send ({
-                numero: '00000213', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
-                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-            });
-
-        const res = await request ( app )
-            .patch ( `${ BASE }/00000213/01/01/1/baixa` )
-            .send ( { valorBaixa: '0.00', dtBaixa: '2026-01-15' } );
-
-        expect ( res.status ).toBe ( 400 );
-        expect ( res.body.erros ).toHaveProperty ( 'valorBaixa' );
-    });
-
-    it ( 'PATCH /api/contas-pagamento/:.../baixa registra a baixa e retorna a conta completa', async () =>
-    {
-        await request ( app )
-            .post ( BASE )
-            .send ({
-                numero: '00000205', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
-                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-            });
-
-        const res = await request ( app )
-            .patch ( `${ BASE }/00000205/01/01/1/baixa` )
-            .send ( { valorBaixa: '100.00', dtBaixa: '2026-01-15' } );
-
-        expect ( res.status ).toBe ( 200 );
-        expect ( res.body ).toEqual
-        (
-            EsperarConta
-            ({
-                numero: '00000205', codFornecedor, codFormaDePag,
-                dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
-                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: '2026-01-15T00:00:00.000Z',
-            })
-        );
-    });
-
-    it ( 'PATCH /api/contas-pagamento/:.../baixa numa conta já baixada retorna 409', async () =>
-    {
-        const res = await request ( app )
-            .patch ( `${ BASE }/00000205/01/01/1/baixa` )
-            .send ( { valorBaixa: '100.00', dtBaixa: '2026-01-16' } );
 
         expect ( res.status ).toBe ( 409 );
-        expect ( res.body ).toEqual ( { mensagem: 'Esta conta a pagar já foi baixada.' } );
+        expect ( res.body ).toEqual ( { mensagem: 'Já existe um documento cadastrado com este número, modelo e série.' } );
     });
 
-    it ( 'PATCH /api/contas-pagamento/:.../cancelar numa conta já baixada retorna 409', async () =>
+    it ( 'POST /api/contas-pagamento aceita outra parcela do mesmo documento e do mesmo fornecedor', async () =>
     {
         const res = await request ( app )
-            .patch ( `${ BASE }/00000205/01/01/1/cancelar` )
-            .send ( { justificativaCancelamento: 'Tentativa inválida' } );
+            .post ( BASE )
+            .send ({
+                numero: '000000203', modelo: '01', serie: '01', parcela: 2,
+                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
+            });
 
-        expect ( res.status ).toBe ( 409 );
-        expect ( res.body ).toEqual ( { mensagem: 'Não é possível cancelar uma conta a pagar já baixada.' } );
+        expect ( res.status ).toBe ( 201 );
+        expect ( res.body ).toMatchObject ( { numero: '000000203', codFornecedor, parcela: 2 } );
     });
 
     it ( 'PATCH /api/contas-pagamento/:.../cancelar cancela a conta e retorna a conta completa', async () =>
@@ -459,13 +395,14 @@ describe ( 'ContasPagamento routes', () =>
         await request ( app )
             .post ( BASE )
             .send ({
-                numero: '00000206', modelo: '01', serie: '01', parcela: 1,
+                numero: '000000206', modelo: '01', serie: '01', parcela: 1,
                 codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         const res = await request ( app )
-            .patch ( `${ BASE }/00000206/01/01/1/cancelar` )
+            .patch ( `${ BASE }/000000206/01/01/${ codFornecedor }/1/cancelar` )
             .send ( { justificativaCancelamento: 'Compra desfeita pelo fornecedor' } );
 
         expect ( res.status ).toBe ( 200 );
@@ -473,29 +410,30 @@ describe ( 'ContasPagamento routes', () =>
         (
             EsperarConta
             ({
-                numero: '00000206', codFornecedor, codFormaDePag,
+                numero: '000000206', codFornecedor, codFormaDePag,
                 dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
                 valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00', justificativaCancelamento: 'Compra desfeita pelo fornecedor',
             })
         );
     });
 
-    it ( 'DELETE /api/contas-pagamento/:.../ remove (soft delete) e some da consulta', async () =>
+    it ( 'PATCH /api/contas-pagamento/:.../cancelar numa conta já cancelada retorna 409', async () =>
     {
-        await request ( app )
-            .post ( BASE )
-            .send ({
-                numero: '00000207', modelo: '01', serie: '01', parcela: 1,
-                codFornecedor, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
-                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-            });
+        const res = await request ( app )
+            .patch ( `${ BASE }/000000206/01/01/${ codFornecedor }/1/cancelar` )
+            .send ( { justificativaCancelamento: 'De novo' } );
 
-        const del = await request ( app ).delete ( `${ BASE }/00000207/01/01/1` );
-        expect ( del.status ).toBe ( 204 );
-        expect ( del.body ).toEqual ( {} );
-
-        const get = await request ( app ).get ( `${ BASE }/00000207/01/01/1` );
-        expect ( get.status ).toBe ( 404 );
-        expect ( get.body ).toEqual ( { mensagem: 'Conta a pagar não encontrada.' } );
+        expect ( res.status ).toBe ( 409 );
+        expect ( res.body ).toEqual ( { mensagem: 'Esta conta a pagar já foi cancelada.' } );
     });
+
+    it ( 'Sem edição, baixa nem exclusão: PUT, PATCH .../baixa e DELETE retornam 404', async () =>
+    {
+        const id = `${ BASE }/000000206/01/01/${ codFornecedor }/1`;
+
+        expect ( ( await request ( app ).put ( id ).send ( {} ) ).status ).toBe ( 404 );
+        expect ( ( await request ( app ).patch ( `${ id }/baixa` ).send ( {} ) ).status ).toBe ( 404 );
+        expect ( ( await request ( app ).delete ( id ) ).status ).toBe ( 404 );
+    });
+
 });

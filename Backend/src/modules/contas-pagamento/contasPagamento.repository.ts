@@ -1,15 +1,15 @@
 import type postgres from 'postgres';
 import sql from '../../lib/db';
 import type ContasAPagar from '../../db/types/public/ContasAPagar';
-import type { DocumentoFiscalChave } from '../../shared/documento-fiscal/documentoFiscal.schema';
-import type { CreateContasAPAgarInput, UpdateContasAPagarInput } from './contasPagamento.schema';
+import type { CreateContasAPAgarInput, ChaveContaAPagar } from './contasPagamento.schema';
 
 export interface ContaAPagarId
 {
-    numero:  string;
-    modelo:  string;
-    serie:   string;
-    parcela: number;
+    numero:        string;
+    modelo:        string;
+    serie:         string;
+    codFornecedor: number;
+    parcela:       number;
 }
 
 export class ContasPagamentoRepository
@@ -29,9 +29,9 @@ export class ContasPagamentoRepository
                 SELECT *
                 FROM   "ContasAPagar"
                 WHERE  "isActive" = true
-                AND    ( "numero", "modelo", "serie", "parcela" ) >
-                       ( ${ afterCursor.numero }, ${ afterCursor.modelo }, ${ afterCursor.serie }, ${ afterCursor.parcela } )
-                ORDER BY "numero", "modelo", "serie", "parcela"
+                AND    ( "numero", "modelo", "serie", "codFornecedor", "parcela" ) >
+                       ( ${ afterCursor.numero }, ${ afterCursor.modelo }, ${ afterCursor.serie }, ${ afterCursor.codFornecedor }, ${ afterCursor.parcela } )
+                ORDER BY "numero", "modelo", "serie", "codFornecedor", "parcela"
                 LIMIT  ${ limit }
             `;
         }
@@ -40,7 +40,7 @@ export class ContasPagamentoRepository
             SELECT *
             FROM   "ContasAPagar"
             WHERE  "isActive" = true
-            ORDER BY "numero", "modelo", "serie", "parcela"
+            ORDER BY "numero", "modelo", "serie", "codFornecedor", "parcela"
             LIMIT  ${ limit }
         `;
     }
@@ -58,6 +58,7 @@ export class ContasPagamentoRepository
             WHERE  "numero"  = ${ id.numero }
             AND    "modelo"  = ${ id.modelo }
             AND    "serie"   = ${ id.serie }
+            AND    "codFornecedor" = ${ id.codFornecedor }
             AND    "parcela" = ${ id.parcela }
             AND    "isActive" = true
         `;
@@ -67,7 +68,7 @@ export class ContasPagamentoRepository
 
     async ExisteDocumento
     (
-        chave: DocumentoFiscalChave,
+        chave: ChaveContaAPagar,
         transaction?: postgres.TransactionSql
     ): Promise < boolean >
     {
@@ -78,6 +79,8 @@ export class ContasPagamentoRepository
             WHERE  "numero" = ${ chave.numero }
             AND    "modelo" = ${ chave.modelo }
             AND    "serie"  = ${ chave.serie }
+            AND    "codFornecedor" = ${ chave.codFornecedor }
+            AND    "parcela" = ${ chave.parcela }
             AND    "isActive" = true
             LIMIT  1
         `;
@@ -108,6 +111,8 @@ export class ContasPagamentoRepository
                 "juro",
                 "desconto",
                 "multa",
+                "valorBaixa",
+                "dtBaixa",
                 "codUser"
             )
             VALUES
@@ -124,72 +129,14 @@ export class ContasPagamentoRepository
                 ${ conta.juro ?? null },
                 ${ conta.desconto ?? null },
                 ${ conta.multa ?? null },
+                ${ conta.valorBaixa },
+                ${ conta.dtBaixa },
                 ${ codUser }
             )
             RETURNING *
         `;
 
         return row;
-    }
-
-    async Update
-    (
-        id: ContaAPagarId,
-        conta: UpdateContasAPagarInput,
-        codUser: number,
-        transaction?: postgres.TransactionSql
-    ): Promise < ContasAPagar | null >
-    {
-        const client = transaction ?? sql;
-        const [ row ] = await client < ContasAPagar[] >`
-            UPDATE "ContasAPagar"
-            SET    "codFornecedor" = ${ conta.codFornecedor },
-                   "codFormaDePag" = ${ conta.codFormaDePag },
-                   "dtEmissao"     = ${ conta.dtEmissao },
-                   "dtVencimento"  = ${ conta.dtVencimento },
-                   "valor"         = ${ conta.valor ?? null },
-                   "juro"          = ${ conta.juro ?? null },
-                   "desconto"      = ${ conta.desconto ?? null },
-                   "multa"         = ${ conta.multa ?? null },
-                   "codUser"       = ${ codUser },
-                   "dtEdicao"      = CURRENT_TIMESTAMP,
-                   "isActive"      = ${ conta.isActive }
-            WHERE  "numero"  = ${ id.numero }
-            AND    "modelo"  = ${ id.modelo }
-            AND    "serie"   = ${ id.serie }
-            AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
-            RETURNING *
-        `;
-
-        return row ?? null;
-    }
-
-    async RegistrarBaixa
-    (
-        id: ContaAPagarId,
-        valorBaixa: string,
-        dtBaixa: Date,
-        codUser: number,
-        transaction?: postgres.TransactionSql
-    ): Promise < ContasAPagar | null >
-    {
-        const client = transaction ?? sql;
-        const [ row ] = await client < ContasAPagar[] >`
-            UPDATE "ContasAPagar"
-            SET    "valorBaixa" = ${ valorBaixa },
-                   "dtBaixa"    = ${ dtBaixa },
-                   "codUser"    = ${ codUser },
-                   "dtEdicao"   = CURRENT_TIMESTAMP
-            WHERE  "numero"  = ${ id.numero }
-            AND    "modelo"  = ${ id.modelo }
-            AND    "serie"   = ${ id.serie }
-            AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
-            RETURNING *
-        `;
-
-        return row ?? null;
     }
 
     async Cancelar
@@ -209,6 +156,7 @@ export class ContasPagamentoRepository
             WHERE  "numero"  = ${ id.numero }
             AND    "modelo"  = ${ id.modelo }
             AND    "serie"   = ${ id.serie }
+            AND    "codFornecedor" = ${ id.codFornecedor }
             AND    "parcela" = ${ id.parcela }
             AND    "isActive" = true
             RETURNING *
@@ -217,27 +165,4 @@ export class ContasPagamentoRepository
         return row ?? null;
     }
 
-    async Delete
-    (
-        id: ContaAPagarId,
-        codUser: number,
-        transaction?: postgres.TransactionSql
-    ): Promise < ContaAPagarId | null >
-    {
-        const client = transaction ?? sql;
-        const [ row ] = await client < ContaAPagarId[] >`
-            UPDATE "ContasAPagar"
-            SET    "isActive" = false,
-                   "codUser"  = ${ codUser },
-                   "dtEdicao" = CURRENT_TIMESTAMP
-            WHERE  "numero"  = ${ id.numero }
-            AND    "modelo"  = ${ id.modelo }
-            AND    "serie"   = ${ id.serie }
-            AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
-            RETURNING "numero", "modelo", "serie", "parcela"
-        `;
-
-        return row ?? null;
-    }
 }

@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ContasPagamentoService } from './contasPagamento.service';
 import type { ContaAPagarId } from './contasPagamento.repository';
-import { documentoFiscalSchema } from '../../shared/documento-fiscal/documentoFiscal.schema';
+import { chaveContaAPagarSchema } from './contasPagamento.schema';
 
 function ExtrairId ( req: Request ): ContaAPagarId
 {
@@ -9,6 +9,7 @@ function ExtrairId ( req: Request ): ContaAPagarId
         numero:  String ( req.params.numero ),
         modelo:  String ( req.params.modelo ),
         serie:   String ( req.params.serie ),
+        codFornecedor: Number ( req.params.codFornecedor ),
         parcela: Number ( req.params.parcela ),
     };
 }
@@ -30,12 +31,13 @@ export class ContasPagamentoController
         {
             const limit = Math.min ( Number ( req.query.limit ) || 50, 100 );
 
-            const { afterNumero, afterModelo, afterSerie, afterParcela } = req.query;
-            const afterCursor = ( afterNumero && afterModelo && afterSerie && afterParcela )
+            const { afterNumero, afterModelo, afterSerie, afterCodFornecedor, afterParcela } = req.query;
+            const afterCursor = ( afterNumero && afterModelo && afterSerie && afterCodFornecedor && afterParcela )
                 ? {
                     numero:  String ( afterNumero ),
                     modelo:  String ( afterModelo ),
                     serie:   String ( afterSerie ),
+                    codFornecedor: Number ( afterCodFornecedor ),
                     parcela: Number ( afterParcela ),
                 }
                 : undefined;
@@ -56,7 +58,7 @@ export class ContasPagamentoController
     {
         try
         {
-            const resultado = documentoFiscalSchema.safeParse ( req.query );
+            const resultado = chaveContaAPagarSchema.safeParse ( req.query );
 
             if ( !resultado.success )
             {
@@ -78,6 +80,22 @@ export class ContasPagamentoController
             }
 
             res.status ( 200 ).json ( await this.service.ValidarChave ( resultado.data ) );
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    }
+
+    CalcularTotalController = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            res.status ( 200 ).json ( this.service.CalcularTotal ( req.body ) );
         }
         catch ( err )
         {
@@ -117,50 +135,6 @@ export class ContasPagamentoController
         }
     }
 
-    UpdateContaController = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) =>
-    {
-        try
-        {
-            res.status ( 200 ).json
-            (
-                await this.service.UpdateConta ( ExtrairId ( req ), req.body, req.codUser! )
-            );
-        }
-        catch ( err )
-        {
-            next ( err );
-        }
-    }
-
-    RegistrarBaixaController = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) =>
-    {
-        try
-        {
-            res.status ( 200 ).json
-            (
-                await this.service.RegistrarBaixa
-                (
-                    ExtrairId ( req ),
-                    req.body.valorBaixa,
-                    req.body.dtBaixa,
-                    req.codUser!
-                )
-            );
-        }
-        catch ( err )
-        {
-            next ( err );
-        }
-    }
-
     CancelarContaController = async (
         req: Request,
         res: Response,
@@ -178,23 +152,6 @@ export class ContasPagamentoController
                     req.codUser!
                 )
             );
-        }
-        catch ( err )
-        {
-            next ( err );
-        }
-    }
-
-    RemoveContaController = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) =>
-    {
-        try
-        {
-            await this.service.DeleteConta ( ExtrairId ( req ), req.codUser! );
-            res.status ( 204 ).send();
         }
         catch ( err )
         {

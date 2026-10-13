@@ -18,6 +18,8 @@ export type ContasAPagarParcela = number & { __brand: 'public.ContasAPagar' };
 
 /** Represents the table public.ContasAPagar */
 export default interface ContasAPagar {
+  codFornecedor: FornecedoresCodForn;
+
   numero: ContasAPagarNumero;
 
   modelo: ContasAPagarModelo;
@@ -25,8 +27,6 @@ export default interface ContasAPagar {
   serie: ContasAPagarSerie;
 
   parcela: ContasAPagarParcela;
-
-  codFornecedor: FornecedoresCodForn;
 
   dtVencimento: Date;
 
@@ -50,15 +50,17 @@ export default interface ContasAPagar {
 
   multa: string;
 
-  valorBaixa: string | null;
+  valorBaixa: string;
 
-  dtBaixa: Date | null;
+  dtBaixa: Date;
 
   justificativaCancelamento: string | null;
 }
 
 /** Represents the initializer for the table public.ContasAPagar */
 export interface ContasAPagarInitializer {
+  codFornecedor: FornecedoresCodForn;
+
   numero: ContasAPagarNumero;
 
   modelo: ContasAPagarModelo;
@@ -66,8 +68,6 @@ export interface ContasAPagarInitializer {
   serie: ContasAPagarSerie;
 
   parcela: ContasAPagarParcela;
-
-  codFornecedor: FornecedoresCodForn;
 
   dtVencimento: Date;
 
@@ -94,15 +94,17 @@ export interface ContasAPagarInitializer {
 
   multa: string;
 
-  valorBaixa?: string | null;
+  valorBaixa: string;
 
-  dtBaixa?: Date | null;
+  dtBaixa: Date;
 
   justificativaCancelamento?: string | null;
 }
 
 /** Represents the mutator for the table public.ContasAPagar */
 export interface ContasAPagarMutator {
+  codFornecedor?: FornecedoresCodForn;
+
   numero?: ContasAPagarNumero;
 
   modelo?: ContasAPagarModelo;
@@ -110,8 +112,6 @@ export interface ContasAPagarMutator {
   serie?: ContasAPagarSerie;
 
   parcela?: ContasAPagarParcela;
-
-  codFornecedor?: FornecedoresCodForn;
 
   dtVencimento?: Date;
 
@@ -135,9 +135,9 @@ export interface ContasAPagarMutator {
 
   multa?: string;
 
-  valorBaixa?: string | null;
+  valorBaixa?: string;
 
-  dtBaixa?: Date | null;
+  dtBaixa?: Date;
 
   justificativaCancelamento?: string | null;
 }

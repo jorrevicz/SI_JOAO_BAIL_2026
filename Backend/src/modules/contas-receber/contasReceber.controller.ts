@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ContasReceberService } from './contasReceber.service';
 import type { ContaAReceberId } from './contasReceber.repository';
-import { documentoFiscalSchema } from '../../shared/documento-fiscal/documentoFiscal.schema';
+import { chaveContaAReceberSchema } from './contasReceber.schema';
 
 function ExtrairId ( req: Request ): ContaAReceberId
 {
@@ -9,6 +9,7 @@ function ExtrairId ( req: Request ): ContaAReceberId
         numero:  String ( req.params.numero ),
         modelo:  String ( req.params.modelo ),
         serie:   String ( req.params.serie ),
+        codCliente: Number ( req.params.codCliente ),
         parcela: Number ( req.params.parcela ),
     };
 }
@@ -30,12 +31,13 @@ export class ContasReceberController
         {
             const limit = Math.min ( Number ( req.query.limit ) || 50, 100 );
 
-            const { afterNumero, afterModelo, afterSerie, afterParcela } = req.query;
-            const afterCursor = ( afterNumero && afterModelo && afterSerie && afterParcela )
+            const { afterNumero, afterModelo, afterSerie, afterCodCliente, afterParcela } = req.query;
+            const afterCursor = ( afterNumero && afterModelo && afterSerie && afterCodCliente && afterParcela )
                 ? {
                     numero:  String ( afterNumero ),
                     modelo:  String ( afterModelo ),
                     serie:   String ( afterSerie ),
+                    codCliente: Number ( afterCodCliente ),
                     parcela: Number ( afterParcela ),
                 }
                 : undefined;
@@ -56,7 +58,7 @@ export class ContasReceberController
     {
         try
         {
-            const resultado = documentoFiscalSchema.safeParse ( req.query );
+            const resultado = chaveContaAReceberSchema.safeParse ( req.query );
 
             if ( !resultado.success )
             {
@@ -78,6 +80,22 @@ export class ContasReceberController
             }
 
             res.status ( 200 ).json ( await this.service.ValidarChave ( resultado.data ) );
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    }
+
+    CalcularTotalController = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            res.status ( 200 ).json ( this.service.CalcularTotal ( req.body ) );
         }
         catch ( err )
         {
@@ -117,51 +135,6 @@ export class ContasReceberController
         }
     }
 
-    UpdateContaController = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) =>
-    {
-        try
-        {
-            res.status ( 200 ).json
-            (
-                await this.service.UpdateConta ( ExtrairId ( req ), req.body, req.codUser! )
-            );
-        }
-        catch ( err )
-        {
-            next ( err );
-        }
-    }
-
-    RegistrarPagamentoRecebidoController = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) =>
-    {
-        try
-        {
-            res.status ( 200 ).json
-            (
-                await this.service.RegistrarPagamentoRecebido
-                (
-                    ExtrairId ( req ),
-                    req.body.valorBaixa,
-                    req.body.dtBaixa,
-                    req.body.dtPagamento,
-                    req.codUser!
-                )
-            );
-        }
-        catch ( err )
-        {
-            next ( err );
-        }
-    }
-
     CancelarContaController = async (
         req: Request,
         res: Response,
@@ -179,23 +152,6 @@ export class ContasReceberController
                     req.codUser!
                 )
             );
-        }
-        catch ( err )
-        {
-            next ( err );
-        }
-    }
-
-    RemoveContaController = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) =>
-    {
-        try
-        {
-            await this.service.DeleteConta ( ExtrairId ( req ), req.codUser! );
-            res.status ( 204 ).send();
         }
         catch ( err )
         {

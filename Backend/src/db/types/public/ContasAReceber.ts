@@ -18,6 +18,8 @@ export type ContasAReceberParcela = number & { __brand: 'public.ContasAReceber' 
 
 /** Represents the table public.ContasAReceber */
 export default interface ContasAReceber {
+  codCliente: ClientesCodCliente;
+
   numero: ContasAReceberNumero;
 
   modelo: ContasAReceberModelo;
@@ -26,15 +28,13 @@ export default interface ContasAReceber {
 
   parcela: ContasAReceberParcela;
 
-  codCliente: ClientesCodCliente;
-
   codFormaDePag: FormaDePagamentoCodFormaDePag;
 
   dtEmissao: Date;
 
   dtVencimento: Date;
 
-  dtPagamento: Date | null;
+  dtPagamento: Date;
 
   valor: string;
 
@@ -52,15 +52,17 @@ export default interface ContasAReceber {
 
   multa: string;
 
-  valorBaixa: string | null;
+  valorBaixa: string;
 
-  dtBaixa: Date | null;
+  dtBaixa: Date;
 
   justificativaCancelamento: string | null;
 }
 
 /** Represents the initializer for the table public.ContasAReceber */
 export interface ContasAReceberInitializer {
+  codCliente: ClientesCodCliente;
+
   numero: ContasAReceberNumero;
 
   modelo: ContasAReceberModelo;
@@ -69,15 +71,13 @@ export interface ContasAReceberInitializer {
 
   parcela: ContasAReceberParcela;
 
-  codCliente: ClientesCodCliente;
-
   codFormaDePag: FormaDePagamentoCodFormaDePag;
 
   dtEmissao: Date;
 
   dtVencimento: Date;
 
-  dtPagamento?: Date | null;
+  dtPagamento: Date;
 
   valor: string;
 
@@ -98,15 +98,17 @@ export interface ContasAReceberInitializer {
 
   multa: string;
 
-  valorBaixa?: string | null;
+  valorBaixa: string;
 
-  dtBaixa?: Date | null;
+  dtBaixa: Date;
 
   justificativaCancelamento?: string | null;
 }
 
 /** Represents the mutator for the table public.ContasAReceber */
 export interface ContasAReceberMutator {
+  codCliente?: ClientesCodCliente;
+
   numero?: ContasAReceberNumero;
 
   modelo?: ContasAReceberModelo;
@@ -115,15 +117,13 @@ export interface ContasAReceberMutator {
 
   parcela?: ContasAReceberParcela;
 
-  codCliente?: ClientesCodCliente;
-
   codFormaDePag?: FormaDePagamentoCodFormaDePag;
 
   dtEmissao?: Date;
 
   dtVencimento?: Date;
 
-  dtPagamento?: Date | null;
+  dtPagamento?: Date;
 
   valor?: string;
 
@@ -141,9 +141,9 @@ export interface ContasAReceberMutator {
 
   multa?: string;
 
-  valorBaixa?: string | null;
+  valorBaixa?: string;
 
-  dtBaixa?: Date | null;
+  dtBaixa?: Date;
 
   justificativaCancelamento?: string | null;
 }

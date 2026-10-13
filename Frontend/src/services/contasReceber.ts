@@ -1,11 +1,13 @@
 import api from './api';
 
+// Chave natural da conta: documento (número, modelo, série) + cliente + parcela.
 export interface ContaAReceberId
 {
-  numero:  string;
-  modelo:  string;
-  serie:   string;
-  parcela: number;
+  numero:     string;
+  modelo:     string;
+  serie:      string;
+  codCliente: number;
+  parcela:    number;
 }
 
 export interface ContaAReceber
@@ -22,9 +24,10 @@ export interface ContaAReceber
   juro:                        string;
   desconto:                    string;
   multa:                       string;
-  valorBaixa:                  string | null;
-  dtBaixa:                     string | null;
-  dtPagamento:                 string | null;
+  valorBaixa:                  string;
+  vlrTotal:                    string;
+  dtBaixa:                     string;
+  dtPagamento:                 string;
   justificativaCancelamento:   string | null;
   dtCriacao:                   string;
   dtEdicao:                    string;
@@ -46,16 +49,11 @@ export interface CreateContaAReceberInput
   juro:          string;
   desconto:      string;
   multa:         string;
+  // A conta nasce já baixada: não há edição nem baixa posterior, só cancelamento.
+  valorBaixa:    string;
+  dtBaixa:       string;
+  dtPagamento:   string;
   isActive:      boolean;
-}
-
-export type UpdateContaAReceberInput = CreateContaAReceberInput;
-
-export interface RegistrarPagamentoRecebidoInput
-{
-  valorBaixa:  string;
-  dtBaixa:     string;
-  dtPagamento: string;
 }
 
 export interface CancelarContaAReceberInput
@@ -63,19 +61,27 @@ export interface CancelarContaAReceberInput
   justificativaCancelamento: string;
 }
 
-export interface ChaveDocumentoFiscal
-{
-  numero: string;
-  modelo: string;
-  serie:  string;
-}
-
 function montarPath ( id: ContaAReceberId )
 {
-  return `${ id.numero }/${ id.modelo }/${ id.serie }/${ id.parcela }`;
+  return `${ id.numero }/${ id.modelo }/${ id.serie }/${ id.codCliente }/${ id.parcela }`;
+}
+
+export interface CalcularTotalContaInput
+{
+  valor:    string;
+  juro:     string;
+  multa:    string;
+  desconto: string;
 }
 
 export const contasReceberService = {
+  // Prévia do valor total: a conta é feita pelo Backend, o Frontend só exibe o resultado.
+  calcularTotal: (
+    dados: CalcularTotalContaInput
+  ) => api
+    .post < { vlrTotal: string } > ( '/api/contas-receber/calcular', dados )
+    .then ( ( resposta ) => resposta.data ),
+
   listar: (
     params?: { limit?: number }
   ) => api
@@ -94,20 +100,6 @@ export const contasReceberService = {
     .post < ContaAReceber > ( '/api/contas-receber', dados )
     .then ( ( resposta ) => resposta.data ),
 
-  atualizar: (
-    id:    ContaAReceberId,
-    dados: UpdateContaAReceberInput
-  ) => api
-    .put < ContaAReceber > ( `/api/contas-receber/${ montarPath ( id ) }`, dados )
-    .then ( ( resposta ) => resposta.data ),
-
-  registrarPagamento: (
-    id:    ContaAReceberId,
-    dados: RegistrarPagamentoRecebidoInput
-  ) => api
-    .patch < ContaAReceber > ( `/api/contas-receber/${ montarPath ( id ) }/baixa`, dados )
-    .then ( ( resposta ) => resposta.data ),
-
   cancelar: (
     id:    ContaAReceberId,
     dados: CancelarContaAReceberInput
@@ -116,13 +108,8 @@ export const contasReceberService = {
     .then ( ( resposta ) => resposta.data ),
 
   validarChave: (
-    chave: ChaveDocumentoFiscal
+    chave: ContaAReceberId
   ) => api
     .get < { valido: true } > ( '/api/contas-receber/validar', { params: chave } )
-    .then ( ( resposta ) => resposta.data ),
-
-  remover: (
-    id: ContaAReceberId
-  ) => api
-    .delete ( `/api/contas-receber/${ montarPath ( id ) }` ),
+    .then ( ( resposta ) => resposta.data )
 };

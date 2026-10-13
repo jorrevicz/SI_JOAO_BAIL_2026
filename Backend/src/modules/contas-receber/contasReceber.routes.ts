@@ -2,9 +2,8 @@ import { Router } from 'express';
 import { Validate } from '../../shared/validation/validate';
 import
 {
+    calcularTotalContaSchema,
     createContasAReceberSchema,
-    updateContasAReceberSchema,
-    registrarPagamentoRecebidoSchema,
     cancelarContaReceberSchema,
 } from './contasReceber.schema';
 import { ContasReceberController } from './contasReceber.controller';
@@ -12,15 +11,13 @@ import { ContasReceberController } from './contasReceber.controller';
 const ContasReceberRouter = Router();
 const controller = new ContasReceberController();
 
-const ID_PATH = '/:numero/:modelo/:serie/:parcela';
+const ID_PATH = '/:numero/:modelo/:serie/:codCliente/:parcela';
 
 ContasReceberRouter.get    ( '/',                       controller.ListContasController                );
 ContasReceberRouter.get    ( '/validar',                controller.ValidarChaveController              );
+ContasReceberRouter.post   ( '/calcular',               Validate ( calcularTotalContaSchema ), controller.CalcularTotalController );
 ContasReceberRouter.get    ( ID_PATH,                   controller.GetByIdContasController             );
 ContasReceberRouter.post   ( '/',                       Validate ( createContasAReceberSchema ),        controller.CreateContaController               );
-ContasReceberRouter.put    ( ID_PATH,                   Validate ( updateContasAReceberSchema ),        controller.UpdateContaController               );
-ContasReceberRouter.patch  ( `${ ID_PATH }/baixa`,      Validate ( registrarPagamentoRecebidoSchema ),  controller.RegistrarPagamentoRecebidoController );
 ContasReceberRouter.patch  ( `${ ID_PATH }/cancelar`,   Validate ( cancelarContaReceberSchema ),        controller.CancelarContaController             );
-ContasReceberRouter.delete ( ID_PATH,                   controller.RemoveContaController               );
 
 export default ContasReceberRouter;
