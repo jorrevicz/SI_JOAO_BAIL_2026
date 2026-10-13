@@ -72,7 +72,8 @@ export class ProdutosRepository
                 "pesoBruto",
                 "pesoLiq",
                 "estoque",
-                "custoMedioProd",
+                "custoProd",
+                "precoVenda",
                 "codUser"
             )
             VALUES
@@ -82,7 +83,8 @@ export class ProdutosRepository
                 ${ prod.pesoBruto       ?? null },
                 ${ prod.pesoLiq         ?? null },
                 ${ prod.estoque         ?? 0 },
-                ${ prod.custo           ?? 0 },
+                ${ prod.custoProd       ?? 0 },
+                ${ prod.precoVenda },
                 ${ codUser }
             )
             RETURNING *
@@ -107,6 +109,7 @@ export class ProdutosRepository
                 "undProduto"   = ${ prod.undProduto   ?? null },
                 "pesoBruto"    = ${ prod.pesoBruto    ?? null },
                 "pesoLiq"      = ${ prod.pesoLiq      ?? null },
+                "precoVenda"   = ${ prod.precoVenda },
                 "codUser"      = ${ codUser },
                 "dtEdicao"     = CURRENT_TIMESTAMP,
                 "isActive"     = ${ prod.isActive }
@@ -135,6 +138,57 @@ export class ProdutosRepository
             WHERE "codProd" = ${ id }
             AND "isActive"  = true
             RETURNING "codProd"
+        `;
+
+        return row ?? null;
+    };
+
+    /**
+     * Lê o produto ativo travando a linha (`FOR UPDATE`) até o fim da transação: o
+     * lançamento/cancelamento de compra calcula o novo estoque e custo a partir desta
+     * leitura, e nenhuma outra compra pode movimentar o mesmo produto no meio do caminho.
+     */
+    async FindByIdForUpdate
+    (
+        id: number,
+        transaction: postgres.TransactionSql
+
+    ): Promise < Produtos | null >
+    {
+        const [ row ] = await transaction < Produtos[] >`
+            SELECT *
+            FROM "Produtos"
+            WHERE "codProd" = ${ id }
+            AND "isActive" = true
+            FOR UPDATE
+        `;
+
+        return row ?? null;
+    };
+
+    /**
+     * Grava estoque e custos já calculados pelo service de Compras (lançamento/estorno).
+     * Não faz conta: o cálculo vive no Backend (`compras.calculo.ts`), não no SQL.
+     */
+    async AtualizarEstoqueCusto
+    (
+        id:      number,
+        valores: { estoque: number; custoMedioProd: string; custoProd: string },
+        codUser: number,
+        transaction?: postgres.TransactionSql
+
+    ): Promise < Produtos | null >
+    {
+        const client = transaction ?? sql;
+        const [ row ] = await client < Produtos[] >`
+            UPDATE "Produtos"
+            SET "estoque"        = ${ valores.estoque },
+                "custoMedioProd" = ${ valores.custoMedioProd },
+                "custoProd"      = ${ valores.custoProd },
+                "codUser"        = ${ codUser },
+                "dtEdicao"       = CURRENT_TIMESTAMP
+            WHERE "codProd" = ${ id }
+            RETURNING *
         `;
 
         return row ?? null;

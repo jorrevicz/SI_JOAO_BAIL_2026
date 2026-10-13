@@ -127,6 +127,8 @@ describe ( 'FormasPagamentoRepository (rollback)', () =>
                     juro: '0.00',
                     desconto: '0.00',
                     multa: '0.00',
+                    valorBaixa: '100.00',
+                    dtBaixa: new Date ( '2026-01-15T00:00:00Z' ),
                 } as never,
                 1,
                 transaction

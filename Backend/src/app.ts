@@ -19,6 +19,7 @@ import FormasPagamentoRoutes    from './modules/formas-pagamento/formasPagamento
 import ParcelasRoutes           from './modules/parcelas/parcelas.routes';
 import ContasPagamentoRoutes    from './modules/contas-pagamento/contasPagamento.routes';
 import ContasReceberRoutes      from './modules/contas-receber/contasReceber.routes';
+import ComprasRoutes            from './modules/compras/compras.routes';
 import ProcedimentosRoutes      from './modules/procedimentos/procedimentos.routes';
 import OrdensServicoRoutes      from './modules/ordens-servico/ordensServico.routes';
 import CargosRoutes             from './modules/cargos/cargos.routes';
@@ -58,6 +59,7 @@ app.use ( '/api/formas-pagamento',    FormasPagamentoRoutes    );
 app.use ( '/api/parcelas',            ParcelasRoutes           );
 app.use ( '/api/contas-pagamento',    ContasPagamentoRoutes    );
 app.use ( '/api/contas-receber',      ContasReceberRoutes      );
+app.use ( '/api/compras',             ComprasRoutes            );
 app.use ( '/api/procedimentos',       ProcedimentosRoutes      );
 app.use ( '/api/ordens-servico',      OrdensServicoRoutes      );
 app.use ( '/api/cargos',              CargosRoutes             );

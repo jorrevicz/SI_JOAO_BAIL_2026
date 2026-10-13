@@ -13,8 +13,9 @@ const repoProdutoCategorias = new ProdutoCategoriasRepository();
 // quem o consome é o service.
 const SEM_CATEGORIAS = { categorias: [] };
 
-// Campos que passaram a ser obrigatórios no cadastro de produto (unidade, pesos, estoque e custo).
-const CAMPOS_PRODUTO = { undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custo: 0 };
+// Campos que passaram a ser obrigatórios no cadastro de produto (unidade, pesos, estoque,
+// custo e preço de venda).
+const CAMPOS_PRODUTO = { undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custoProd: 0, precoVenda: 10 };
 
 describe ( 'ProdutosRepository (rollback)', () =>
 {
@@ -35,7 +36,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
             );
 
             expect ( novo.codProd ).toBeDefined();
-            expect ( parseFloat ( novo.saldoProd ) ).toBe ( 0 );
+            expect ( parseFloat ( novo.precoVenda ) ).toBe ( 10 );
 
             const achado = await repoProdutos.FindById ( novo.codProd, transaction );
             expect ( achado?.produto ).toBe ( 'Teclado USB Teste' );
@@ -85,7 +86,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
             const atualizado = await repoProdutos.Update
             (
                 novo.codProd,
-                { produto: 'Monitor Atualizado', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true, ...SEM_CATEGORIAS },
+                { produto: 'Monitor Atualizado', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, precoVenda: 10, isActive: true, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
@@ -119,30 +120,48 @@ describe ( 'ProdutosRepository (rollback)', () =>
         });
     });
 
-    it ( 'Update não altera estoque nem custoMedioProd (imutáveis na edição)', async () =>
+    it ( 'Create grava o custo inicial em custoProd e não no custo médio', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
             const novo = await repoProdutos.Create
             (
-                { produto: 'Notebook Teste', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 10, custo: 2500, ...SEM_CATEGORIAS },
+                { produto: 'Notebook Custo', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 10, custoProd: 2500, precoVenda: 3200, ...SEM_CATEGORIAS },
+                1,
+                transaction
+            );
+
+            expect ( parseFloat ( novo.custoProd ) ).toBe ( 2500 );
+            expect ( parseFloat ( novo.precoVenda ) ).toBe ( 3200 );
+            expect ( parseFloat ( novo.custoMedioProd ) ).toBe ( 0 );
+        });
+    });
+
+    it ( 'Update altera o preço de venda, mas não estoque nem custos (imutáveis na edição)', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const novo = await repoProdutos.Create
+            (
+                { produto: 'Notebook Teste', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 10, custoProd: 2500, precoVenda: 3200, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
 
             expect ( novo.estoque ).toBe ( 10 );
-            expect ( parseFloat ( novo.custoMedioProd ) ).toBe ( 2500 );
 
             const atualizado = await repoProdutos.Update
             (
                 novo.codProd,
-                { produto: 'Notebook Atualizado', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true, ...SEM_CATEGORIAS },
+                { produto: 'Notebook Atualizado', undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, precoVenda: 3500, isActive: true, ...SEM_CATEGORIAS },
                 1,
                 transaction
             );
 
             expect ( atualizado?.estoque ).toBe ( 10 );
-            expect ( parseFloat ( atualizado!.custoMedioProd ) ).toBe ( 2500 );
+            expect ( parseFloat ( atualizado!.custoProd ) ).toBe ( 2500 );
+            expect ( parseFloat ( atualizado!.custoMedioProd ) ).toBe ( 0 );
+            expect ( parseFloat ( atualizado!.precoVenda ) ).toBe ( 3500 );
             expect ( atualizado?.produto ).toBe ( 'Notebook Atualizado' );
         });
     });
@@ -160,6 +179,60 @@ describe ( 'ProdutosRepository (rollback)', () =>
 
             const temDependentes = await repoProdutos.HasDependents ( novo.codProd, transaction );
             expect ( temDependentes ).toBe ( false );
+        });
+    });
+
+    // Fase 4 (Lote C-3) — o lançamento/estorno de compras lê o produto com trava de linha
+    // e grava estoque/custos já calculados pelo service (o cálculo não fica no SQL).
+    it ( 'FindByIdForUpdate devolve o produto ativo e null para o inativo', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const ativo = await repoProdutos.Create
+            (
+                { produto: 'Trava Ativo', ...CAMPOS_PRODUTO, estoque: 4, ...SEM_CATEGORIAS },
+                1,
+                transaction
+            );
+            const inativo = await repoProdutos.Create
+            (
+                { produto: 'Trava Inativo', ...CAMPOS_PRODUTO, ...SEM_CATEGORIAS },
+                1,
+                transaction
+            );
+            await repoProdutos.Delete ( inativo.codProd, 1, transaction );
+
+            expect ( ( await repoProdutos.FindByIdForUpdate ( ativo.codProd, transaction ) )?.estoque ).toBe ( 4 );
+            expect ( await repoProdutos.FindByIdForUpdate ( inativo.codProd, transaction ) ).toBeNull();
+        });
+    });
+
+    it ( 'AtualizarEstoqueCusto grava estoque, custo médio e custo do produto', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const novo = await repoProdutos.Create
+            (
+                { produto: 'Movimento Teste', ...CAMPOS_PRODUTO, estoque: 10, custoProd: 100, ...SEM_CATEGORIAS },
+                1,
+                transaction
+            );
+
+            const atualizado = await repoProdutos.AtualizarEstoqueCusto
+            (
+                novo.codProd,
+                { estoque: 20, custoMedioProd: '110.00', custoProd: '120.00' },
+                1,
+                transaction
+            );
+
+            expect ( atualizado ).toMatchObject
+            ({
+                estoque:        20,
+                custoMedioProd: '110.00',
+                custoProd:      '120.00',
+                produto:        'Movimento Teste',
+            });
         });
     });
 });

@@ -87,7 +87,7 @@ describe ( 'ProdutosService', () =>
 
         const dados = {
             produto: 'Teclado USB', categorias: [ { codCategoria: 3 } ],
-            undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custo: 0,
+            undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custoProd: 0, precoVenda: 10,
         };
 
         await service.CreateProduto ( dados, 7 );
@@ -105,7 +105,7 @@ describe ( 'ProdutosService', () =>
             {
                 produto:    'Teclado USB',
                 categorias: [ { codCategoria: 3 }, { codCategoria: 5 } ],
-                undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custo: 0,
+                undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custoProd: 0, precoVenda: 10,
             },
             7
         );
@@ -126,7 +126,7 @@ describe ( 'ProdutosService', () =>
             (
                 {
                     produto: 'Teclado USB', categorias: [ { codCategoria: 999 } ],
-                    undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custo: 0,
+                    undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, estoque: 0, custoProd: 0, precoVenda: 10,
                 },
                 7
             )
@@ -144,7 +144,7 @@ describe ( 'ProdutosService', () =>
             service.UpdateProduto
             (
                 99,
-                { produto: 'X', categorias: [ { codCategoria: 1 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
+                { produto: 'X', categorias: [ { codCategoria: 1 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, precoVenda: 10, isActive: true },
                 1
             )
         ).rejects.toMatchObject ( { status: 404 } );
@@ -159,7 +159,7 @@ describe ( 'ProdutosService', () =>
         await service.UpdateProduto
         (
             1,
-            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
+            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, precoVenda: 10, isActive: true },
             1
         );
 
@@ -179,7 +179,7 @@ describe ( 'ProdutosService', () =>
         await service.UpdateProduto
         (
             1,
-            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
+            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, precoVenda: 10, isActive: true },
             1
         );
 
@@ -199,7 +199,7 @@ describe ( 'ProdutosService', () =>
         await service.UpdateProduto
         (
             1,
-            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
+            { produto: 'X', categorias: [ { codCategoria: 4 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, precoVenda: 10, isActive: true },
             1
         );
 
@@ -216,7 +216,7 @@ describe ( 'ProdutosService', () =>
             service.UpdateProduto
             (
                 1,
-                { produto: 'X', categorias: [ { codCategoria: 1 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, isActive: true },
+                { produto: 'X', categorias: [ { codCategoria: 1 } ], undProduto: 'UN', pesoBruto: 1, pesoLiq: 0.9, precoVenda: 10, isActive: true },
                 1
             )
         ).rejects.toMatchObject ( { status: 409 } );

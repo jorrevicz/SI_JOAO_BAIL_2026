@@ -33,7 +33,8 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
     produto:      inicial.produto      ?? '',
     undProduto:   inicial.undProduto   ?? '',
     estoque:      inicial.estoque      ?? 0,
-    custo:        inicial.custoMedioProd != null ? parseFloat ( inicial.custoMedioProd ) : 0,
+    custoProd:    inicial.custoProd    != null ? parseFloat ( inicial.custoProd  ) : 0,
+    precoVenda:   inicial.precoVenda   != null ? parseFloat ( inicial.precoVenda ) : 0,
     pesoBruto:    inicial.pesoBruto    != null ? parseFloat ( inicial.pesoBruto ) : 0,
     pesoLiq:      inicial.pesoLiq      != null ? parseFloat ( inicial.pesoLiq   ) : 0,
     isActive:     inicial.isActive     ?? true,
@@ -116,6 +117,7 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           undProduto:   form.undProduto,
           pesoBruto:    form.pesoBruto,
           pesoLiq:      form.pesoLiq,
+          precoVenda:   form.precoVenda,
           isActive:     form.isActive     ?? true,
         };
         await produtosService.atualizar ( inicial.codProd!, dados );
@@ -128,7 +130,8 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           categorias:   categoriasMapeadas,
           undProduto:   form.undProduto,
           estoque:      form.estoque,
-          custo:        form.custo,
+          custoProd:    form.custoProd,
+          precoVenda:   form.precoVenda,
           pesoBruto:    form.pesoBruto,
           pesoLiq:      form.pesoLiq,
           isActive:     form.isActive     ?? true,
@@ -173,7 +176,7 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           />
         </FormCampo>
 
-        <FormCampo label="Unidade" obrigatorio colunas={ 2 } htmlFor="undProduto" erro={ errosCampo.undProduto }>
+        <FormCampo label="Unidade" obrigatorio colunas={ 1.5 } htmlFor="undProduto" erro={ errosCampo.undProduto }>
           <input
             id="undProduto"
             value={ form.undProduto }
@@ -183,10 +186,8 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
             required
           />
         </FormCampo>
-      </FormSecao>
 
-      <FormSecao>
-        <FormCampo label="Estoque inicial" obrigatorio colunas={ 3 } htmlFor="estoque" erro={ errosCampo.estoque }>
+        <FormCampo label="Estoque inicial" obrigatorio colunas={ 1.5 } htmlFor="estoque" erro={ errosCampo.estoque }>
           <input
             id="estoque"
             type="number"
@@ -202,16 +203,18 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
             required
           />
         </FormCampo>
+      </FormSecao>
 
-        <FormCampo label="Custo inicial (R$)" obrigatorio colunas={ 3 } htmlFor="custo" erro={ errosCampo.custo }>
+      <FormSecao>
+        <FormCampo label="Custo inicial (R$)" obrigatorio colunas={ 1.5 } htmlFor="custoProd" erro={ errosCampo.custoProd }>
           <input
-            id="custo"
+            id="custoProd"
             type="number"
             step="0.01"
             min="0"
-            value={ form.custo }
+            value={ form.custoProd }
             onChange={ ( evento ) =>
-              setForm ( { ...form, custo: evento.target.value ? parseFloat ( evento.target.value ) : 0 } )
+              setForm ( { ...form, custoProd: evento.target.value ? parseFloat ( evento.target.value ) : 0 } )
             }
             disabled={ editando }
             readOnly={ editando }
@@ -219,7 +222,23 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           />
         </FormCampo>
 
-        <FormCampo label="Peso bruto (kg)" obrigatorio colunas={ 3 } htmlFor="pesoBruto" erro={ errosCampo.pesoBruto }>
+        <FormCampo label="Preço de venda (R$)" obrigatorio colunas={ 1.5 } htmlFor="precoVenda" erro={ errosCampo.precoVenda }>
+          <input
+            id="precoVenda"
+            type="number"
+            step="0.01"
+            min="0.01"
+            value={ form.precoVenda }
+            onChange={ ( evento ) =>
+              setForm ( { ...form, precoVenda: evento.target.value ? parseFloat ( evento.target.value ) : 0 } )
+            }
+            required
+          />
+        </FormCampo>
+
+        <FormCampo colunas={ 0.5 }><div></div></FormCampo>
+
+        <FormCampo label="Peso bruto (kg)" obrigatorio colunas={ 1.5 } htmlFor="pesoBruto" erro={ errosCampo.pesoBruto }>
           <input
             id="pesoBruto"
             type="number"
@@ -233,7 +252,7 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           />
         </FormCampo>
 
-        <FormCampo label="Peso líquido (kg)" obrigatorio colunas={ 3 } htmlFor="pesoLiq" erro={ errosCampo.pesoLiq }>
+        <FormCampo label="Peso líquido (kg)" obrigatorio colunas={ 1.5 } htmlFor="pesoLiq" erro={ errosCampo.pesoLiq }>
           <input
             id="pesoLiq"
             type="number"

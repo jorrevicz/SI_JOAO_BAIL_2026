@@ -15,8 +15,9 @@ export interface Produto
   estoque:        number;
   pesoBruto:      string | null;
   pesoLiq:        string | null;
-  saldoProd:      string;
+  custoProd:      string;
   custoMedioProd: string;
+  precoVenda:     string;
   dtCriacao:      string;
   dtEdicao:       string;
   codUser:        number | null;
@@ -29,7 +30,8 @@ export interface CreateProdutoInput
   categorias: CategoriaProdutoInput[];
   undProduto: string;
   estoque:    number;
-  custo:      number;
+  custoProd:  number;
+  precoVenda: number;
   pesoBruto:  number;
   pesoLiq:    number;
   isActive:   boolean;
@@ -42,6 +44,7 @@ export interface UpdateProdutoInput
   undProduto: string;
   pesoBruto:  number;
   pesoLiq:    number;
+  precoVenda: number;
   isActive:   boolean;
 }
 

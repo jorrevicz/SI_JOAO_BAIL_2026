@@ -4,7 +4,6 @@
 import type { FornecedoresCodForn } from './Fornecedores';
 import type { TransportadorasCodTransp } from './Transportadoras';
 import type { CondicaoDePagamentoCodCondDePag } from './CondicaoDePagamento';
-import type { ClassificacoesCompraCodClassificacaoCompra } from './ClassificacoesCompra';
 
 /** Identifier type for public.Compras */
 export type ComprasNumero = string & { __brand: 'public.Compras' };
@@ -17,19 +16,17 @@ export type ComprasSerie = string & { __brand: 'public.Compras' };
 
 /** Represents the table public.Compras */
 export default interface Compras {
+  codForn: FornecedoresCodForn;
+
   numero: ComprasNumero;
 
   modelo: ComprasModelo;
 
   serie: ComprasSerie;
 
-  codForn: FornecedoresCodForn;
-
   codTransp: TransportadorasCodTransp | null;
 
   codCondDePag: CondicaoDePagamentoCodCondDePag;
-
-  vlrTotal: number;
 
   dtCriacao: Date;
 
@@ -39,11 +36,11 @@ export default interface Compras {
 
   isActive: boolean;
 
-  dtChegada: Date | null;
+  dtChegada: Date;
 
-  dtEmissao: Date | null;
+  dtEmissao: Date;
 
-  dtEntrada: Date | null;
+  dtEntrada: Date;
 
   frete: string;
 
@@ -52,25 +49,21 @@ export default interface Compras {
   despesas: string;
 
   justificativaCancelamento: string | null;
-
-  codClassificacaoCompra: ClassificacoesCompraCodClassificacaoCompra;
 }
 
 /** Represents the initializer for the table public.Compras */
 export interface ComprasInitializer {
+  codForn: FornecedoresCodForn;
+
   numero: ComprasNumero;
 
   modelo: ComprasModelo;
 
   serie: ComprasSerie;
 
-  codForn: FornecedoresCodForn;
-
   codTransp?: TransportadorasCodTransp | null;
 
   codCondDePag: CondicaoDePagamentoCodCondDePag;
-
-  vlrTotal: number;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -83,11 +76,11 @@ export interface ComprasInitializer {
   /** Default value: true */
   isActive?: boolean;
 
-  dtChegada?: Date | null;
+  dtChegada: Date;
 
-  dtEmissao?: Date | null;
+  dtEmissao: Date;
 
-  dtEntrada?: Date | null;
+  dtEntrada: Date;
 
   frete: string;
 
@@ -96,25 +89,21 @@ export interface ComprasInitializer {
   despesas: string;
 
   justificativaCancelamento?: string | null;
-
-  codClassificacaoCompra: ClassificacoesCompraCodClassificacaoCompra;
 }
 
 /** Represents the mutator for the table public.Compras */
 export interface ComprasMutator {
+  codForn?: FornecedoresCodForn;
+
   numero?: ComprasNumero;
 
   modelo?: ComprasModelo;
 
   serie?: ComprasSerie;
 
-  codForn?: FornecedoresCodForn;
-
   codTransp?: TransportadorasCodTransp | null;
 
   codCondDePag?: CondicaoDePagamentoCodCondDePag;
-
-  vlrTotal?: number;
 
   dtCriacao?: Date;
 
@@ -124,11 +113,11 @@ export interface ComprasMutator {
 
   isActive?: boolean;
 
-  dtChegada?: Date | null;
+  dtChegada?: Date;
 
-  dtEmissao?: Date | null;
+  dtEmissao?: Date;
 
-  dtEntrada?: Date | null;
+  dtEntrada?: Date;
 
   frete?: string;
 
@@ -137,6 +126,4 @@ export interface ComprasMutator {
   despesas?: string;
 
   justificativaCancelamento?: string | null;
-
-  codClassificacaoCompra?: ClassificacoesCompraCodClassificacaoCompra;
 }

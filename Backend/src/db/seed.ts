@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import sql from '../lib/db';
+import { CalcularCompra, CalcularEntradaEstoque } from '../modules/compras/compras.calculo';
 
 // ============================================================
 // T-021 — Seed geográfico
@@ -121,7 +122,6 @@ const CATEGORIAS_LISTA = [
 // Domínio fechado da classificação de propósito da compra (RN005) — os três valores
 // são fixos e sustentam regra de negócio; não se confundem com "Categorias", que é a
 // taxonomia aberta do catálogo de produtos.
-const CLASSIFICACOES_COMPRA = [ 'obra-prima', 'revenda', 'serviços' ];
 
 // ============================================================
 // T-061 — Seed de atendimento (Procedimentos e Ordens de Serviço)
@@ -193,18 +193,6 @@ async function seedGeografico(): Promise < Record < string, number > > {
   return estadoMap;
 }
 
-async function seedClassificacoesCompra(): Promise < void >
-{
-  for ( const classificacao of CLASSIFICACOES_COMPRA )
-  {
-    await sql`
-      INSERT INTO "ClassificacoesCompra" ( "classificacaoCompra" )
-      VALUES ( ${ classificacao } )
-      ON CONFLICT ( "classificacaoCompra" ) DO NOTHING
-    `;
-  }
-}
-
 async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < Record < string, number > >
 {
   const catMap: Record < string, number > = {};
@@ -237,8 +225,8 @@ async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < 
       codCategoria:   catMap [ 'NOTEBOOKS E ULTRABOOKS' ],
       pesoBruto:      '2.500',
       pesoLiq:        '2.100',
-      saldoProd:      '15.000',
-      custoMedioProd: '3200.00',
+      custoProd:      '3200.00',
+      precoVenda:     '4299.00',
       estoque:        15,
     },
     {
@@ -247,8 +235,8 @@ async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < 
       codCategoria:   catMap [ 'DESKTOPS E WORKSTATIONS' ],
       pesoBruto:      '6.800',
       pesoLiq:        '5.900',
-      saldoProd:      '8.000',
-      custoMedioProd: '1950.00',
+      custoProd:      '1950.00',
+      precoVenda:     '2599.00',
       estoque:        8,
     },
     {
@@ -257,8 +245,8 @@ async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < 
       codCategoria:   catMap [ 'PERIFÉRICOS' ],
       pesoBruto:      '0.141',
       pesoLiq:        '0.100',
-      saldoProd:      '25.000',
-      custoMedioProd: '380.00',
+      custoProd:      '380.00',
+      precoVenda:     '549.00',
       estoque:        25,
     },
     {
@@ -267,8 +255,8 @@ async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < 
       codCategoria:   catMap [ 'COMPONENTES' ],
       pesoBruto:      '0.070',
       pesoLiq:        '0.055',
-      saldoProd:      '30.000',
-      custoMedioProd: '210.00',
+      custoProd:      '210.00',
+      precoVenda:     '299.00',
       estoque:        30,
     },
     {
@@ -277,8 +265,8 @@ async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < 
       codCategoria:   catMap [ 'CABOS E ACESSÓRIOS' ],
       pesoBruto:      '0.150',
       pesoLiq:        '0.120',
-      saldoProd:      '50.000',
-      custoMedioProd: '28.00',
+      custoProd:      '28.00',
+      precoVenda:     '49.90',
       estoque:        50,
     },
   ];
@@ -302,8 +290,8 @@ async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < 
           "undProduto"     = ${ prod.undProduto },
           "pesoBruto"      = ${ prod.pesoBruto },
           "pesoLiq"        = ${ prod.pesoLiq },
-          "saldoProd"      = ${ prod.saldoProd },
-          "custoMedioProd" = ${ prod.custoMedioProd },
+          "custoProd"      = ${ prod.custoProd },
+          "precoVenda"     = ${ prod.precoVenda },
           "estoque"        = ${ prod.estoque }
         WHERE "codProd" = ${ codProd }
       `;
@@ -313,11 +301,11 @@ async function seedCatalogo ( estadoMap: Record < string, number > ): Promise < 
       const [ inserted ] = await sql`
         INSERT INTO "Produtos"
           ( "produto", "undProduto", "pesoBruto", "pesoLiq",
-           "saldoProd", "custoMedioProd", "estoque" )
+           "custoProd", "precoVenda", "estoque" )
         VALUES
           ( ${ prod.produto }, ${ prod.undProduto },
-           ${ prod.pesoBruto }, ${ prod.pesoLiq }, ${ prod.saldoProd },
-           ${ prod.custoMedioProd }, ${ prod.estoque } )
+           ${ prod.pesoBruto }, ${ prod.pesoLiq }, ${ prod.custoProd },
+           ${ prod.precoVenda }, ${ prod.estoque } )
         RETURNING "codProd"
       `;
 
@@ -659,32 +647,31 @@ async function seedFinanceiro(): Promise < void >
     }
   }
 
-  // Parcelas — vinculadas às condições
+  // Parcelas — vinculadas às condições; o número (numParcela) é definido manualmente, por condição
   const parcelas = [
     // À Vista: 100% no 1º dia (à vista = 1 dia) via Dinheiro
-    { codCondDePag: codCondMap [ 'À VISTA' ],       codFormaDePag: codFormaMap [ 'DINHEIRO' ],          percentual: '100.00', numDias: 1  },
+    { numParcela: 1, codCondDePag: codCondMap [ 'À VISTA' ],       codFormaDePag: codFormaMap [ 'DINHEIRO' ],          percentual: '100.00', numDias: 1  },
     // 30 dias: 100% em 30 dias via boleto
-    { codCondDePag: codCondMap [ '30 DIAS' ],       codFormaDePag: codFormaMap [ 'BOLETO BANCÁRIO' ],   percentual: '100.00', numDias: 30 },
+    { numParcela: 1, codCondDePag: codCondMap [ '30 DIAS' ],       codFormaDePag: codFormaMap [ 'BOLETO BANCÁRIO' ],   percentual: '100.00', numDias: 30 },
     // 30/60/90 dias: 3 parcelas de 33,33% via boleto
-    { codCondDePag: codCondMap [ '30/60/90 DIAS' ], codFormaDePag: codFormaMap [ 'BOLETO BANCÁRIO' ],   percentual:  '33.33', numDias: 30 },
-    { codCondDePag: codCondMap [ '30/60/90 DIAS' ], codFormaDePag: codFormaMap [ 'BOLETO BANCÁRIO' ],   percentual:  '33.33', numDias: 60 },
-    { codCondDePag: codCondMap [ '30/60/90 DIAS' ], codFormaDePag: codFormaMap [ 'BOLETO BANCÁRIO' ],   percentual:  '33.34', numDias: 90 },
+    { numParcela: 1, codCondDePag: codCondMap [ '30/60/90 DIAS' ], codFormaDePag: codFormaMap [ 'BOLETO BANCÁRIO' ],   percentual:  '33.33', numDias: 30 },
+    { numParcela: 2, codCondDePag: codCondMap [ '30/60/90 DIAS' ], codFormaDePag: codFormaMap [ 'BOLETO BANCÁRIO' ],   percentual:  '33.33', numDias: 60 },
+    { numParcela: 3, codCondDePag: codCondMap [ '30/60/90 DIAS' ], codFormaDePag: codFormaMap [ 'BOLETO BANCÁRIO' ],   percentual:  '33.34', numDias: 90 },
   ];
 
   for ( const parcela of parcelas )
   {
     const existing = await sql`
-      SELECT "codParcela" FROM "Parcelas"
-      WHERE  "codCondDePag"  = ${ parcela.codCondDePag }
-      AND    "codFormaDePag" = ${ parcela.codFormaDePag }
-      AND    "numDias"       = ${ parcela.numDias }
+      SELECT "numParcela" FROM "Parcelas"
+      WHERE  "codCondDePag" = ${ parcela.codCondDePag }
+      AND    "numParcela"   = ${ parcela.numParcela }
       LIMIT 1
     `;
     if ( existing.length === 0 )
     {
       await sql`
-        INSERT INTO "Parcelas" ( "codCondDePag", "codFormaDePag", "percentual", "numDias" )
-        VALUES ( ${ parcela.codCondDePag }, ${ parcela.codFormaDePag }, ${ parcela.percentual }, ${ parcela.numDias } )
+        INSERT INTO "Parcelas" ( "codCondDePag", "numParcela", "codFormaDePag", "percentual", "numDias" )
+        VALUES ( ${ parcela.codCondDePag }, ${ parcela.numParcela }, ${ parcela.codFormaDePag }, ${ parcela.percentual }, ${ parcela.numDias } )
       `;
     }
   }
@@ -717,7 +704,7 @@ async function seedContasAPagar(): Promise < void >
 
   const contas = [
     {
-      numero:        '00000001',
+      numero:        '000000001',
       modelo:        '55',
       serie:         '01',
       parcela:       1,
@@ -729,11 +716,11 @@ async function seedContasAPagar(): Promise < void >
       juro:          '0.00',
       desconto:      '0.00',
       multa:         '0.00',
-      valorBaixa:    null as string | null,
-      dtBaixa:       null as string | null,
+      valorBaixa:    '3200.00',
+      dtBaixa:       '2026-10-01T12:00:00Z',
     },
     {
-      numero:        '00000002',
+      numero:        '000000002',
       modelo:        '55',
       serie:         '01',
       parcela:       1,
@@ -745,13 +732,12 @@ async function seedContasAPagar(): Promise < void >
       juro:          '0.00',
       desconto:      '5.00',
       multa:         '0.00',
-      valorBaixa:    null as string | null,
-      dtBaixa:       null as string | null,
+      valorBaixa:    '1945.00',
+      dtBaixa:       '2026-09-05T20:00:00Z',
     },
-    // Conta já baixada — preenche os campos opcionais de baixa (RegistrarBaixa),
-    // que na seed original nunca eram exercitados.
+    // A conta a pagar nasce já baixada (sem estado "em aberto").
     {
-      numero:        '00000003',
+      numero:        '000000003',
       modelo:        '55',
       serie:         '01',
       parcela:       1,
@@ -763,8 +749,8 @@ async function seedContasAPagar(): Promise < void >
       juro:          '0.00',
       desconto:      '0.00',
       multa:         '0.00',
-      valorBaixa:    '500.00' as string | null,
-      dtBaixa:       '2026-09-10T18:00:00Z' as string | null,
+      valorBaixa:    '500.00',
+      dtBaixa:       '2026-09-10T18:00:00Z',
     },
   ];
 
@@ -796,6 +782,129 @@ async function seedContasAPagar(): Promise < void >
 }
 
 // ============================================================
+// T-080 — Seed de Compras (Fase 4)
+// Ordem: Fornecedores → CondicaoDePagamento → Produtos → Compras
+//
+// Uma compra já lançada (a compra não tem rascunho): ao ser criada, dá entrada nos itens
+// em estoque e custo médio — só na 1ª execução, para o seed seguir idempotente. Só os dados
+// informados são gravados; total, rateio e custo unitário são calculados pelo Backend:
+//   mouse: 5 × 380,00 = 1.900,00
+//   SSD:  10 × 210,00 − 100,00 = 2.000,00
+// A parcela única de 4.000,00 fecha no total da compra (3.900,00 de produtos + 100,00 de despesas).
+// ============================================================
+async function seedCompras(): Promise < void >
+{
+  const [ fornecedor ] = await sql`
+    SELECT "codForn", "codCondDePag" FROM "Fornecedores" WHERE "cpfCnpjForn" = '12345678000190' LIMIT 1
+  `;
+  const [ mouse ] = await sql`
+    SELECT "codProd" FROM "Produtos" WHERE "produto" = 'MOUSE LOGITECH MX MASTER 3S SEM FIO' LIMIT 1
+  `;
+  const [ ssd ] = await sql`
+    SELECT "codProd" FROM "Produtos" WHERE "produto" = 'SSD KINGSTON A400 480GB SATA III' LIMIT 1
+  `;
+
+  if ( !fornecedor || !mouse || !ssd )
+  {
+    throw new Error ( 'Fornecedor/Produtos de referência não encontrados — rode seedCatalogo e seedParceiros primeiro.' );
+  }
+
+  const compra = {
+    numero:    '000000101',
+    modelo:    '55',
+    serie:     '01',
+    dtEmissao: '2026-09-20T10:00:00Z',
+    dtChegada: '2026-09-22T14:00:00Z',
+    frete:     '60.00',
+    seguro:    '20.00',
+    despesas:  '20.00',
+  };
+
+  const compraCriada = await sql`
+    INSERT INTO "Compras"
+      ( "numero", "modelo", "serie", "codForn", "codCondDePag",
+       "dtEmissao", "dtChegada", "dtEntrada", "frete", "seguro", "despesas" )
+    VALUES
+      ( ${ compra.numero }, ${ compra.modelo }, ${ compra.serie }, ${ fornecedor.codForn },
+       ${ fornecedor.codCondDePag },
+       ${ compra.dtEmissao }, ${ compra.dtChegada }, ${ compra.dtChegada }, ${ compra.frete }, ${ compra.seguro },
+       ${ compra.despesas } )
+    ON CONFLICT ( "numero", "modelo", "serie", "codForn" ) DO NOTHING
+    RETURNING "numero"
+  `;
+
+  const itens = [
+    {
+      codProduto:        mouse.codProd,
+      quantidade:        5,
+      valorUnitario:     '380.00',
+      desconto:          '0.00',
+    },
+    {
+      codProduto:        ssd.codProd,
+      quantidade:        10,
+      valorUnitario:     '210.00',
+      desconto:          '100.00',
+    },
+  ];
+
+  for ( const item of itens )
+  {
+    await sql`
+      INSERT INTO "CompraProduto"
+        ( "numero", "modelo", "serie", "codForn", "codProduto", "quantidade", "valorUnitario",
+         "desconto", "unidade" )
+      VALUES
+        ( ${ compra.numero }, ${ compra.modelo }, ${ compra.serie }, ${ fornecedor.codForn }, ${ item.codProduto },
+         ${ item.quantidade }, ${ item.valorUnitario }, ${ item.desconto },
+         'UN' )
+      ON CONFLICT ( "numero", "modelo", "serie", "codForn", "codProduto" ) DO NOTHING
+    `;
+  }
+
+  // Entrada em estoque/custo médio (RN018), igual ao cadastro da compra pela API.
+  if ( compraCriada.length > 0 )
+  {
+    const calculo = CalcularCompra ( { frete: compra.frete, seguro: compra.seguro, despesas: compra.despesas, itens } );
+
+    for ( const [ indice, item ] of itens.entries() )
+    {
+      const [ produto ] = await sql`
+        SELECT "estoque", "custoProd", "custoMedioProd" FROM "Produtos" WHERE "codProd" = ${ item.codProduto }
+      `;
+      const entrada = CalcularEntradaEstoque (
+        { estoque: produto.estoque, custoProd: produto.custoProd, custoMedioProd: produto.custoMedioProd },
+        item.quantidade,
+        calculo.itens[ indice ].custoMedioProduto
+      );
+
+      await sql`
+        UPDATE "Produtos"
+        SET "estoque" = ${ entrada.estoque }, "custoMedioProd" = ${ entrada.custoMedioProd }, "custoProd" = ${ entrada.custoProd }
+        WHERE "codProd" = ${ item.codProduto }
+      `;
+    }
+  }
+
+  // RN023 — parcela única à vista (PIX) que fecha no total calculado da compra de exemplo.
+  const [ pix ] = await sql`
+    SELECT "codFormaDePag" FROM "FormaDePagamento" WHERE "formaDePag" = 'PIX' LIMIT 1
+  `;
+
+  if ( pix )
+  {
+    await sql`
+      INSERT INTO "CompraParcelas"
+        ( "numero", "modelo", "serie", "codForn", "numParcela", "codFormaDePag", "valor", "dtVencimento" )
+      VALUES
+        ( ${ compra.numero }, ${ compra.modelo }, ${ compra.serie }, ${ fornecedor.codForn }, 1, ${ pix.codFormaDePag },
+         '4000.00', '2026-10-20T10:00:00Z' )
+      ON CONFLICT ( "numero", "modelo", "serie", "codForn", "numParcela" ) DO NOTHING
+    `;
+  }
+}
+
+// ============================================================
 // T-042 — Seed de Contas a Receber
 // Ordem: Clientes → FormaDePagamento → ContasAReceber
 // ============================================================
@@ -822,7 +931,7 @@ async function seedContasAReceber(): Promise < void >
 
   const contas = [
     {
-      numero:        '00000001',
+      numero:        '000000001',
       modelo:        '55',
       serie:         '01',
       parcela:       1,
@@ -834,13 +943,13 @@ async function seedContasAReceber(): Promise < void >
       juro:          '0.00',
       desconto:      '0.00',
       multa:         '0.00',
-      valorBaixa:    null as string | null,
-      dtBaixa:       null as string | null,
-      dtPagamento:   null as string | null,
+      valorBaixa:    '380.00',
+      dtBaixa:       '2026-10-10T12:00:00Z',
+      dtPagamento:   '2026-10-10T12:00:00Z',
     },
-    // Conta já recebida — preenche valorBaixa/dtBaixa/dtPagamento (RegistrarPagamentoRecebido).
+    // A conta a receber nasce já baixada (sem estado "em aberto").
     {
-      numero:        '00000002',
+      numero:        '000000002',
       modelo:        '55',
       serie:         '01',
       parcela:       1,
@@ -852,9 +961,9 @@ async function seedContasAReceber(): Promise < void >
       juro:          '0.00',
       desconto:      '0.00',
       multa:         '0.00',
-      valorBaixa:    '210.00' as string | null,
-      dtBaixa:       '2026-09-12T15:30:00Z' as string | null,
-      dtPagamento:   '2026-09-12T15:30:00Z' as string | null,
+      valorBaixa:    '210.00',
+      dtBaixa:       '2026-09-12T15:30:00Z',
+      dtPagamento:   '2026-09-12T15:30:00Z',
     },
   ];
 
@@ -1155,10 +1264,6 @@ async function main()
   await seedCatalogo(estadoMap);
   console.log ( `  -> ${CATEGORIAS_LISTA.length} categorias, 5 produtos.` );
 
-  console.log ( '  Classificações de Compra...' );
-  await seedClassificacoesCompra();
-  console.log ( `  -> ${CLASSIFICACOES_COMPRA.length} classificações de compra.` );
-
   console.log ( '  Parceiros (Fornecedores, Clientes, Veículos, Transportadoras)...' );
   await seedParceiros(estadoMap);
   console.log ( '  -> 2 fornecedores, 1 condição de pagamento, 2 clientes, 1 veículo, 1 transportadora.' );
@@ -1170,6 +1275,10 @@ async function main()
   console.log ( '  Contas a Pagar...' );
   await seedContasAPagar();
   console.log ( '  -> 3 contas a pagar.' );
+
+  console.log ( '  Compras...' );
+  await seedCompras();
+  console.log ( '  -> 1 compra lançada com 2 itens.' );
 
   console.log ( '  Contas a Receber...' );
   await seedContasAReceber();

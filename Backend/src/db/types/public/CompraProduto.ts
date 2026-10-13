@@ -3,6 +3,7 @@
 
 import type { ProdutosCodProd } from './Produtos';
 import type { ComprasNumero, ComprasModelo, ComprasSerie } from './Compras';
+import type { FornecedoresCodForn } from './Fornecedores';
 
 /** Represents the table public.CompraProduto */
 export default interface CompraProduto {
@@ -14,13 +15,21 @@ export default interface CompraProduto {
 
   serie: ComprasSerie;
 
-  custoMedioProduto: string | null;
+  codForn: FornecedoresCodForn;
 
   dtCriacao: Date;
 
   dtEdicao: Date;
 
   codUser: number | null;
+
+  quantidade: number;
+
+  valorUnitario: string;
+
+  desconto: string;
+
+  unidade: string;
 }
 
 /** Represents the initializer for the table public.CompraProduto */
@@ -33,7 +42,7 @@ export interface CompraProdutoInitializer {
 
   serie: ComprasSerie;
 
-  custoMedioProduto?: string | null;
+  codForn: FornecedoresCodForn;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -42,6 +51,15 @@ export interface CompraProdutoInitializer {
   dtEdicao?: Date;
 
   codUser?: number | null;
+
+  quantidade: number;
+
+  valorUnitario: string;
+
+  /** Default value: 0 */
+  desconto?: string;
+
+  unidade: string;
 }
 
 /** Represents the mutator for the table public.CompraProduto */
@@ -54,11 +72,19 @@ export interface CompraProdutoMutator {
 
   serie?: ComprasSerie;
 
-  custoMedioProduto?: string | null;
+  codForn?: FornecedoresCodForn;
 
   dtCriacao?: Date;
 
   dtEdicao?: Date;
 
   codUser?: number | null;
+
+  quantidade?: number;
+
+  valorUnitario?: string;
+
+  desconto?: string;
+
+  unidade?: string;
 }

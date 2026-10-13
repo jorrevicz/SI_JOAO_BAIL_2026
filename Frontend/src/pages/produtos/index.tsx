@@ -110,10 +110,6 @@ export default function ProdutosPage ()
       }
     ),
     columnHelper.accessor (
-      'saldoProd',
-      { header: 'Saldo', cell: ( info ) => parseFloat ( info.getValue() ).toFixed ( 3 ) }
-    ),
-    columnHelper.accessor (
       'pesoBruto',
       { header: 'Peso bruto (kg)', cell: ( info ) => info.getValue() != null ? parseFloat ( info.getValue()! ).toFixed ( 3 ) : '—' }
     ),
@@ -122,8 +118,16 @@ export default function ProdutosPage ()
       { header: 'Peso líquido (kg)', cell: ( info ) => info.getValue() != null ? parseFloat ( info.getValue()! ).toFixed ( 3 ) : '—' }
     ),
     columnHelper.accessor (
+      'custoProd',
+      { header: 'Custo (R$)', cell: ( info ) => parseFloat ( info.getValue() ).toFixed ( 2 ) }
+    ),
+    columnHelper.accessor (
       'custoMedioProd',
       { header: 'Custo médio (R$)', cell: ( info ) => parseFloat ( info.getValue() ).toFixed ( 2 ) }
+    ),
+    columnHelper.accessor (
+      'precoVenda',
+      { header: 'Preço de venda (R$)', cell: ( info ) => parseFloat ( info.getValue() ).toFixed ( 2 ) }
     ),
     columnHelper.accessor (
       'dtCriacao',

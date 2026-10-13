@@ -53,7 +53,7 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
             .send
             ({
                 tipoPessoa: 'FISICA', cliente: 'Cliente ExecTst', codCidade: cidade.body.codCidade,
-                enderecoCl: 'Rua X', bairroCl: 'Centro', cepCl: '13000000', foneCl: '19999999999',
+                enderecoCl: 'Rua X', bairroCl: 'Centro', cepCl: '13000000', cpfCnpjCl: '12345678901', inscEstCl: '123456', foneCl: '19999999999',
                 email: 'exec@kaneko.com.br', dtNascimento: '1990-01-01', genero: 'OUTRO',
             });
 

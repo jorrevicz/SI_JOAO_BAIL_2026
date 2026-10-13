@@ -85,7 +85,7 @@ export function ProdutoCategoriaForm ( { categorias, onAdicionar }: Props )
           rotuloNome="Nome da categoria"
           obrigatorio
           erroApi={ erroCategoria }
-          colunas={ [ 2, 2, 4 ] }
+          colunas={ [ 2, 1, 4 ] }
         />
 
         <FormCampo colunas={ 4 }>

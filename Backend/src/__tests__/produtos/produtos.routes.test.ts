@@ -98,7 +98,8 @@ describe ( 'Produtos routes', () =>
                 pesoBruto:  1,
                 pesoLiq:    0.9,
                 estoque:    0,
-                custo:      0,
+                custoProd:  0,
+                precoVenda: 10,
                 categorias: [ { codCategoria: primeiraCategoria }, { codCategoria: segundaCategoria } ],
             });
 
@@ -124,7 +125,8 @@ describe ( 'Produtos routes', () =>
                 pesoBruto:  0,
                 pesoLiq:    0.9,
                 estoque:    0,
-                custo:      0,
+                custoProd:  0,
+                precoVenda: 10,
                 categorias: [ { codCategoria: primeiraCategoria } ],
             });
 
@@ -143,12 +145,52 @@ describe ( 'Produtos routes', () =>
                 pesoBruto:  1,
                 pesoLiq:    0,
                 estoque:    0,
-                custo:      0,
+                custoProd:  0,
+                precoVenda: 10,
                 categorias: [ { codCategoria: primeiraCategoria } ],
             });
 
         expect ( res.status ).toBe ( 400 );
         expect ( res.body.erros ).toHaveProperty ( 'pesoLiq' );
+    });
+
+    it ( 'POST /api/produtos sem preço de venda retorna 400 no campo precoVenda', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/produtos' )
+            .send
+            ({
+                produto:    nomeUnico ( 'PRODUTO SEM PRECO' ),
+                undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0.9,
+                estoque:    0,
+                custoProd:  0,
+                categorias: [ { codCategoria: primeiraCategoria } ],
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'precoVenda' );
+    });
+
+    it ( 'POST /api/produtos com preço de venda zero retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/produtos' )
+            .send
+            ({
+                produto:    nomeUnico ( 'PRODUTO PRECO ZERO' ),
+                undProduto: 'UN',
+                pesoBruto:  1,
+                pesoLiq:    0.9,
+                estoque:    0,
+                custoProd:  0,
+                precoVenda: 0,
+                categorias: [ { codCategoria: primeiraCategoria } ],
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'precoVenda' );
     });
 
     it ( 'POST /api/produtos sem categorias retorna 400 (RN: ao menos uma categoria)', async () =>
@@ -182,7 +224,8 @@ describe ( 'Produtos routes', () =>
                 pesoBruto:  1,
                 pesoLiq:    0.9,
                 estoque:    0,
-                custo:      0,
+                custoProd:  0,
+                precoVenda: 10,
                 categorias: [ { codCategoria: primeiraCategoria }, { codCategoria: primeiraCategoria } ],
             });
 
@@ -220,7 +263,8 @@ describe ( 'Produtos routes', () =>
                 pesoBruto:  1,
                 pesoLiq:    0.9,
                 estoque:    0,
-                custo:      0,
+                custoProd:  0,
+                precoVenda: 10,
                 categorias: [ { codCategoria: primeiraCategoria } ],
             });
 
@@ -237,6 +281,7 @@ describe ( 'Produtos routes', () =>
                 undProduto: 'UN',
                 pesoBruto:  1,
                 pesoLiq:    0.9,
+                precoVenda: 10,
                 isActive:   true,
                 categorias: [ { codCategoria: segundaCategoria } ],
             });
@@ -261,7 +306,8 @@ describe ( 'Produtos routes', () =>
                 pesoBruto:  1,
                 pesoLiq:    0.9,
                 estoque:    0,
-                custo:      0,
+                custoProd:  0,
+                precoVenda: 10,
                 categorias: [ { codCategoria: primeiraCategoria } ],
             });
 
@@ -295,7 +341,8 @@ describe ( 'Produtos routes', () =>
                 pesoBruto:  1,
                 pesoLiq:    0.9,
                 estoque:    0,
-                custo:      0,
+                custoProd:  0,
+                precoVenda: 10,
                 categorias: [ { codCategoria } ],
             });
 

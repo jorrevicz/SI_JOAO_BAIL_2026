@@ -16,8 +16,6 @@ export default interface Produtos {
 
   pesoLiq: string;
 
-  saldoProd: string;
-
   custoMedioProd: string;
 
   dtCriacao: Date;
@@ -29,6 +27,10 @@ export default interface Produtos {
   isActive: boolean;
 
   estoque: number;
+
+  custoProd: string;
+
+  precoVenda: string;
 }
 
 /** Represents the initializer for the table public.Produtos */
@@ -42,9 +44,6 @@ export interface ProdutosInitializer {
   pesoBruto: string;
 
   pesoLiq: string;
-
-  /** Default value: 0 */
-  saldoProd?: string;
 
   /** Default value: 0 */
   custoMedioProd?: string;
@@ -62,6 +61,11 @@ export interface ProdutosInitializer {
 
   /** Default value: 0 */
   estoque?: number;
+
+  /** Default value: 0 */
+  custoProd?: string;
+
+  precoVenda: string;
 }
 
 /** Represents the mutator for the table public.Produtos */
@@ -76,8 +80,6 @@ export interface ProdutosMutator {
 
   pesoLiq?: string;
 
-  saldoProd?: string;
-
   custoMedioProd?: string;
 
   dtCriacao?: Date;
@@ -89,4 +91,8 @@ export interface ProdutosMutator {
   isActive?: boolean;
 
   estoque?: number;
+
+  custoProd?: string;
+
+  precoVenda?: string;
 }

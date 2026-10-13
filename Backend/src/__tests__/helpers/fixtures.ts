@@ -301,6 +301,7 @@ export async function criarProdutoDeTeste
             "undProduto",
             "pesoBruto",
             "pesoLiq",
+            "precoVenda",
             "codUser"
         )
         VALUES
@@ -309,10 +310,129 @@ export async function criarProdutoDeTeste
             'UN',
             1,
             0.9,
+            10,
             ${ COD_USER_TESTE }
         )
         RETURNING "codProd"
     `;
 
     return novoProduto.codProd;
+}
+
+export interface CompraDeTeste
+{
+    numero:       string;
+    modelo:       string;
+    serie:        string;
+    codForn:      number;
+    codCondDePag: number;
+    codProduto:   number;
+    codFormaDePag: number;
+}
+
+/**
+ * Insere fornecedor → produto → compra (já lançada) com um item e
+ * devolve a chave natural e os códigos gerados. Valores do item já seguem as regras de
+ * cálculo da compra: 2 × 100,00 = 200,00 (o vlrTotal e o rateio são calculados na leitura, não gravados).
+ */
+export async function criarCompraDeTeste
+(
+    transaction: postgres.TransactionSql,
+    chave: { numero: string; modelo?: string; serie?: string },
+    codForn?: number
+): Promise < CompraDeTeste >
+{
+    const modelo = chave.modelo ?? '55';
+    const serie  = chave.serie  ?? '01';
+
+    const codFornecedor = codForn ?? await criarFornecedorDeTeste ( transaction );
+
+    const [ fornecedor ] = await transaction < { codCondDePag: number }[] >`
+        SELECT "codCondDePag" FROM "Fornecedores" WHERE "codForn" = ${ codFornecedor }
+    `;
+
+    const codProduto = await criarProdutoDeTeste ( transaction, `PRODUTO COMPRA ${ chave.numero }` );
+
+    await transaction`
+        INSERT INTO "Compras"
+        (
+            "numero",
+            "modelo",
+            "serie",
+            "codForn",
+            "codCondDePag",
+            "dtEmissao",
+            "dtChegada",
+            "dtEntrada",
+            "frete",
+            "seguro",
+            "despesas",
+            "codUser"
+        )
+        VALUES
+        (
+            ${ chave.numero },
+            ${ modelo },
+            ${ serie },
+            ${ codFornecedor },
+            ${ fornecedor.codCondDePag },
+            '2026-09-01T10:00:00Z',
+            '2026-09-02T10:00:00Z',
+            '2026-09-02T10:00:00Z',
+            5.00,
+            3.00,
+            2.00,
+            ${ COD_USER_TESTE }
+        )
+    `;
+
+    await transaction`
+        INSERT INTO "CompraProduto"
+        (
+            "numero",
+            "modelo",
+            "serie",
+            "codForn",
+            "codProduto",
+            "quantidade",
+            "valorUnitario",
+            "desconto",
+            "unidade",
+            "codUser"
+        )
+        VALUES
+        (
+            ${ chave.numero },
+            ${ modelo },
+            ${ serie },
+            ${ codFornecedor },
+            ${ codProduto },
+            2,
+            100.00,
+            0,
+            'UN',
+            ${ COD_USER_TESTE }
+        )
+    `;
+
+    // RN023 — uma parcela única que fecha no total da compra de teste (200,00).
+    const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
+
+    await transaction`
+        INSERT INTO "CompraParcelas"
+            ( "numero", "modelo", "serie", "codForn", "numParcela", "codFormaDePag", "valor", "dtVencimento", "codUser" )
+        VALUES
+            ( ${ chave.numero }, ${ modelo }, ${ serie }, ${ codFornecedor }, 1, ${ codFormaDePag }, 200.00,
+              '2026-10-01T10:00:00Z', ${ COD_USER_TESTE } )
+    `;
+
+    return {
+        numero:       chave.numero,
+        modelo,
+        serie,
+        codForn:      codFornecedor,
+        codCondDePag: fornecedor.codCondDePag,
+        codProduto,
+        codFormaDePag,
+    };
 }

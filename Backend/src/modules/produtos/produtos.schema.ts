@@ -80,22 +80,30 @@ const camposProduto = {
         .nonnegative ( 'O estoque não pode ser negativo.' )
         .max ( 99999, 'O limite do estoque de produtos são 99.999 unidades.' ),
 
-    custo: z
+    // Custo inicial (de referência) — gravado em `custoProd`, nunca em `custoMedioProd`,
+    // que só as compras lançadas calculam (custo médio ponderado).
+    custoProd: z
         .number ( { message: 'O custo inicial é obrigatório.' } )
         .nonnegative ( 'O custo não pode ser negativo.' ),
+
+    precoVenda: z
+        .number ( { message: 'O preço de venda é obrigatório.' } )
+        .positive ( 'O preço de venda deve ser maior que zero.' ),
 };
 
 export const createProdutoSchema = z
     .object ( camposProduto )
     .superRefine ( ( data, ctx ) => validarCategorias ( data.categorias, ctx ) );
 
-// `estoque` e `custo` são definidos no cadastro e imutáveis na edição (RN007)
+// `estoque` e `custoProd` são definidos no cadastro e imutáveis na edição (RN004);
+// `precoVenda` continua editável.
 const camposProdutoEdicao = {
     produto:    camposProduto.produto,
     categorias: camposProduto.categorias,
     undProduto: camposProduto.undProduto,
     pesoBruto:  camposProduto.pesoBruto,
     pesoLiq:    camposProduto.pesoLiq,
+    precoVenda: camposProduto.precoVenda,
     isActive:   z.boolean(),
 };
 

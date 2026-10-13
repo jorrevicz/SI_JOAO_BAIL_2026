@@ -14,8 +14,8 @@ describe ( 'ProdutoCategorias routes', () =>
     beforeAll ( async () =>
     {
         const [ produto ] = await sql < { codProd: number }[] >`
-            INSERT INTO "Produtos" ( "produto", "undProduto", "pesoBruto", "pesoLiq", "codUser" )
-            VALUES ( 'PRODUTO ROTA PC', 'UN', 1, 0.9, 1 )
+            INSERT INTO "Produtos" ( "produto", "undProduto", "pesoBruto", "pesoLiq", "precoVenda", "codUser" )
+            VALUES ( 'PRODUTO ROTA PC', 'UN', 1, 0.9, 10, 1 )
             RETURNING "codProd"
         `;
         codProduto = produto.codProd;

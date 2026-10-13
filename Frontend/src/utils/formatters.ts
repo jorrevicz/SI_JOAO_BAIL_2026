@@ -1,13 +1,13 @@
 const doisDigitos = ( numero: number ) => String ( numero ).padStart ( 2, '0' );
 
-// Padrão brasileiro DD-MM-AAAA, sempre a partir dos componentes UTC do valor (nunca
+// Padrão brasileiro dd/mm/aa (RNF14), sempre a partir dos componentes UTC do valor (nunca
 // do fuso do navegador) — consistente com o Backend, que grava/retorna tudo em UTC
 // (colunas TIMESTAMPTZ, respostas ISO 8601 com sufixo "Z").
 export const formatarData = ( iso: string ) =>
 {
   const data = new Date ( iso );
 
-  return `${ doisDigitos ( data.getUTCDate() ) }-${ doisDigitos ( data.getUTCMonth() + 1 ) }-${ data.getUTCFullYear() }`;
+  return `${ doisDigitos ( data.getUTCDate() ) }/${ doisDigitos ( data.getUTCMonth() + 1 ) }/${ doisDigitos ( data.getUTCFullYear() % 100 ) }`;
 };
 
 // Mesmo padrão de formatarData, acrescido do horário (UTC) — usado nos campos onde a
@@ -27,6 +27,16 @@ export const formatarDataHora = ( iso: string ) =>
 export const paraDataHoraInputUtc = ( data: Date ) =>
   `${ data.getUTCFullYear() }-${ doisDigitos ( data.getUTCMonth() + 1 ) }-${ doisDigitos ( data.getUTCDate() ) }`
   + `T${ doisDigitos ( data.getUTCHours() ) }:${ doisDigitos ( data.getUTCMinutes() ) }`;
+
+// Mesma data, com o horário ajustado para o início do dia em UTC (00:00) — usado como
+// emissão/chegada padrão, para o formulário nunca nascer com a hora atual.
+export const inicioDoDiaUtc = ( data: Date ) =>
+{
+  const resultado = new Date ( data );
+  resultado.setUTCHours ( 0, 0, 0, 0 );
+
+  return resultado;
+};
 
 // Mesma data, com o horário ajustado para o fim do dia em UTC (23:59) — usado como
 // vencimento padrão ao abrir o formulário de criação de uma conta.

@@ -8,6 +8,7 @@ const CONSTRAINT_CAMPO: Record < string, ErroCampoUnico > = {
   'Paises_ddi_key':            { campo: 'ddi',    mensagem: 'Este DDI já está cadastrado.'                         },
   'Estados_codPais_uf_key':    { campo: 'uf',     mensagem: 'Esta UF já está cadastrada para este país.'           },
   'Users_email_key':           { campo: 'email',  mensagem: 'Este e-mail já está cadastrado.'                      },
+  'Compras_pkey':              { campo: 'numero', mensagem: 'Já existe um documento cadastrado com este número, modelo e série.' },
 };
 
 export function ErrorHandler
