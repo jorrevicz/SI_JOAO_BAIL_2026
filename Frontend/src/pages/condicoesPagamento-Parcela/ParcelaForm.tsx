@@ -15,10 +15,11 @@ export interface ParcelaLocal extends ParcelaCondicaoInput
 
 interface Props
 {
-  onAdicionar: ( parcela: ParcelaLocal ) => void;
+  onAdicionar:      ( parcela: ParcelaLocal ) => void;
+  numerosExistentes: number[];
 }
 
-export function ParcelaForm ( { onAdicionar }: Props )
+export function ParcelaForm ( { onAdicionar, numerosExistentes }: Props )
 {
   const campoFormaPag = useCampoConsulta (
     {
@@ -28,6 +29,9 @@ export function ParcelaForm ( { onAdicionar }: Props )
       descricaoDe:   ( formaPagamento ) => formaPagamento.formaDePag,
     }
   );
+  // Número da parcela informado manualmente (sem geração automática)
+  const [ numParcela, setNumParcela ]       = useState ( '' );
+  const [ erroNumParcela, setErroNumParcela ] = useState ( '' );
   const [ percentual, setPercentual ]       = useState ( 0 );
   const [ numDias, setNumDias ]             = useState ( 1 );
   const [ isActive, setIsActive ]           = useState ( true );
@@ -37,6 +41,23 @@ export function ParcelaForm ( { onAdicionar }: Props )
   const HandleAdicionar = async () =>
   {
     let valido = true;
+
+    const numeroInformado = parseInt ( numParcela, 10 );
+
+    if ( !numeroInformado || numeroInformado <= 0 )
+    {
+      setErroNumParcela ( 'Informe o número da parcela.' );
+      valido = false;
+    }
+    else if ( numerosExistentes.includes ( numeroInformado ) )
+    {
+      setErroNumParcela ( 'Já existe uma parcela com este número.' );
+      valido = false;
+    }
+    else
+    {
+      setErroNumParcela ( '' );
+    }
 
     // Confere no banco o código digitado à mão antes de incluí-lo na lista
     const formaEncontrada = await campoFormaPag.resolver();
@@ -72,7 +93,8 @@ export function ParcelaForm ( { onAdicionar }: Props )
     }
 
     onAdicionar({
-      _uid:          crypto.randomUUID(),
+      _uid:          String ( numeroInformado ),
+      numParcela:    numeroInformado,
       codFormaDePag: formaEncontrada.codFormaDePag,
       nomeFormaPag:  formaEncontrada.formaDePag,
       percentual,
@@ -81,6 +103,7 @@ export function ParcelaForm ( { onAdicionar }: Props )
     });
 
     campoFormaPag.digitar ( '' );
+    setNumParcela ( '' );
     setPercentual ( 0 );
     setNumDias ( 1 );
     setIsActive ( true );
@@ -89,18 +112,19 @@ export function ParcelaForm ( { onAdicionar }: Props )
   return (
     <>
       <FormSecao>
-        <CampoConsulta
-          campo={ campoFormaPag }
-          Consulta={ FormaPagamentoConsulta }
-          rotulo="Forma de Pagamento"
-          rotuloCodigo="Código da forma"
-          rotuloNome="Descrição da forma"
-          obrigatorio
-          erroApi={ erroForma }
-          colunas={ [ 2, 2, 3 ] }
-        />
+        <FormCampo label="Nº da parcela" obrigatorio colunas={ 1 } htmlFor="parcelaNumParcela" erro={ erroNumParcela }>
+          <input
+            id="parcelaNumParcela"
+            type="number"
+            min="1"
+            step="1"
+            value={ numParcela }
+            onChange={ ( evento ) => setNumParcela ( evento.target.value ) }
+            placeholder={ String ( Math.max ( 0, ...numerosExistentes ) + 1 ) }
+          />
+        </FormCampo>
 
-        <FormCampo label="Percentual (%)" obrigatorio colunas={ 2 } htmlFor="parcelaPercentual" erro={ erroPercentual }>
+        <FormCampo label="Percentual (%)" obrigatorio colunas={ 1.3 } htmlFor="parcelaPercentual" erro={ erroPercentual }>
           <input
             id="parcelaPercentual"
             type="number"
@@ -115,7 +139,7 @@ export function ParcelaForm ( { onAdicionar }: Props )
           />
         </FormCampo>
 
-        <FormCampo label="Número de dias" obrigatorio colunas={ 2 } htmlFor="parcelaNumDias">
+        <FormCampo label="Número de dias" obrigatorio colunas={ 1 } htmlFor="parcelaNumDias">
           <input
             id="parcelaNumDias"
             type='number'
@@ -129,6 +153,22 @@ export function ParcelaForm ( { onAdicionar }: Props )
           />
         </FormCampo>
 
+
+      </FormSecao>
+
+      <FormSecao>
+        <CampoConsulta
+          campo={ campoFormaPag }
+          Consulta={ FormaPagamentoConsulta }
+          rotulo="Forma de Pagamento"
+          rotuloCodigo="Código da forma"
+          rotuloNome="Descrição da forma"
+          obrigatorio
+          erroApi={ erroForma }
+          colunas={ [ 2, 1, 6.5 ] }
+        />
+
+
         <FormCampo label="Status" colunas={ 2 }>
           <CaixaSelecao
             value={ isActive }
@@ -136,7 +176,7 @@ export function ParcelaForm ( { onAdicionar }: Props )
           />
         </FormCampo>
 
-        <FormCampo colunas={ 3 }>
+        <FormCampo colunas={ 12 }>
           <div style={ { display: 'flex', justifyContent: 'flex-end' } }>
             <Botao type="button" onClick={ () => { void HandleAdicionar(); } }>
               Adicionar parcela

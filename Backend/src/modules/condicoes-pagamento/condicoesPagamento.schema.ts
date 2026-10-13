@@ -3,11 +3,10 @@ import { z } from 'zod';
 const parcelaCondicaoSchema = z.object
 (
     {
-        codParcela: z
-            .coerce.number()
-            .int()
-            .positive()
-            .optional(),
+        numParcela: z
+            .coerce.number ( { message: 'O número da parcela é obrigatório.' } )
+            .int ( 'O número da parcela deve ser um inteiro.' )
+            .positive ( 'O número da parcela deve ser maior que zero.' ),
         codFormaDePag: z
             .coerce.number ( { message: 'A forma de pagamento é obrigatória.' } )
             .int()
@@ -28,7 +27,7 @@ const parcelaCondicaoSchema = z.object
 
 function validarParcelas
 (
-    parcelas: Array < { percentual: number; numDias: number } >,
+    parcelas: Array < { numParcela: number; percentual: number; numDias: number } >,
     ctx:      z.RefinementCtx
 ): void
 {
@@ -48,15 +47,31 @@ function validarParcelas
         } );
     }
 
-    for ( let i = 1; i < parcelas.length; i++ )
+    const numeros = new Set < number > ( parcelas.map ( ( parcela ) => parcela.numParcela ) );
+
+    if ( numeros.size !== parcelas.length )
     {
-        if ( parcelas[ i ].numDias <= parcelas[ i - 1 ].numDias )
+        ctx.addIssue
+        ( {
+            code:    'custom',
+            path:    [ 'parcelas' ],
+            message: 'Há parcelas com o mesmo número; cada parcela deve ter um número único.',
+        } );
+        return;
+    }
+
+    // Os dias são conferidos na ordem do número da parcela (a de número maior vem depois)
+    const ordenadas = [ ...parcelas ].sort ( ( a, b ) => a.numParcela - b.numParcela );
+
+    for ( let i = 1; i < ordenadas.length; i++ )
+    {
+        if ( ordenadas[ i ].numDias <= ordenadas[ i - 1 ].numDias )
         {
             ctx.addIssue
             ( {
                 code:    'custom',
                 path:    [ 'parcelas' ],
-                message: 'Cada parcela deve ter um número de dias maior que a anterior (dias não podem se repetir).',
+                message: 'Os dias de cada parcela devem ser maiores que os da parcela anterior (dias não podem se repetir).',
             } );
             break;
         }

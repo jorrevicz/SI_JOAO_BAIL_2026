@@ -1,12 +1,8 @@
 import { z } from 'zod';
 
-export const createParcelaSchema = z.object
+const camposParcela = z.object
 (
     {
-        codCondDePag: z
-            .coerce.number ( { message: 'A condição de pagamento é obrigatória.' } )
-            .int()
-            .positive(),
         codFormaDePag: z
             .coerce.number ( { message: 'A forma de pagamento é obrigatória.' } )
             .int()
@@ -22,7 +18,22 @@ export const createParcelaSchema = z.object
     }
 );
 
-export const updateParcelaSchema = createParcelaSchema.extend
+export const createParcelaSchema = camposParcela.extend
+(
+    {
+        codCondDePag: z
+            .coerce.number ( { message: 'A condição de pagamento é obrigatória.' } )
+            .int()
+            .positive(),
+        numParcela: z
+            .coerce.number ( { message: 'O número da parcela é obrigatório.' } )
+            .int ( 'O número da parcela deve ser um inteiro.' )
+            .positive ( 'O número da parcela deve ser maior que zero.' ),
+    }
+);
+
+// A chave (codCondDePag, numParcela) vem da URL e não pode ser alterada.
+export const updateParcelaSchema = camposParcela.extend
 (
     {
         isActive: z.boolean()

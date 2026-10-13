@@ -2,8 +2,8 @@ import api from './api';
 
 export interface Parcela
 {
-  codParcela:    number;
   codCondDePag:  number;
+  numParcela:    number;
   codFormaDePag: number;
   percentual:    string;
   numDias:       number;
@@ -16,26 +16,29 @@ export interface Parcela
 export interface CreateParcelaInput
 {
   codCondDePag:  number;
+  numParcela:    number;
   codFormaDePag: number;
   percentual:    number;
   numDias:       number;
   isActive:      boolean;
 }
 
-export type UpdateParcelaInput = CreateParcelaInput;
+// A chave (codCondDePag, numParcela) vem da URL e não é alterável.
+export type UpdateParcelaInput = Omit < CreateParcelaInput, 'codCondDePag' | 'numParcela' >;
 
 export const parcelasService = {
   listar: (
     codCondDePag?: number,
-    params?: { limit?: number; after?: number }
+    params?: { limit?: number; after?: number; afterCodCondDePag?: number }
   ) => api
     .get < Parcela[] > ( '/api/parcelas', { params: { ...( codCondDePag ? { codCondDePag } : {} ), ...params } } )
     .then ( ( resposta ) => resposta.data ),
 
   obter: (
-    id: number
+    codCondDePag: number,
+    numParcela: number
   ) => api
-    .get < Parcela > ( `/api/parcelas/${ id }` )
+    .get < Parcela > ( `/api/parcelas/${ codCondDePag }/${ numParcela }` )
     .then ( ( resposta ) => resposta.data ),
 
   criar: (
@@ -45,14 +48,16 @@ export const parcelasService = {
     .then ( ( resposta ) => resposta.data ),
 
   atualizar: (
-    id: number,
+    codCondDePag: number,
+    numParcela: number,
     dados: UpdateParcelaInput
   ) => api
-    .put < Parcela > ( `/api/parcelas/${ id }`, dados )
+    .put < Parcela > ( `/api/parcelas/${ codCondDePag }/${ numParcela }`, dados )
     .then ( ( resposta ) => resposta.data ),
 
   remover: (
-    id: number
+    codCondDePag: number,
+    numParcela: number
   ) => api
-    .delete ( `/api/parcelas/${ id }` ),
+    .delete ( `/api/parcelas/${ codCondDePag }/${ numParcela }` ),
 };

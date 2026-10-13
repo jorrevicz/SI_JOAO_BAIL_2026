@@ -5,11 +5,11 @@ import type { CondicaoDePagamentoCodCondDePag } from './CondicaoDePagamento';
 import type { FormaDePagamentoCodFormaDePag } from './FormaDePagamento';
 
 /** Identifier type for public.Parcelas */
-export type ParcelasCodParcela = number & { __brand: 'public.Parcelas' };
+export type ParcelasNumParcela = number & { __brand: 'public.Parcelas' };
 
 /** Represents the table public.Parcelas */
 export default interface Parcelas {
-  codParcela: ParcelasCodParcela;
+  numParcela: ParcelasNumParcela;
 
   codCondDePag: CondicaoDePagamentoCodCondDePag;
 
@@ -30,7 +30,7 @@ export default interface Parcelas {
 
 /** Represents the initializer for the table public.Parcelas */
 export interface ParcelasInitializer {
-  codParcela?: ParcelasCodParcela;
+  numParcela: ParcelasNumParcela;
 
   codCondDePag: CondicaoDePagamentoCodCondDePag;
 
@@ -54,7 +54,7 @@ export interface ParcelasInitializer {
 
 /** Represents the mutator for the table public.Parcelas */
 export interface ParcelasMutator {
-  codParcela?: ParcelasCodParcela;
+  numParcela?: ParcelasNumParcela;
 
   codCondDePag?: CondicaoDePagamentoCodCondDePag;
 

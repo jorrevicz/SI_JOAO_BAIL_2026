@@ -15,7 +15,7 @@ import { ParcelaForm, type ParcelaLocal } from './ParcelaForm';
 interface Props
 {
   inicial:     Partial < CondicaoPagamento >;
-  onSalvo:     () => void;
+  onSalvo:     ( salvo: CondicaoPagamento ) => void;
   onCancelar:  () => void;
 }
 
@@ -57,8 +57,8 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
       {
         const lista = await parcelasService.listar ( inicial.codCondDePag );
         setParcelas ( lista.map ( ( parcela ) => ({
-          _uid:          String ( parcela.codParcela ),
-          codParcela:    parcela.codParcela,
+          _uid:          String ( parcela.numParcela ),
+          numParcela:    parcela.numParcela,
           codFormaDePag: parcela.codFormaDePag,
           nomeFormaPag:  formasMap [ parcela.codFormaDePag ] ?? String ( parcela.codFormaDePag ),
           percentual:    parseFloat ( parcela.percentual ),
@@ -74,7 +74,7 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
   const HandleAdicionar = ( parcela: ParcelaLocal ) =>
   {
     setParcelas ( ( anterior ) =>
-      [ ...anterior, parcela ].sort ( ( a, b ) => a.numDias - b.numDias )
+      [ ...anterior, parcela ].sort ( ( a, b ) => a.numParcela - b.numParcela )
     );
   };
 
@@ -93,7 +93,7 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
     try
     {
       const parcelasMapeadas = parcelas.map ( ( parcela ) => ({
-        codParcela:    parcela.codParcela,
+        numParcela:    parcela.numParcela,
         codFormaDePag: parcela.codFormaDePag,
         percentual:    parcela.percentual,
         numDias:       parcela.numDias,
@@ -108,7 +108,7 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
           isActive:  form.isActive,
           parcelas:  parcelasMapeadas,
         };
-        await condicoesPagamentoService.atualizar ( inicial.codCondDePag!, payload );
+        onSalvo ( await condicoesPagamentoService.atualizar ( inicial.codCondDePag!, payload ) );
       }
       else
       {
@@ -120,10 +120,9 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
           descontoCondPag: form.descontoCondPag ?? 0,
           parcelas: parcelasMapeadas,
         };
-        await condicoesPagamentoService.criar ( payload );
+        onSalvo ( await condicoesPagamentoService.criar ( payload ) );
       }
 
-      onSalvo();
     }
     catch ( err )
     {
@@ -154,7 +153,7 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
       onSubmit={ submit }
     >
       <FormSecao>
-        <FormCampo label="Descrição" obrigatorio colunas={ 4 } htmlFor="descricao" erro={ errosCampo.descricao }>
+        <FormCampo label="Descrição" obrigatorio colunas={ 7 } htmlFor="descricao" erro={ errosCampo.descricao }>
           <input
             id="descricao"
             value={ form.descricao }
@@ -165,7 +164,7 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
           />
         </FormCampo>
 
-        <FormCampo label="Juros (%)" colunas={ 2 } htmlFor="juroCondPag" erro={ errosCampo.juroCondPag }>
+        <FormCampo label="Juros (%)" colunas={ 1.5 } htmlFor="juroCondPag" erro={ errosCampo.juroCondPag }>
           <input
             id="juroCondPag"
             type="number"
@@ -181,7 +180,7 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
           />
         </FormCampo>
 
-        <FormCampo label="Multa (%)" colunas={ 2 } htmlFor="multaCondPag" erro={ errosCampo.multaCondPag }>
+        <FormCampo label="Multa (%)" colunas={ 1.5 } htmlFor="multaCondPag" erro={ errosCampo.multaCondPag }>
           <input
             id="multaCondPag"
             type="number"
@@ -197,7 +196,7 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
           />
         </FormCampo>
 
-        <FormCampo label="Desconto (%)" colunas={ 2 } htmlFor="descontoCondPag" erro={ errosCampo.descontoCondPag }>
+        <FormCampo label="Desconto (%)" colunas={ 1.5 } htmlFor="descontoCondPag" erro={ errosCampo.descontoCondPag }>
           <input
             id="descontoCondPag"
             type="number"
@@ -223,14 +222,17 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
 
       <div>
         <h4 style={ { marginBottom: '0.75rem', fontWeight: 600 } }>Parcelas</h4>
-        <ParcelaForm onAdicionar={ HandleAdicionar } />
+        <ParcelaForm
+          onAdicionar={ HandleAdicionar }
+          numerosExistentes={ parcelas.map ( ( parcela ) => parcela.numParcela ) }
+        />
         {
           parcelas.length > 0 && (
             <TabelaWrapper style={ { marginTop: '0.75rem', height: 'auto', maxHeight: '200px' } }>
               <Tabela>
                 <thead>
                   <tr>
-                    <th>Código da Parcela</th>
+                    <th>Nº da Parcela</th>
                     <th>Código da Forma de Pagamento</th>
                     <th>Forma de Pagamento</th>
                     <th>Percentual (%)</th>
@@ -243,7 +245,7 @@ export default function CondicaoPagamentoForm ( { inicial, onSalvo, onCancelar }
                   {
                     parcelas.map ( ( parcela ) => (
                       <tr key={ parcela._uid }>
-                        <td>{ parcela._uid }</td>
+                        <td>{ parcela.numParcela }</td>
                         <td>{ parcela.codFormaDePag }</td>
                         <td>{ parcela.nomeFormaPag }</td>
                         <td>{ parcela.percentual.toFixed ( 2 ) }%</td>

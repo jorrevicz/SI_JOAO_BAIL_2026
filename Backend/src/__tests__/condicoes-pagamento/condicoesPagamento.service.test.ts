@@ -98,15 +98,15 @@ describe ( 'CondicoesPagamentoService', () =>
         parcelasRepo.Create.mockResolvedValue ( {} );
 
         const parcelas = [
-            { codFormaDePag: 1, percentual: 50, numDias: 30, isActive: true },
-            { codFormaDePag: 1, percentual: 50, numDias: 60, isActive: true },
+            { numParcela: 1, codFormaDePag: 1, percentual: 50, numDias: 30, isActive: true },
+            { numParcela: 2, codFormaDePag: 1, percentual: 50, numDias: 60, isActive: true },
         ];
 
         await service.CreateCondicao ( { descricao: 'Parcelado', juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0, parcelas }, 1 );
 
         expect ( parcelasRepo.Create ).toHaveBeenCalledTimes ( 2 );
         expect ( parcelasRepo.Create ).toHaveBeenCalledWith (
-            { codCondDePag: 5, codFormaDePag: 1, percentual: 50, numDias: 30 },
+            { codCondDePag: 5, numParcela: 1, codFormaDePag: 1, percentual: 50, numDias: 30 },
             1,
             {}
         );
@@ -122,7 +122,7 @@ describe ( 'CondicoesPagamentoService', () =>
                 {
                     descricao: 'X',
                     juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
-                    parcelas:  [ { codFormaDePag: 99, percentual: 100, numDias: 1, isActive: true } ],
+                    parcelas:  [ { numParcela: 1, codFormaDePag: 99, percentual: 100, numDias: 1, isActive: true } ],
                 },
                 1
             )
@@ -156,13 +156,13 @@ describe ( 'CondicoesPagamentoService', () =>
         expect ( resultado ).toEqual ( atualizada );
     });
 
-    it ( 'UpdateCondicao atualiza parcela existente quando codParcela está presente', async () =>
+    it ( 'UpdateCondicao atualiza parcela existente quando o numParcela já existe na condição', async () =>
     {
         const atualizada = { codCondDePag: 1, descricao: 'Atualizada' };
         repo.Update.mockResolvedValue ( atualizada );
         parcelasRepo.List.mockResolvedValue
         ([
-            { codParcela: 10, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
+            { numParcela: 1, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
         ]);
         formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 1 } );
         parcelasRepo.Update.mockResolvedValue ( {} );
@@ -172,14 +172,15 @@ describe ( 'CondicoesPagamentoService', () =>
             {
                 descricao: 'Atualizada',
                 isActive:  true,
-                parcelas:  [ { codParcela: 10, codFormaDePag: 1, percentual: 100, numDias: 1, isActive: true } ],
+                parcelas:  [ { numParcela: 1, codFormaDePag: 1, percentual: 100, numDias: 1, isActive: true } ],
             },
             1
         );
 
         expect ( parcelasRepo.Update ).toHaveBeenCalledWith (
-            10,
-            { codCondDePag: 1, codFormaDePag: 1, percentual: 100, numDias: 1, isActive: true },
+            1,
+            1,
+            { codFormaDePag: 1, percentual: 100, numDias: 1, isActive: true },
             1,
             {}
         );
@@ -187,7 +188,7 @@ describe ( 'CondicoesPagamentoService', () =>
         expect ( parcelasRepo.Delete ).not.toHaveBeenCalled();
     });
 
-    it ( 'UpdateCondicao cria nova parcela quando codParcela está ausente', async () =>
+    it ( 'UpdateCondicao cria nova parcela quando o numParcela ainda não existe na condição', async () =>
     {
         repo.Update.mockResolvedValue ( { codCondDePag: 1 } );
         parcelasRepo.List.mockResolvedValue ( [] );
@@ -199,7 +200,7 @@ describe ( 'CondicoesPagamentoService', () =>
             {
                 descricao: 'X',
                 isActive:  true,
-                parcelas:  [ { codFormaDePag: 2, percentual: 100, numDias: 1, isActive: true } ],
+                parcelas:  [ { numParcela: 1, codFormaDePag: 2, percentual: 100, numDias: 1, isActive: true } ],
             },
             1
         );
@@ -213,9 +214,9 @@ describe ( 'CondicoesPagamentoService', () =>
         repo.Update.mockResolvedValue ( { codCondDePag: 1 } );
         parcelasRepo.List.mockResolvedValue
         ([
-            { codParcela: 20, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
+            { numParcela: 2, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
         ]);
-        parcelasRepo.Delete.mockResolvedValue ( { codParcela: 20 } );
+        parcelasRepo.Delete.mockResolvedValue ( { numParcela: 2 } );
 
         await service.UpdateCondicao
         (
@@ -224,7 +225,7 @@ describe ( 'CondicoesPagamentoService', () =>
             1
         );
 
-        expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 20, 1, {} );
+        expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 1, 2, 1, {} );
     });
 
     it ( 'UpdateCondicao lança 400 quando forma de parcela não existe', async () =>
@@ -239,7 +240,7 @@ describe ( 'CondicoesPagamentoService', () =>
                 {
                     descricao: 'X',
                     isActive:  true,
-                    parcelas:  [ { codFormaDePag: 99, percentual: 100, numDias: 1, isActive: true } ],
+                    parcelas:  [ { numParcela: 1, codFormaDePag: 99, percentual: 100, numDias: 1, isActive: true } ],
                 },
                 1
             )
@@ -266,7 +267,7 @@ describe ( 'CondicoesPagamentoService', () =>
         repo.Update.mockResolvedValue ( atualizada );
         parcelasRepo.List.mockResolvedValue
         ([
-            { codParcela: 10, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
+            { numParcela: 1, codFormaDePag: 1, percentual: '100.00', numDias: 0, isActive: true },
         ]);
         formasRepo.FindById.mockResolvedValue ( { codFormaDePag: 1 } );
         parcelasRepo.Update.mockResolvedValue ( {} );
@@ -276,7 +277,7 @@ describe ( 'CondicoesPagamentoService', () =>
             {
                 descricao: 'Parcelado',
                 isActive:  true,
-                parcelas:  [ { codParcela: 10, codFormaDePag: 1, percentual: 100, numDias: 1, isActive: true } ],
+                parcelas:  [ { numParcela: 1, codFormaDePag: 1, percentual: 100, numDias: 1, isActive: true } ],
             },
             1
         );
@@ -306,15 +307,15 @@ describe ( 'CondicoesPagamentoService', () =>
     {
         repo.FindById.mockResolvedValue ( { codCondDePag: 1 } );
         repo.HasExternalReferences.mockResolvedValue ( false );
-        parcelasRepo.List.mockResolvedValue ( [ { codParcela: 10 }, { codParcela: 11 } ] );
-        parcelasRepo.Delete.mockResolvedValue ( { codParcela: 10 } );
+        parcelasRepo.List.mockResolvedValue ( [ { numParcela: 1 }, { numParcela: 2 } ] );
+        parcelasRepo.Delete.mockResolvedValue ( { numParcela: 1 } );
         repo.Delete.mockResolvedValue ( { codCondDePag: 1 } );
 
         await service.DeleteCondicao ( 1, 1 );
 
         expect ( parcelasRepo.List ).toHaveBeenCalledWith ( 999, 0, 1, {} );
-        expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 10, 1, {} );
-        expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 11, 1, {} );
+        expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 1, 1, 1, {} );
+        expect ( parcelasRepo.Delete ).toHaveBeenCalledWith ( 1, 2, 1, {} );
         expect ( repo.Delete ).toHaveBeenCalledWith ( 1, 1, {} );
     });
 });

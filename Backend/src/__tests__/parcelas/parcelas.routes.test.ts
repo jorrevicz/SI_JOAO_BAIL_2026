@@ -23,9 +23,9 @@ describe ( 'Parcelas routes', () =>
         expect ( Array.isArray ( res.body ) ).toBe ( true );
     });
 
-    it ( 'GET /api/parcelas/:id inexistente retorna 404', async () =>
+    it ( 'GET /api/parcelas/:codCondDePag/:numParcela inexistente retorna 404', async () =>
     {
-        const res = await request ( app ).get ( '/api/parcelas/999999' );
+        const res = await request ( app ).get ( '/api/parcelas/999999/999999' );
 
         expect ( res.status ).toBe ( 404 );
         expect ( res.body.mensagem ).toBeDefined();
@@ -38,5 +38,15 @@ describe ( 'Parcelas routes', () =>
             .send ( {} );
 
         expect ( res.status ).toBe ( 400 );
+    });
+
+    it ( 'POST /api/parcelas sem numParcela retorna 400 (código manual obrigatório)', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/parcelas' )
+            .send ( { codCondDePag: 1, codFormaDePag: 1, percentual: 100, numDias: 30 } );
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros?.numParcela ).toBeDefined();
     });
 });

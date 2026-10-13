@@ -94,8 +94,8 @@ describe ( 'CondicoesPagamento routes', () =>
                 juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [
-                    { codFormaDePag, percentual: 40, numDias: 30, isActive: true },
-                    { codFormaDePag, percentual: 40, numDias: 60, isActive: true },
+                    { numParcela: 1, codFormaDePag, percentual: 40, numDias: 30, isActive: true },
+                    { numParcela: 2, codFormaDePag, percentual: 40, numDias: 60, isActive: true },
                 ],
             });
 
@@ -113,8 +113,8 @@ describe ( 'CondicoesPagamento routes', () =>
                 juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [
-                    { codFormaDePag, percentual: 50, numDias: 30, isActive: true },
-                    { codFormaDePag, percentual: 50, numDias: 30, isActive: true },
+                    { numParcela: 1, codFormaDePag, percentual: 50, numDias: 30, isActive: true },
+                    { numParcela: 2, codFormaDePag, percentual: 50, numDias: 30, isActive: true },
                 ],
             });
 
@@ -131,7 +131,7 @@ describe ( 'CondicoesPagamento routes', () =>
                 descricao: 'Dia Zero',
                 juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
-                parcelas:  [ { codFormaDePag, percentual: 100, numDias: 0, isActive: true } ],
+                parcelas:  [ { numParcela: 1, codFormaDePag, percentual: 100, numDias: 0, isActive: true } ],
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -146,8 +146,8 @@ describe ( 'CondicoesPagamento routes', () =>
                 juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [
-                    { codFormaDePag, percentual: 50, numDias: 30, isActive: true },
-                    { codFormaDePag, percentual: 50, numDias: 60, isActive: true },
+                    { numParcela: 1, codFormaDePag, percentual: 50, numDias: 30, isActive: true },
+                    { numParcela: 2, codFormaDePag, percentual: 50, numDias: 60, isActive: true },
                 ],
             });
 
@@ -173,7 +173,7 @@ describe ( 'CondicoesPagamento routes', () =>
                 descricao: 'Rollback Test',
                 juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
-                parcelas:  [ { codFormaDePag: 999999, percentual: 100, numDias: 1, isActive: true } ],
+                parcelas:  [ { numParcela: 1, codFormaDePag: 999999, percentual: 100, numDias: 1, isActive: true } ],
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -190,7 +190,7 @@ describe ( 'CondicoesPagamento routes', () =>
                 descricao: 'Para Atualizar',
                 juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
-                parcelas:  [ { codFormaDePag, percentual: 100, numDias: 30, isActive: true } ],
+                parcelas:  [ { numParcela: 1, codFormaDePag, percentual: 100, numDias: 30, isActive: true } ],
             });
 
         expect ( criadaRes.status ).toBe ( 201 );
@@ -200,7 +200,7 @@ describe ( 'CondicoesPagamento routes', () =>
         const parcelasAntes = await request ( app )
             .get ( `/api/parcelas?codCondDePag=${ codCondDePag }` );
 
-        const codParcelaExistente = parcelasAntes.body[ 0 ].codParcela;
+        const numParcelaExistente = parcelasAntes.body[ 0 ].numParcela;
 
         const atualizadaRes = await request ( app )
             .put ( `/api/condicoes-pagamento/${ codCondDePag }` )
@@ -208,8 +208,8 @@ describe ( 'CondicoesPagamento routes', () =>
                 descricao: 'Atualizada',
                 isActive:  true,
                 parcelas:  [
-                    { codParcela: codParcelaExistente, codFormaDePag, percentual: 50, numDias: 30, isActive: true },
-                    { codFormaDePag, percentual: 50, numDias: 60, isActive: true },
+                    { numParcela: numParcelaExistente, codFormaDePag, percentual: 50, numDias: 30, isActive: true },
+                    { numParcela: 2, codFormaDePag, percentual: 50, numDias: 60, isActive: true },
                 ],
             });
 
@@ -219,5 +219,57 @@ describe ( 'CondicoesPagamento routes', () =>
             .get ( `/api/parcelas?codCondDePag=${ codCondDePag }` );
 
         expect ( parcelasDepois.body ).toHaveLength ( 2 );
+    });
+
+    // Código manual: números não precisam ser informados em ordem, mas não podem repetir
+    it ( 'POST /api/condicoes-pagamento com numParcela repetido retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/condicoes-pagamento' )
+            .send ({
+                descricao: 'Número Repetido',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
+                isActive:  true,
+                parcelas:  [
+                    { numParcela: 1, codFormaDePag, percentual: 50, numDias: 30, isActive: true },
+                    { numParcela: 1, codFormaDePag, percentual: 50, numDias: 60, isActive: true },
+                ],
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros?.parcelas ).toBeDefined();
+    });
+
+    // Os dias seguem a ordem do número da parcela, não a ordem da lista
+    it ( 'POST /api/condicoes-pagamento com dias menores na parcela de número maior retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/condicoes-pagamento' )
+            .send ({
+                descricao: 'Dias Invertidos',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
+                isActive:  true,
+                parcelas:  [
+                    { numParcela: 2, codFormaDePag, percentual: 50, numDias: 30, isActive: true },
+                    { numParcela: 1, codFormaDePag, percentual: 50, numDias: 60, isActive: true },
+                ],
+            });
+
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros?.parcelas ).toBeDefined();
+    });
+
+    it ( 'POST /api/condicoes-pagamento sem numParcela retorna 400', async () =>
+    {
+        const res = await request ( app )
+            .post ( '/api/condicoes-pagamento' )
+            .send ({
+                descricao: 'Sem Número',
+                juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
+                isActive:  true,
+                parcelas:  [ { codFormaDePag, percentual: 100, numDias: 30, isActive: true } ],
+            });
+
+        expect ( res.status ).toBe ( 400 );
     });
 });

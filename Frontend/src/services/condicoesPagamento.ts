@@ -15,7 +15,7 @@ export interface CondicaoPagamento
 
 export interface ParcelaCondicaoInput
 {
-  codParcela?:   number;
+  numParcela:    number;
   codFormaDePag: number;
   percentual:    number;
   numDias:       number;

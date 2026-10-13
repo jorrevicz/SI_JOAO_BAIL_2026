@@ -18,9 +18,10 @@ export class ParcelasController
         {
             const limit        = Math.min ( Number ( req.query.limit ) || 50, 100 );
             const afterId      = Number ( req.query.after ) || 0;
+            const afterCond    = Number ( req.query.afterCodCondDePag ) || 0;
             const codCondDePag = req.query.codCondDePag ? Number ( req.query.codCondDePag ) : undefined;
 
-            res.status ( 200 ).json ( await this.service.ListParcelas ( limit, afterId, codCondDePag ) );
+            res.status ( 200 ).json ( await this.service.ListParcelas ( limit, afterId, codCondDePag, afterCond ) );
         }
         catch ( err )
         {
@@ -36,7 +37,7 @@ export class ParcelasController
     {
         try
         {
-            res.status ( 200 ).json ( await this.service.FindParcela ( Number ( req.params.id ) ) );
+            res.status ( 200 ).json ( await this.service.FindParcela ( Number ( req.params.codCondDePag ), Number ( req.params.numParcela ) ) );
         }
         catch ( err )
         {
@@ -70,7 +71,13 @@ export class ParcelasController
         {
             res.status ( 200 ).json
             (
-                await this.service.UpdateParcela ( Number ( req.params.id ), req.body, req.codUser! )
+                await this.service.UpdateParcela
+                (
+                    Number ( req.params.codCondDePag ),
+                    Number ( req.params.numParcela ),
+                    req.body,
+                    req.codUser!
+                )
             );
         }
         catch ( err )
@@ -87,7 +94,7 @@ export class ParcelasController
     {
         try
         {
-            await this.service.DeleteParcela ( Number ( req.params.id ), req.codUser! );
+            await this.service.DeleteParcela ( Number ( req.params.codCondDePag ), Number ( req.params.numParcela ), req.codUser! );
             res.status ( 204 ).send();
         }
         catch ( err )

@@ -7,9 +7,9 @@ const ParcelasRouter = Router();
 const controller = new ParcelasController();
 
 ParcelasRouter.get    ( '/',    controller.ListParcelasController    );
-ParcelasRouter.get    ( '/:id', controller.GetByIdParcelasController );
+ParcelasRouter.get    ( '/:codCondDePag/:numParcela', controller.GetByIdParcelasController );
 ParcelasRouter.post   ( '/',    Validate ( createParcelaSchema ), controller.CreateParcelaController );
-ParcelasRouter.put    ( '/:id', Validate ( updateParcelaSchema ), controller.UpdateParcelaController );
-ParcelasRouter.delete ( '/:id', controller.RemoveParcelaController  );
+ParcelasRouter.put    ( '/:codCondDePag/:numParcela', Validate ( updateParcelaSchema ), controller.UpdateParcelaController );
+ParcelasRouter.delete ( '/:codCondDePag/:numParcela', controller.RemoveParcelaController  );
 
 export default ParcelasRouter;

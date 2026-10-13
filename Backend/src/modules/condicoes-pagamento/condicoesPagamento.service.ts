@@ -49,6 +49,7 @@ export class CondicoesPagamentoService
                 await this.parcelasRepo.Create (
                     {
                         codCondDePag:  condicao.codCondDePag,
+                        numParcela:    item.numParcela,
                         codFormaDePag: item.codFormaDePag,
                         percentual:    item.percentual,
                         numDias:       item.numDias,
@@ -83,17 +84,14 @@ export class CondicoesPagamentoService
             }
 
             const parcelasExistentes = await this.parcelasRepo.List ( 999, 0, id, transaction );
-            const idsParcRecebidas   = new Set (
-                data.parcelas
-                    .filter ( ( item ) => item.codParcela !== undefined )
-                    .map    ( ( item ) => item.codParcela! )
-            );
+            const numerosExistentes  = new Set ( parcelasExistentes.map ( ( existente ) => Number ( existente.numParcela ) ) );
+            const numerosRecebidos   = new Set ( data.parcelas.map ( ( item ) => item.numParcela ) );
 
             for ( const existente of parcelasExistentes )
             {
-                if ( !idsParcRecebidas.has ( existente.codParcela ) )
+                if ( !numerosRecebidos.has ( Number ( existente.numParcela ) ) )
                 {
-                    await this.parcelasRepo.Delete ( existente.codParcela, codUser, transaction );
+                    await this.parcelasRepo.Delete ( id, Number ( existente.numParcela ), codUser, transaction );
                 }
             }
 
@@ -106,12 +104,12 @@ export class CondicoesPagamentoService
                     throw new AppError ( 'Forma de pagamento informada não existe.', 400 );
                 }
 
-                if ( item.codParcela !== undefined )
+                if ( numerosExistentes.has ( item.numParcela ) )
                 {
                     await this.parcelasRepo.Update (
-                        item.codParcela,
+                        id,
+                        item.numParcela,
                         {
-                            codCondDePag:  id,
                             codFormaDePag: item.codFormaDePag,
                             percentual:    item.percentual,
                             numDias:       item.numDias,
@@ -126,6 +124,7 @@ export class CondicoesPagamentoService
                     await this.parcelasRepo.Create (
                         {
                             codCondDePag:  id,
+                            numParcela:    item.numParcela,
                             codFormaDePag: item.codFormaDePag,
                             percentual:    item.percentual,
                             numDias:       item.numDias,
@@ -163,7 +162,7 @@ export class CondicoesPagamentoService
 
             for ( const parcela of parcelas )
             {
-                await this.parcelasRepo.Delete ( parcela.codParcela, codUser, transaction );
+                await this.parcelasRepo.Delete ( id, Number ( parcela.numParcela ), codUser, transaction );
             }
 
             await this.repo.Delete ( id, codUser, transaction );
