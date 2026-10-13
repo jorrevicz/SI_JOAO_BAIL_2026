@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-export const Botao = styled.button<{ $variante?: 'perigo' | 'secundario' }>`
+export const Botao = styled.button.attrs<{ $variante?: 'perigo' | 'secundario' }> ( ( { type } ) => ( { type: type ?? 'button' } ) )<{ $variante?: 'perigo' | 'secundario' }>`
   padding: ${({ theme }) => `${theme.espacamento.sm} ${theme.espacamento.md}`};
   border-radius: ${({ theme }) => theme.borda.raio};
   border: 1px solid transparent;

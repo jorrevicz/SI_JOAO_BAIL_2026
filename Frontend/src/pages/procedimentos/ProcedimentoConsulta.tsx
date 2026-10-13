@@ -263,9 +263,19 @@ export function ProcedimentoConsulta ( { onSelecionarVarios, onCancelar }: Props
                 edit !== null && (
                     <ProcedimentoForm
                         inicial={ edit }
-                        onSalvo={ () =>
+                        onSalvo={ ( salvo ) =>
                         {
+                            // Cadastro novo feito dentro da consulta já volta selecionado ao formulário de origem.
+                            const novo = edit !== null && Object.keys ( edit ).length === 0;
+
                             setEdit ( null );
+
+                            if ( novo )
+                            {
+                                onSelecionarVarios ( [ salvo ] );
+                                return;
+                            }
+
                             Carregar();
                         }}
                         onCancelar={ () => setEdit ( null ) }

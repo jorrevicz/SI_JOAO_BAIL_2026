@@ -60,9 +60,9 @@ export default function VeiculosPage ()
 
   const columns = [
     columnHelper.accessor ( 'codVeiculo', { header: 'Código' } ),
+    columnHelper.accessor ( 'placaVeiculo', { header: 'Placa' } ),
     columnHelper.accessor ( 'codEstado', { header: 'Código Estado' } ),
     columnHelper.accessor ( 'codAntt', { header: 'Código ANTT' } ),
-    columnHelper.accessor ( 'placaVeiculo', { header: 'Placa' } ),
     columnHelper.accessor (
       'modeloVeiculo',
       { header: 'Modelo', 

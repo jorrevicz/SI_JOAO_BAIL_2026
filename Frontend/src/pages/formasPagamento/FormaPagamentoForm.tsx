@@ -7,7 +7,7 @@ import { CaixaSelecao } from '../../components/caixaSelecao';
 interface Props
 {
   inicial: Partial < FormaPagamento >;
-  onSalvo: () => void;
+  onSalvo: ( salvo: FormaPagamento ) => void;
   onCancelar: () => void;
 }
 
@@ -40,14 +40,13 @@ export function FormaPagamentoForm ( { inicial, onSalvo, onCancelar }: Props )
           formaDePag: form.formaDePag,
           isActive:   form.isActive,
         };
-        await formasPagamentoService.atualizar ( inicial.codFormaDePag!, dados );
+        onSalvo ( await formasPagamentoService.atualizar ( inicial.codFormaDePag!, dados ) );
       }
       else
       {
         const dados: CreateFormaPagamentoInput = { ...form };
-        await formasPagamentoService.criar ( dados );
+        onSalvo ( await formasPagamentoService.criar ( dados ) );
       }
-      onSalvo();
     }
     catch ( err )
     {

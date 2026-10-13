@@ -7,7 +7,7 @@ import { CaixaSelecao } from '../../components/caixaSelecao';
 interface Props
 {
   inicial:    Partial < Procedimento >;
-  onSalvo:    () => void;
+  onSalvo:    ( salvo: Procedimento ) => void;
   onCancelar: () => void;
 }
 
@@ -35,13 +35,12 @@ export default function ProcedimentoForm ( { inicial, onSalvo, onCancelar }: Pro
     {
       if ( editando )
       {
-        await procedimentosService.atualizar ( inicial.codProcedimento!, form );
+        onSalvo ( await procedimentosService.atualizar ( inicial.codProcedimento!, form ) );
       }
       else
       {
-        await procedimentosService.criar ( form );
+        onSalvo ( await procedimentosService.criar ( form ) );
       }
-      onSalvo();
     }
     catch ( err )
     {

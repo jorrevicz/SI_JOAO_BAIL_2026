@@ -264,9 +264,19 @@ export function FormaPagamentoConsulta ( { onSelecionar, onCancelar }: Props )
         edit !== null && (
             <FormaPagamentoForm
                 inicial={ edit }
-                onSalvo={ () =>
+                onSalvo={ ( salvo ) =>
                 {
+                    // Cadastro novo feito dentro da consulta já volta selecionado ao formulário de origem.
+                    const novo = edit !== null && Object.keys ( edit ).length === 0;
+
                     setEdit ( null );
+
+                    if ( novo )
+                    {
+                        onSelecionar ( salvo );
+                        return;
+                    }
+
                     Carregar();
                 }}
                 onCancelar={ () => setEdit ( null ) }

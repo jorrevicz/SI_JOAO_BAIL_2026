@@ -7,7 +7,7 @@ import { CaixaSelecao } from '../../components/caixaSelecao';
 interface Props
 {
   inicial: Partial < Pais >;
-  onSalvo: () => void;
+  onSalvo: ( salvo: Pais ) => void;
   onCancelar: () => void;
 }
 
@@ -37,13 +37,12 @@ export default function PaisForm ( { inicial, onSalvo, onCancelar }: Props )
     {
       if ( editando )
       {
-        await paisesService.atualizar ( inicial.codPais!, form );
+        onSalvo ( await paisesService.atualizar ( inicial.codPais!, form ) );
       }
       else
       {
-        await paisesService.criar ( form );
+        onSalvo ( await paisesService.criar ( form ) );
       }
-      onSalvo();
     }
     catch ( err )
     {
@@ -70,7 +69,7 @@ export default function PaisForm ( { inicial, onSalvo, onCancelar }: Props )
       onSubmit={ submit }
     >
       <FormSecao>
-        <FormCampo label="País" obrigatorio colunas={ 4 } htmlFor="pais" erro={ errosCampo.pais }>
+        <FormCampo label="País" obrigatorio colunas={ 6 } htmlFor="pais" erro={ errosCampo.pais }>
           <input
             id="pais"
             value={ form.pais }
@@ -81,7 +80,7 @@ export default function PaisForm ( { inicial, onSalvo, onCancelar }: Props )
           />
         </FormCampo>
 
-        <FormCampo label="Sigla" obrigatorio colunas={ 2 } htmlFor="sigla" erro={ errosCampo.sigla }>
+        <FormCampo label="Sigla" obrigatorio colunas={ 1 } htmlFor="sigla" erro={ errosCampo.sigla }>
           <input
             id="sigla"
             value={ form.sigla }
@@ -91,7 +90,7 @@ export default function PaisForm ( { inicial, onSalvo, onCancelar }: Props )
           />
         </FormCampo>
 
-        <FormCampo label="DDI" obrigatorio colunas={ 2 } htmlFor="ddi" erro={ errosCampo.ddi }>
+        <FormCampo label="DDI" obrigatorio colunas={ 1 } htmlFor="ddi" erro={ errosCampo.ddi }>
           <input
             id="ddi"
             type='string'
@@ -103,7 +102,7 @@ export default function PaisForm ( { inicial, onSalvo, onCancelar }: Props )
           />
         </FormCampo>
 
-        <FormCampo label="Moeda" obrigatorio colunas={ 2 } htmlFor="moeda" erro={ errosCampo.moeda }>
+        <FormCampo label="Moeda" obrigatorio colunas={ 1 } htmlFor="moeda" erro={ errosCampo.moeda }>
           <input
             id="moeda"
             value={ form.moeda }

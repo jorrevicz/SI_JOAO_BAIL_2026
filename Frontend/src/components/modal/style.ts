@@ -1,6 +1,8 @@
+import { createElement, type ComponentProps } from 'react';
+import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 
-export const ModalOverlay = styled.div`
+const OverlayEstilizado = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
@@ -9,6 +11,14 @@ export const ModalOverlay = styled.div`
   justify-content: center;
   z-index: 100;
 `;
+
+// Renderizado em document.body (portal): o pop-up nunca fica dentro do <form> do formulário que o
+// abriu — evita <form> aninhado e o submit acidental do formulário pai.
+// Os eventos React ainda borbulham pela árvore React, por isso os <form> também param a propagação.
+export function ModalOverlay ( props: ComponentProps < typeof OverlayEstilizado > )
+{
+  return createPortal ( createElement ( OverlayEstilizado, props ), document.body );
+}
 
 export const ModalCard = styled.div`
   background: ${({ theme }) => theme.cores.fundo};

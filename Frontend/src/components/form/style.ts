@@ -52,27 +52,49 @@ export const CorpoFormulario = styled.form`
   gap: ${ ( { theme } ) => theme.espacamento.xl };
 `;
 
-// Cada seção é um grid de 12 colunas; colapsa para 1 coluna no mobile ( RNF01 ).
+// Trilhas internas do grid: a API pública continua em 12 colunas, mas cada coluna vale 2 trilhas
+// para permitir meias colunas ( colunas={ 1.5 } ).
+const TRILHAS_POR_COLUNA = 2;
+const TOTAL_TRILHAS      = 12 * TRILHAS_POR_COLUNA;
+
+// Converte `colunas` ( 0.5–12, em passos de 0.5 ) no número de trilhas ocupadas.
+function trilhasDaCelula ( colunas: number ): number
+{
+  const trilhas = Math.round ( colunas * TRILHAS_POR_COLUNA );
+
+  return Math.min ( Math.max ( trilhas, 1 ), TOTAL_TRILHAS );
+}
+
+// Cada seção é um grid de 12 colunas ( 24 trilhas ); colapsa para 1 coluna no mobile ( RNF01 ).
+// O espaçamento vertical entre linhas de campos fica na própria célula ( padding-bottom ), pois
+// cada célula ocupa 3 linhas do grid ( rótulo / controle / erro ).
 export const Secao = styled.div`
   display: grid;
-  grid-template-columns: repeat( 12, 1fr );
+  grid-template-columns: repeat( ${ TOTAL_TRILHAS }, 1fr );
   column-gap: ${ ( { theme } ) => theme.espacamento.md };
-  row-gap: ${ ( { theme } ) => theme.espacamento.md };
+  row-gap: 0;
+  margin-bottom: -${ ( { theme } ) => theme.espacamento.md };
 
   @media ( max-width: 768px ) {
     grid-template-columns: 1fr;
   }
 `;
 
-// Célula do campo: ocupa `$colunas` colunas do grid; label acima, controle, erro abaixo.
+// Célula do campo: ocupa `$colunas` colunas do grid e 3 linhas compartilhadas ( subgrid ) —
+// rótulo, controle e erro de todas as células da mesma linha ficam alinhados entre si, mesmo
+// quando um rótulo longo quebra em duas linhas.
 export const Celula = styled.div < { $colunas: number } >`
-  grid-column: span ${ ( { $colunas } ) => $colunas };
-  display: flex;
-  flex-direction: column;
-  gap: ${ ( { theme } ) => theme.espacamento.xs };
+  grid-column: span ${ ( { $colunas } ) => trilhasDaCelula ( $colunas ) };
+  grid-row: span 3;
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: ${ ( { theme } ) => theme.espacamento.xs };
+  padding-bottom: ${ ( { theme } ) => theme.espacamento.md };
   min-width: 0;
 
   label {
+    grid-row: 1;
+    align-self: end;
     font-size: ${ ( { theme } ) => theme.tipografia.tamanho.sm };
     font-weight: 500;
     color: ${ ( { theme } ) => theme.cores.texto };
@@ -112,6 +134,18 @@ export const Celula = styled.div < { $colunas: number } >`
   @media ( max-width: 768px ) {
     grid-column: 1 / -1;
   }
+`;
+
+// Linha do controle dentro da célula ( fixa na 2ª linha, com ou sem rótulo ).
+export const Controle = styled.div`
+  grid-row: 2;
+  min-width: 0;
+`;
+
+// Linha do erro por campo dentro da célula ( 3ª linha; vazia quando não há erro ).
+export const LinhaErro = styled.div`
+  grid-row: 3;
+  min-width: 0;
 `;
 
 // Asterisco vermelho de campo obrigatório.

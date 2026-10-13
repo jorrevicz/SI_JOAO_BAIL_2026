@@ -11,7 +11,7 @@ import { useCampoConsulta } from '../../hooks/campoConsulta';
 interface Props
 {
   inicial: Partial < Cidade >;
-  onSalvo: () => void;
+  onSalvo: ( salvo: Cidade ) => void;
   onCancelar: () => void;
 }
 
@@ -57,13 +57,12 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
     {
       if ( editando )
       {
-        await cidadesService.atualizar ( inicial.codCidade!, dados );
+        onSalvo ( await cidadesService.atualizar ( inicial.codCidade!, dados ) );
       }
       else
       {
-        await cidadesService.criar ( dados );
+        onSalvo ( await cidadesService.criar ( dados ) );
       }
-      onSalvo();
     }
     catch ( err )
     {
@@ -103,7 +102,7 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
 
-          <FormCampo label="DDD" obrigatorio colunas={ 2 } htmlFor="ddd" erro={ errosCampo.ddd }>
+          <FormCampo label="DDD" obrigatorio colunas={ 1 } htmlFor="ddd" erro={ errosCampo.ddd }>
             <input
               id="ddd"
               type='number'
@@ -115,6 +114,7 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
         </FormSecao>
+        
         <FormSecao>
           <CampoConsulta
             campo={ campoEstado }
@@ -124,6 +124,7 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
             rotuloNome="Nome do estado"
             obrigatorio
             erroApi={ errosCampo.codEstado }
+            colunas={ [ 2, 1, 4 ] }
           />
 
           <FormCampo label='Status' colunas={ 2 }>

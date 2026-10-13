@@ -7,7 +7,7 @@ import { CaixaSelecao } from '../../components/caixaSelecao';
 interface Props
 {
   inicial:    Partial < Categoria >;
-  onSalvo:    () => void;
+  onSalvo:    ( salvo: Categoria ) => void;
   onCancelar: () => void;
 }
 
@@ -35,13 +35,12 @@ export default function CategoriaForm ( { inicial, onSalvo, onCancelar }: Props 
     {
       if ( editando )
       {
-        await categoriasService.atualizar ( inicial.codCategoria!, form );
+        onSalvo ( await categoriasService.atualizar ( inicial.codCategoria!, form ) );
       }
       else
       {
-        await categoriasService.criar ( form );
+        onSalvo ( await categoriasService.criar ( form ) );
       }
-      onSalvo();
     }
     catch ( err )
     {

@@ -11,7 +11,7 @@ import { useCampoConsulta } from '../../hooks/campoConsulta';
 interface Props
 {
   inicial:    Partial < Veiculo >;
-  onSalvo:    () => void;
+  onSalvo:    ( salvo: Veiculo ) => void;
   onCancelar: () => void;
 }
 
@@ -70,13 +70,12 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
     {
       if ( editando )
       {
-        await veiculosService.atualizar ( inicial.codVeiculo!, dados );
+        onSalvo ( await veiculosService.atualizar ( inicial.codVeiculo!, dados ) );
       }
       else
       {
-        await veiculosService.criar ( dados );
+        onSalvo ( await veiculosService.criar ( dados ) );
       }
-      onSalvo();
     }
     catch ( err )
     {
@@ -104,7 +103,7 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
         onSubmit={ submit }
       >
         <FormSecao>
-          <FormCampo label="Placa" obrigatorio colunas={ 3 } htmlFor="placaVeiculo" erro={ errosCampo.placaVeiculo }>
+          <FormCampo label="Placa" obrigatorio colunas={ 1.5 } htmlFor="placaVeiculo" erro={ errosCampo.placaVeiculo }>
             <input
               id="placaVeiculo"
               type='text'
@@ -131,7 +130,7 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
 
-          <FormCampo label="Marca" obrigatorio colunas={ 4 } htmlFor="marca" erro={ errosCampo.marca }>
+          <FormCampo label="Marca" obrigatorio colunas={ 2 } htmlFor="marca" erro={ errosCampo.marca }>
             <input
               id="marca"
               type='text'
@@ -154,11 +153,12 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
             rotuloNome="Nome do estado"
             obrigatorio
             erroApi={ errosCampo.codEstado }
+            colunas={ [ 2, 1, 4 ] }
           />
         </FormSecao>
 
         <FormSecao>
-          <FormCampo label="Placa Mercosul" colunas={ 3 } htmlFor="placaMercoSul" erro={ errosCampo.placaMercoSul }>
+          <FormCampo label="Placa Mercosul" colunas={ 1.5 } htmlFor="placaMercoSul" erro={ errosCampo.placaMercoSul }>
             <input
               id="placaMercoSul"
               type='text'
@@ -170,7 +170,7 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
             />
           </FormCampo>
 
-          <FormCampo label="Código ANTT" obrigatorio colunas={ 3 } htmlFor="codAntt" erro={ errosCampo.codAntt }>
+          <FormCampo label="Código ANTT" obrigatorio colunas={ 1.7 } htmlFor="codAntt" erro={ errosCampo.codAntt }>
             <input
               id="codAntt"
               type='text'

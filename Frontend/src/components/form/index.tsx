@@ -9,6 +9,8 @@ import {
   CorpoFormulario,
   Secao,
   Celula,
+  Controle,
+  LinhaErro,
   Obrigatorio,
   Acoes,
 } from './style';
@@ -35,7 +37,13 @@ export function FormModal ( { titulo, erro, onFechar, onSubmit, children }: Prop
           </BotaoFechar>
         </CabecalhoFormulario>
         { erro && <Alerta role="alert">{ erro }</Alerta> }
-        <CorpoFormulario onSubmit={ onSubmit }>
+        <CorpoFormulario
+          onSubmit={ ( evento ) =>
+          {
+            evento.stopPropagation();
+            onSubmit ( evento );
+          } }
+        >
           { children }
         </CorpoFormulario>
       </CardFormulario>
@@ -65,6 +73,7 @@ interface PropsFormCampo
 }
 
 // Célula do campo: label acima ( com asterisco quando obrigatório ), controle e erro por campo.
+// `colunas` vai de 0.5 a 12, em passos de 0.5 ( ex.: 1.5 para campos curtos com rótulo maior ).
 export function FormCampo (
   { label, obrigatorio = false, colunas = 12, erro, htmlFor, children }: PropsFormCampo
 )
@@ -79,8 +88,8 @@ export function FormCampo (
           </label>
         )
       }
-      { children }
-      { erro && <ErroCampo>{ erro }</ErroCampo> }
+      <Controle>{ children }</Controle>
+      { erro && <LinhaErro><ErroCampo>{ erro }</ErroCampo></LinhaErro> }
     </Celula>
   );
 }
