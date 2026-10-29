@@ -148,10 +148,11 @@ export const procedimentoOdSSchema = z.object
             .int()
             .positive(),
         posicao: z
-            .string ( { message: 'A posição é obrigatória.' } )
+            .string()
             .trim()
-            .min ( 1, 'Informe a posição.' )
-            .max ( 8, 'A posição deve ter no máximo 8 caracteres.' ),
+            .max ( 8, 'A posição deve ter no máximo 8 caracteres.' )
+            .nullish()
+            .transform ( ( posicao ) => posicao || null ),
         checagem: z
             .boolean ( { message: 'A checagem é obrigatória.' } ),
         dthFim: z
@@ -209,8 +210,7 @@ export const abrirOrdemServicoSchema = z.object
             .trim()
             .max ( 128 )
             .nullish(),
-        aparelho:    aparelhoSchema,
-        equipamento: equipamentoSchema,
+        aparelho: aparelhoSchema,
     }
 );
 
@@ -242,6 +242,8 @@ export const registrarDiagnosticoSchema = z.object
         orcamentoPecas: z
             .array ( orcamentoPecaOdSSchema )
             .default ( [] ),
+        // Ficha técnica da máquina, levantada na inspeção — opcional: sem ela a OS segue sem Equipamento.
+        equipamento: equipamentoSchema.nullish(),
     }
 );
 

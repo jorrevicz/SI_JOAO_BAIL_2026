@@ -71,11 +71,6 @@ describe ( 'Ordens de Serviço routes — execução/aprovação (Lote OS-B)', (
             ({
                 codCliente, atendente: 'Ana', defeito: 'Não liga', tipoOdS: 'Garantia',
                 aparelho: { modelo: 'Inspiron 15', voltagem: 'Bivolt', garantia: '12 meses' },
-                equipamento: {
-                    equipamento: 'Notebook Dell', soEq: 'Win11', socketEq: 'BGA', memoriaRam: '8GB',
-                    tipoOffice: '2021', placaMae: 'Dell', bios: '1.2.0', capacidadeRam: '8GB',
-                    possuiSSD: true, possuiHD: false, capacidadeArmz: '256GB', usoArmz: '50%',
-                },
             });
 
         numOdS = ordemServico.body.numOdS;

@@ -87,4 +87,39 @@ export class EquipamentosRepository
 
         return row;
     };
+
+    async Update
+    (
+        id: number,
+        equipamento: CreateEquipamentoInput,
+        codUser: number,
+        transaction?: postgres.TransactionSql
+
+    ): Promise < Equipamentos | null >
+    {
+        const client = transaction ?? sql;
+        const [ row ] = await client < Equipamentos[] >`
+            UPDATE "Equipamentos"
+            SET "equipamento"    = ${ equipamento.equipamento },
+                "grupoUser"      = ${ equipamento.grupoUser ?? null },
+                "soEq"           = ${ equipamento.soEq },
+                "socketEq"       = ${ equipamento.socketEq },
+                "memoriaRam"     = ${ equipamento.memoriaRam },
+                "tipoOffice"     = ${ equipamento.tipoOffice },
+                "placaMae"       = ${ equipamento.placaMae },
+                "bios"           = ${ equipamento.bios },
+                "capacidadeRam"  = ${ equipamento.capacidadeRam },
+                "possuiSSD"      = ${ equipamento.possuiSSD },
+                "possuiHD"       = ${ equipamento.possuiHD },
+                "capacidadeArmz" = ${ equipamento.capacidadeArmz },
+                "usoArmz"        = ${ equipamento.usoArmz },
+                "codUser"        = ${ codUser },
+                "dtEdicao"       = CURRENT_TIMESTAMP
+            WHERE "codEquipamento" = ${ id }
+            AND "isActive" = true
+            RETURNING *
+        `;
+
+        return row ?? null;
+    };
 }

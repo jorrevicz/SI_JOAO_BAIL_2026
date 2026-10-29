@@ -29,6 +29,11 @@ OrdensServicoRouter.post
     Validate ( abrirOrdemServicoSchema ),
     controller.AbrirOrdemServicoController
 );
+OrdensServicoRouter.delete
+(
+    '/:numOdS',
+    controller.RemoveOrdemServicoController
+);
 OrdensServicoRouter.patch
 (
     '/:numOdS/procedimentos',

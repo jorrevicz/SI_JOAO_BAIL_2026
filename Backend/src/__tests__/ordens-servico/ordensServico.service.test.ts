@@ -18,6 +18,8 @@ function MakeOsRepo
         RegistrarDiagnostico:   vi.fn(),
         AtualizarObsTecnica:    vi.fn(),
         AtualizarSituacao:      vi.fn(),
+        VincularEquipamento:    vi.fn(),
+        Delete:                 vi.fn(),
         ...over,
     };
 }
@@ -30,6 +32,7 @@ function MakeSimpleRepo
     return {
         FindById: vi.fn(),
         Create:   vi.fn(),
+        Update:   vi.fn(),
         ...over,
     };
 }
@@ -155,6 +158,34 @@ describe ( 'OrdensServicoService', () =>
         expect ( resultado.procedimentos ).toEqual ( [] );
     });
 
+    it ( 'FindOrdemServico devolve equipamento nulo quando a OS ainda não tem ficha', async () =>
+    {
+        repo.FindById.mockResolvedValue ( { numOdS: 1, codAparelho: 1, codEquipamento: null } );
+        aparelhosRepo.FindById.mockResolvedValue ( { codAparelho: 1, ...aparelho } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+
+        const resultado = await service.FindOrdemServico ( 1 );
+
+        expect ( resultado.equipamento ).toBeNull();
+        expect ( equipamentosRepo.FindById ).not.toHaveBeenCalled();
+    });
+
+    it ( 'DeleteOrdemServico lança 404 quando a OS não existe ou já está inativa', async () =>
+    {
+        repo.Delete.mockResolvedValue ( null );
+
+        await expect ( service.DeleteOrdemServico ( 999999, 1 ) ).rejects.toMatchObject ( { status: 404 } );
+    });
+
+    it ( 'DeleteOrdemServico desativa a OS (soft delete)', async () =>
+    {
+        repo.Delete.mockResolvedValue ( { numOdS: 1 } );
+
+        await service.DeleteOrdemServico ( 1, 7 );
+
+        expect ( repo.Delete ).toHaveBeenCalledWith ( 1, 7, {} );
+    });
+
     it ( 'AbrirOS lança 400 quando cliente informado não existe', async () =>
     {
         clientesRepo.FindById.mockResolvedValue ( null );
@@ -163,7 +194,7 @@ describe ( 'OrdensServicoService', () =>
             service.AbrirOS (
                 {
                     codCliente: 99, atendente: 'Ana', defeito: 'Não liga',
-                    tipoOdS: 'Garantia', aparelho, equipamento,
+                    tipoOdS: 'Garantia', aparelho,
                 } as never,
                 1
             )
@@ -173,26 +204,25 @@ describe ( 'OrdensServicoService', () =>
         expect ( repo.Create ).not.toHaveBeenCalled();
     });
 
-    it ( 'AbrirOS cria Aparelho, Equipamento e o cabeçalho da OS dentro da transação', async () =>
+    it ( 'AbrirOS cria Aparelho e o cabeçalho da OS (sem Equipamento) dentro da transação', async () =>
     {
         clientesRepo.FindById.mockResolvedValue ( { codCliente: 1 } );
         aparelhosRepo.Create.mockResolvedValue ( { codAparelho: 10, ...aparelho } );
-        equipamentosRepo.Create.mockResolvedValue ( { codEquipamento: 20, ...equipamento } );
-        repo.Create.mockResolvedValue ( { numOdS: 1, codAparelho: 10, codEquipamento: 20 } );
+        repo.Create.mockResolvedValue ( { numOdS: 1, codAparelho: 10, codEquipamento: null } );
 
         const resultado = await service.AbrirOS (
             {
                 codCliente: 1, atendente: 'Ana', defeito: 'Não liga',
-                tipoOdS: 'Garantia', aparelho, equipamento,
+                tipoOdS: 'Garantia', aparelho,
             } as never,
             1
         );
 
         expect ( aparelhosRepo.Create ).toHaveBeenCalledWith ( aparelho, 1, {} );
-        expect ( equipamentosRepo.Create ).toHaveBeenCalledWith ( equipamento, 1, {} );
+        expect ( equipamentosRepo.Create ).not.toHaveBeenCalled();
         expect ( repo.Create ).toHaveBeenCalledWith
         (
-            expect.objectContaining ( { codAparelho: 10, codEquipamento: 20 } ),
+            expect.objectContaining ( { codAparelho: 10 } ),
             1,
             {}
         );
@@ -321,6 +351,65 @@ describe ( 'OrdensServicoService', () =>
         expect ( procedimentosOdSRepo.UpdateChecagem ).toHaveBeenCalledWith ( 1, 1, item, 1, {} );
         expect ( procedimentosOdSRepo.CreateEstrutura ).not.toHaveBeenCalled();
         expect ( procedimentosOdSRepo.Delete ).not.toHaveBeenCalled();
+    });
+
+    it ( 'RegistrarDiagnostico cria a ficha de Equipamento e vincula à OS quando ela ainda não tem', async () =>
+    {
+        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 1, codEquipamento: null } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        orcamentoPecasOdSRepo.ListByOS.mockResolvedValue ( [] );
+        equipamentosRepo.Create.mockResolvedValue ( { codEquipamento: 20, ...equipamento } );
+        repo.FindById.mockResolvedValue ( { numOdS: 1, codAparelho: 1, codEquipamento: 20 } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+
+        await service.RegistrarDiagnostico
+        (
+            1,
+            { historicoManutencao: null, procedimentos: [], orcamentoPecas: [], equipamento },
+            1
+        );
+
+        expect ( equipamentosRepo.Create ).toHaveBeenCalledWith ( equipamento, 1, {} );
+        expect ( repo.VincularEquipamento ).toHaveBeenCalledWith ( 1, 20, 1, {} );
+        expect ( equipamentosRepo.Update ).not.toHaveBeenCalled();
+    });
+
+    it ( 'RegistrarDiagnostico atualiza a ficha de Equipamento quando a OS já tem uma', async () =>
+    {
+        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 1, codEquipamento: 20 } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        orcamentoPecasOdSRepo.ListByOS.mockResolvedValue ( [] );
+        equipamentosRepo.Update.mockResolvedValue ( { codEquipamento: 20, ...equipamento } );
+        repo.FindById.mockResolvedValue ( { numOdS: 1, codAparelho: 1, codEquipamento: 20 } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+        equipamentosRepo.FindById.mockResolvedValue ( {} );
+
+        await service.RegistrarDiagnostico
+        (
+            1,
+            { historicoManutencao: null, procedimentos: [], orcamentoPecas: [], equipamento },
+            1
+        );
+
+        expect ( equipamentosRepo.Update ).toHaveBeenCalledWith ( 20, equipamento, 1, {} );
+        expect ( equipamentosRepo.Create ).not.toHaveBeenCalled();
+        expect ( repo.VincularEquipamento ).not.toHaveBeenCalled();
+    });
+
+    it ( 'RegistrarDiagnostico não toca na ficha de Equipamento quando ela não é informada', async () =>
+    {
+        repo.RegistrarDiagnostico.mockResolvedValue ( { numOdS: 1, codEquipamento: null } );
+        procedimentosOdSRepo.ListByOS.mockResolvedValue ( [] );
+        orcamentoPecasOdSRepo.ListByOS.mockResolvedValue ( [] );
+        repo.FindById.mockResolvedValue ( { numOdS: 1, codAparelho: 1, codEquipamento: null } );
+        aparelhosRepo.FindById.mockResolvedValue ( {} );
+
+        await service.RegistrarDiagnostico ( 1, { historicoManutencao: null, procedimentos: [], orcamentoPecas: [] }, 1 );
+
+        expect ( equipamentosRepo.Create ).not.toHaveBeenCalled();
+        expect ( equipamentosRepo.Update ).not.toHaveBeenCalled();
+        expect ( repo.VincularEquipamento ).not.toHaveBeenCalled();
     });
 
     it ( 'RegistrarDiagnostico avança a situação de Aberta para Em execução na primeira chamada', async () =>

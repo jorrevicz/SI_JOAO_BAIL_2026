@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -21,6 +20,7 @@ import { InfoBlock } from '../../components/tabela/style';
 import OrdemServicoForm from './OrdemServicoForm';
 import DiagnosticoModal from './DiagnosticoModal';
 import ExecucaoModal from './ExecucaoModal';
+import ProcedimentoModal from './ProcedimentoModal';
 import { ClienteConsulta } from '../clientes/ClienteConsulta';
 
 const columnHelper = createColumnHelper < OrdemServico >();
@@ -28,9 +28,9 @@ const columnHelper = createColumnHelper < OrdemServico >();
 export default function OrdensServicoPage ()
 {
   'use no memo';
-  const navigate = useNavigate();
   const [ dados, setDados ]       = useState < OrdemServico[] > ([]);
   const [ abrindo, setAbrindo ]   = useState ( false );
+  const [ editandoProcedimentos, setEditandoProcedimentos ] = useState < OrdemServico | null > ( null );
   const [ diagnosticando, setDiagnosticando ] = useState < OrdemServico | null > ( null );
   const [ executando, setExecutando ] = useState < OrdemServico | null > ( null );
   const [ clienteFiltro, setClienteFiltro ]   = useState < Cliente | null > ( null );
@@ -48,6 +48,25 @@ export default function OrdensServicoPage ()
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect ( () => { carregar(); }, [ clienteFiltro ] );
+
+  const excluir = async ( numOdS: number ) =>
+  {
+    if ( !confirm ( 'Confirma a exclusão desta ordem de serviço?' ) )
+    {
+      return;
+    }
+    setErro ( '' );
+
+    try
+    {
+      await ordensServicoService.remover ( numOdS );
+      carregar();
+    }
+    catch ( err )
+    {
+      setErro ( ( err as Error ).message );
+    }
+  };
 
   const HandleSelecionarClienteFiltro = ( oCliente: Cliente ) =>
   {
@@ -124,7 +143,13 @@ export default function OrdensServicoPage ()
       }
     ),
     columnHelper.accessor ( 'tipoOdS', { header: 'Tipo' } ),
-    columnHelper.accessor ( 'codEquipamento', { header: () => <>Código do<br/>Equipamento</> } ),
+    columnHelper.accessor (
+      'codEquipamento',
+      {
+        header: () => <>Código do<br/>Equipamento</>,
+        cell:   ( info ) => info.getValue() ?? '-',
+      }
+    ),
     columnHelper.accessor (
       'historicoManutencao',
       {
@@ -168,7 +193,7 @@ export default function OrdensServicoPage ()
         <GrupoBotoes>
           <Botao
             $variante="secundario"
-            onClick={ ( evento ) => { evento.stopPropagation(); navigate ( `/procedimentos-os?numOdS=${ row.original.numOdS }` ); } }
+            onClick={ ( evento ) => { evento.stopPropagation(); setEditandoProcedimentos ( row.original ); } }
           >
             Procedimentos
           </Botao>
@@ -183,6 +208,13 @@ export default function OrdensServicoPage ()
             onClick={ ( evento ) => { evento.stopPropagation(); setExecutando ( row.original ); } }
           >
             Execução
+          </Botao>
+          <Botao
+            $variante="perigo"
+            disabled={ !row.original.isActive }
+            onClick={ ( evento ) => { evento.stopPropagation(); excluir ( row.original.numOdS ); } }
+          >
+            Excluir
           </Botao>
         </GrupoBotoes>
       ),
@@ -308,6 +340,18 @@ export default function OrdensServicoPage ()
             carregar();
           }}
           onCancelar={ () => setAbrindo ( false ) }
+        />
+      )}
+
+      { editandoProcedimentos !== null && (
+        <ProcedimentoModal
+          os={ editandoProcedimentos }
+          onSalvo={ () =>
+          {
+            setEditandoProcedimentos ( null );
+            carregar();
+          }}
+          onCancelar={ () => setEditandoProcedimentos ( null ) }
         />
       )}
 

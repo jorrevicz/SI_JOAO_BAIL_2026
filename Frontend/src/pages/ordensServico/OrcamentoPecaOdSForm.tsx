@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { type OrcamentoPecaOdSInput } from '../../services/ordensServico';
 import { FormSecao, FormCampo, Botao } from './style';
+import { validarDecimal } from '../../utils/validators';
 
 export interface OrcamentoPecaOdSLocal extends OrcamentoPecaOdSInput
 {
@@ -105,7 +106,11 @@ export function OrcamentoPecaOdSForm ( { onAdicionar }: Props )
         <input
           id="vlrPv"
           value={ vlrPv }
-          onChange={ ( evento ) => setVlrPv ( evento.target.value ) }
+          onChange={ ( evento ) =>
+          {
+            setVlrPv ( evento.target.value );
+            setErroValor ( validarDecimal ( evento.target.value, 2, 'O valor de venda' ) );
+          } }
           placeholder="89.90"
         />
       </FormCampo>

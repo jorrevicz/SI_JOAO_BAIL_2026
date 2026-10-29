@@ -3,7 +3,6 @@ import { ApiError } from '../../services/api';
 import { ordensServicoService, type AbrirOrdemServicoInput } from '../../services/ordensServico';
 import { clientesService } from '../../services/clientes';
 import { FormModal, FormSecao, FormCampo, FormAcoes, Botao } from './style';
-import { CaixaSelecao } from '../../components/caixaSelecao';
 import { ClienteConsulta } from '../clientes/ClienteConsulta';
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
@@ -28,21 +27,6 @@ const FORM_VAZIO: AbrirOrdemServicoInput = {
     modelo:   '',
     voltagem: '',
     garantia: '',
-  },
-  equipamento: {
-    equipamento:    '',
-    grupoUser:      '',
-    soEq:           '',
-    socketEq:       '',
-    memoriaRam:     '',
-    tipoOffice:     '',
-    placaMae:       '',
-    bios:           '',
-    capacidadeRam:  '',
-    possuiSSD:      false,
-    possuiHD:       false,
-    capacidadeArmz: '',
-    usoArmz:        '',
   },
 };
 
@@ -109,21 +93,7 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
       erro={ erro }
       onFechar={ onCancelar }
       onSubmit={ submit }
-    >
-      <FormSecao>
-        <FormCampo label="Tipo da OS" obrigatorio colunas={ 4 } htmlFor="tipoOdS" erro={ errosCampo.tipoOdS }>
-          <input
-            id="tipoOdS"
-            value={ form.tipoOdS }
-            onChange={ ( evento ) => setForm ( { ...form, tipoOdS: evento.target.value } ) }
-            maxLength={ 14 }
-            placeholder="Ex.: Garantia"
-            disabled={ !clienteSelecionado }
-            required
-          />
-          </FormCampo>
-      </FormSecao>
-
+    > 
       <FormSecao>
         <CampoConsulta
           campo={ campoCliente }
@@ -133,10 +103,12 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
           rotuloNome="Cliente"
           obrigatorio
           erroApi={ errosCampo.codCliente }
-          colunas={ [ 2, 2, 5 ] }
+          colunas={ [ 2, 1, 5 ] }
         />
+      </FormSecao>
 
-        <FormCampo label='Fone' colunas={ 4 }>
+      <FormSecao>
+        <FormCampo label='Fone' colunas={ 1.8 }>
           <div>
             {
               (
@@ -152,7 +124,7 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
           </div>
         </FormCampo>
 
-        <FormCampo label='Endereço' colunas={ 4 }>
+        <FormCampo label='Endereço' colunas={ 6 }>
           <div>
             {
               (
@@ -168,6 +140,42 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
           </div>
         </FormCampo>
       </FormSecao>  
+
+      <FormSecao>
+        <FormCampo label="Atendente" obrigatorio colunas={ 4 } htmlFor="atendente" erro={ errosCampo.atendente }>
+          <input
+            id="atendente"
+            value={ form.atendente }
+            onChange={ ( evento ) => setForm ( { ...form, atendente: evento.target.value } ) }
+            maxLength={ 128 }
+            required
+          />
+        </FormCampo>
+
+        <FormCampo label="Solicitante" colunas={ 4 } htmlFor="solicitante" erro={ errosCampo.solicitante }>
+          <input
+            id="solicitante"
+            value={ form.solicitante ?? '' }
+            onChange={ ( evento ) => setForm ( { ...form, solicitante: evento.target.value } ) }
+            maxLength={ 128 }
+          />
+        </FormCampo>
+      </FormSecao>
+
+      <FormSecao>
+        <FormCampo label="Tipo da OS" obrigatorio colunas={ 4 } htmlFor="tipoOdS" erro={ errosCampo.tipoOdS }>
+          <input
+            id="tipoOdS"
+            value={ form.tipoOdS }
+            onChange={ ( evento ) => setForm ( { ...form, tipoOdS: evento.target.value } ) }
+            maxLength={ 14 }
+            placeholder="Ex.: Garantia"
+            disabled={ !clienteSelecionado }
+            required
+          />
+          </FormCampo>
+      </FormSecao>
+
 
       <fieldset disabled={ !clienteSelecionado } style={ { border: 'none', padding: 0, margin: 0 } }>
       <div>
@@ -227,27 +235,6 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
       </div>
 
       <FormSecao>    
-        <FormCampo label="Atendente" obrigatorio colunas={ 5 } htmlFor="atendente" erro={ errosCampo.atendente }>
-          <input
-            id="atendente"
-            value={ form.atendente }
-            onChange={ ( evento ) => setForm ( { ...form, atendente: evento.target.value } ) }
-            maxLength={ 128 }
-            required
-          />
-        </FormCampo>
-        </FormSecao>
-
-        <FormSecao>
-        <FormCampo label="Solicitante" colunas={ 5 } htmlFor="solicitante" erro={ errosCampo.solicitante }>
-          <input
-            id="solicitante"
-            value={ form.solicitante ?? '' }
-            onChange={ ( evento ) => setForm ( { ...form, solicitante: evento.target.value } ) }
-            maxLength={ 128 }
-          />
-        </FormCampo>
-
         <FormCampo label="Acessório" colunas={ 8 } htmlFor="acessorio" erro={ errosCampo.acessorio }>
           <input
             id="acessorio"
@@ -277,134 +264,6 @@ export default function OrdemServicoForm ( { onSalvo, onCancelar }: Props )
         </FormCampo>
       </FormSecao> 
 
-      <div>
-        <h4 style={ { margin: '0.75rem', fontWeight: 600 } }>Equipamento</h4>
-        <FormSecao>
-          <FormCampo label="Equipamento" obrigatorio colunas={ 6 } htmlFor="equipamento">
-            <input
-              id="equipamento"
-              value={ form.equipamento.equipamento }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, equipamento: evento.target.value } } ) }
-              maxLength={ 80 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Grupo de usuários (rede)" colunas={ 6 } htmlFor="grupoUser">
-            <input
-              id="grupoUser"
-              value={ form.equipamento.grupoUser ?? '' }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, grupoUser: evento.target.value } } ) }
-              maxLength={ 40 }
-            />
-          </FormCampo>
-
-          <FormCampo label="Sistema operacional" obrigatorio colunas={ 3 } htmlFor="soEq">
-            <input
-              id="soEq"
-              value={ form.equipamento.soEq }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, soEq: evento.target.value } } ) }
-              maxLength={ 8 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Socket" obrigatorio colunas={ 3 } htmlFor="socketEq">
-            <input
-              id="socketEq"
-              value={ form.equipamento.socketEq }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, socketEq: evento.target.value } } ) }
-              maxLength={ 15 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Memória RAM" obrigatorio colunas={ 3 } htmlFor="memoriaRam">
-            <input
-              id="memoriaRam"
-              value={ form.equipamento.memoriaRam }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, memoriaRam: evento.target.value } } ) }
-              maxLength={ 15 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Office" obrigatorio colunas={ 3 } htmlFor="tipoOffice">
-            <input
-              id="tipoOffice"
-              value={ form.equipamento.tipoOffice }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, tipoOffice: evento.target.value } } ) }
-              maxLength={ 15 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Placa-mãe" obrigatorio colunas={ 4 } htmlFor="placaMae">
-            <input
-              id="placaMae"
-              value={ form.equipamento.placaMae }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, placaMae: evento.target.value } } ) }
-              maxLength={ 20 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="BIOS" obrigatorio colunas={ 4 } htmlFor="bios">
-            <input
-              id="bios"
-              value={ form.equipamento.bios }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, bios: evento.target.value } } ) }
-              maxLength={ 15 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Capacidade de RAM" obrigatorio colunas={ 4 } htmlFor="capacidadeRam">
-            <input
-              id="capacidadeRam"
-              value={ form.equipamento.capacidadeRam }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, capacidadeRam: evento.target.value } } ) }
-              maxLength={ 10 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Capacidade de armazenamento" obrigatorio colunas={ 4 } htmlFor="capacidadeArmz">
-            <input
-              id="capacidadeArmz"
-              value={ form.equipamento.capacidadeArmz }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, capacidadeArmz: evento.target.value } } ) }
-              maxLength={ 8 }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Uso de armazenamento" obrigatorio colunas={ 4 } htmlFor="usoArmz">
-            <input
-              id="usoArmz"
-              value={ form.equipamento.usoArmz }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, usoArmz: evento.target.value } } ) }
-              maxLength={ 8 }
-              placeholder="Ex.: 50%"
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Possui SSD" colunas={ 2 }>
-            <CaixaSelecao
-              value={ form.equipamento.possuiSSD }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, possuiSSD: evento } } ) }
-            />
-          </FormCampo>
-
-          <FormCampo label="Possui HD" colunas={ 2 }>
-            <CaixaSelecao
-              value={ form.equipamento.possuiHD }
-              onChange={ ( evento ) => setForm ( { ...form, equipamento: { ...form.equipamento, possuiHD: evento } } ) }
-            />
-          </FormCampo>
-        </FormSecao> 
-      </div> 
       </fieldset>
 
       <FormAcoes>

@@ -11,7 +11,6 @@ export type CreateOrdemServicoRow = {
     tipoOdS:     string;
     solicitante?: string | null;
     codAparelho:   number;
-    codEquipamento: number;
 };
 
 export type RegistrarDiagnosticoRow = {
@@ -78,7 +77,6 @@ export class OrdensServicoRepository
                 "tipoOdS",
                 "solicitante",
                 "codAparelho",
-                "codEquipamento",
                 "codUser"
             )
             VALUES
@@ -91,13 +89,35 @@ export class OrdensServicoRepository
                 ${ os.tipoOdS },
                 ${ os.solicitante ?? null },
                 ${ os.codAparelho },
-                ${ os.codEquipamento },
                 ${ codUser }
             )
             RETURNING *
         `;
 
         return row;
+    };
+
+    async VincularEquipamento
+    (
+        numOdS: number,
+        codEquipamento: number,
+        codUser: number,
+        transaction?: postgres.TransactionSql
+
+    ): Promise < OrdemDeServicos | null >
+    {
+        const client = transaction ?? sql;
+        const [ row ] = await client < OrdemDeServicos[] >`
+            UPDATE "OrdemDeServicos"
+            SET "codEquipamento" = ${ codEquipamento },
+                "codUser"        = ${ codUser },
+                "dtEdicao"       = CURRENT_TIMESTAMP
+            WHERE "numOdS" = ${ numOdS }
+            AND "isActive" = true
+            RETURNING *
+        `;
+
+        return row ?? null;
     };
 
     async RegistrarDiagnostico
@@ -165,6 +185,28 @@ export class OrdensServicoRepository
             WHERE "numOdS"  = ${ numOdS }
             AND "isActive"  = true
             RETURNING *
+        `;
+
+        return row ?? null;
+    };
+
+    async Delete
+    (
+        numOdS: number,
+        codUser: number,
+        transaction?: postgres.TransactionSql
+
+    ): Promise < { numOdS: number } | null >
+    {
+        const client = transaction ?? sql;
+        const [ row ] = await client < { numOdS: number }[] >`
+            UPDATE "OrdemDeServicos"
+            SET "isActive"  = false,
+                "codUser"   = ${ codUser },
+                "dtEdicao"  = CURRENT_TIMESTAMP
+            WHERE "numOdS"  = ${ numOdS }
+            AND "isActive"  = true
+            RETURNING "numOdS"
         `;
 
         return row ?? null;

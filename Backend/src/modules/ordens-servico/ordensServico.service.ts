@@ -90,7 +90,7 @@ export class OrdensServicoService
         const [ aparelho, equipamento, procedimentos, servicos, orcamentoPecas, substituicaoPecas ] = await Promise.all
         ([
             this.aparelhosRepo.FindById ( os.codAparelho, transaction ),
-            this.equipamentosRepo.FindById ( os.codEquipamento, transaction ),
+            os.codEquipamento === null ? Promise.resolve ( null ) : this.equipamentosRepo.FindById ( os.codEquipamento, transaction ),
             this.procedimentosOdSRepo.ListByOS ( numOdS, transaction ),
             this.servicosOdSRepo.ListByOS ( numOdS, transaction ),
             this.orcamentoPecasOdSRepo.ListByOS ( numOdS, transaction ),
@@ -101,8 +101,30 @@ export class OrdensServicoService
     };
 
     /**
-     * Abertura atômica (RNF06): a OS e as fichas de Aparelho/Equipamento daquela
-     * unidade nascem juntas ou não nascem.
+     * Exclusão é soft delete (`isActive = false`): o histórico da OS (checklist, serviços,
+     * orçamento e substituições) permanece íntegro no banco.
+     */
+    async DeleteOrdemServico
+    (
+        numOdS:  number,
+        codUser: number
+    )
+    {
+        return WithTransaction ( async ( transaction ) =>
+        {
+            const removida = await this.repo.Delete ( numOdS, codUser, transaction );
+
+            if ( !removida )
+            {
+                throw new AppError ( 'Ordem de Serviço não encontrada.', 404 );
+            }
+        } );
+    };
+
+    /**
+     * Abertura atômica (RNF06): a OS e a ficha do Aparelho daquela unidade nascem
+     * juntas ou não nascem. A ficha de Equipamento não é criada aqui — é levantada
+     * pelo técnico no diagnóstico (`RegistrarDiagnostico`).
      */
     async AbrirOS
     (
@@ -115,7 +137,6 @@ export class OrdensServicoService
             await this.AssertCliente ( data.codCliente, transaction );
 
             const aparelho = await this.aparelhosRepo.Create ( data.aparelho, codUser, transaction );
-            const equipamento = await this.equipamentosRepo.Create ( data.equipamento, codUser, transaction );
 
             const os = await this.repo.Create
             (
@@ -128,13 +149,12 @@ export class OrdensServicoService
                     tipoOdS:        data.tipoOdS,
                     solicitante:    data.solicitante,
                     codAparelho:    aparelho.codAparelho,
-                    codEquipamento: equipamento.codEquipamento,
                 },
                 codUser,
                 transaction
             );
 
-            return { ...os, aparelho, equipamento };
+            return { ...os, aparelho };
         } );
     };
 
@@ -203,7 +223,9 @@ export class OrdensServicoService
      * trocado. Ao ser registrado pela primeira vez, a OS avança de 'Aberta' para 'Em
      * execução'; ao final, recalcula a situação — 'Aguardando aprovação' se houver
      * peça orçada ainda não decidida pelo cliente, 'Em execução' caso contrário (RN —
-     * Lote OS-B).
+     * Lote OS-B). Também registra a ficha técnica do Equipamento, quando informada:
+     * cria e vincula à OS na primeira vez, atualiza nas seguintes; sem ela, a OS segue
+     * sem Equipamento.
      */
     async RegistrarDiagnostico
     (
@@ -225,6 +247,19 @@ export class OrdensServicoService
             if ( !atualizada )
             {
                 throw new AppError ( 'Ordem de Serviço não encontrada.', 404 );
+            }
+
+            if ( data.equipamento )
+            {
+                if ( atualizada.codEquipamento === null )
+                {
+                    const equipamento = await this.equipamentosRepo.Create ( data.equipamento, codUser, transaction );
+                    await this.repo.VincularEquipamento ( numOdS, equipamento.codEquipamento, codUser, transaction );
+                }
+                else
+                {
+                    await this.equipamentosRepo.Update ( atualizada.codEquipamento, data.equipamento, codUser, transaction );
+                }
             }
 
             const checklistExistente = await this.procedimentosOdSRepo.ListByOS ( numOdS, transaction );

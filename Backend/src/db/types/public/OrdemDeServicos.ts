@@ -34,7 +34,7 @@ export default interface OrdemDeServicos {
 
   tipoOdS: string;
 
-  codEquipamento: EquipamentosCodEquipamento;
+  codEquipamento: EquipamentosCodEquipamento | null;
 
   historicoManutencao: string | null;
 
@@ -77,7 +77,7 @@ export interface OrdemDeServicosInitializer {
 
   tipoOdS: string;
 
-  codEquipamento: EquipamentosCodEquipamento;
+  codEquipamento?: EquipamentosCodEquipamento | null;
 
   historicoManutencao?: string | null;
 
@@ -124,7 +124,7 @@ export interface OrdemDeServicosMutator {
 
   tipoOdS?: string;
 
-  codEquipamento?: EquipamentosCodEquipamento;
+  codEquipamento?: EquipamentosCodEquipamento | null;
 
   historicoManutencao?: string | null;
 

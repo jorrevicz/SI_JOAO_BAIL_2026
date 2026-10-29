@@ -6,6 +6,7 @@ import { TecnicoConsulta, NomeCargoNormalizado } from '../funcionarios/TecnicoCo
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { FormSecao, FormCampo, Botao } from './style';
+import { validarDecimal } from '../../utils/validators';
 
 export interface ServicoOdSLocal extends ServicoOdSInput
 {
@@ -26,6 +27,7 @@ export function ServicoOdSForm ( { onAdicionar }: Props )
   const [ codServico, setCodServico ]     = useState ( 0 );
   const [ nomeServico, setNomeServico ]   = useState ( '' );
   const [ valorUnitario, setValorUnitario ] = useState ( '' );
+  const [ erroValor, setErroValor ]         = useState ( '' );
   const campoTecnico = useCampoConsulta (
     {
       codigoInicial: null,
@@ -160,11 +162,15 @@ export function ServicoOdSForm ( { onAdicionar }: Props )
           />
         </FormCampo>
 
-        <FormCampo label="Valor Unitário" colunas={ 3 } htmlFor="valorUnitario">
+        <FormCampo label="Valor Unitário" colunas={ 3 } htmlFor="valorUnitario" erro={ erroValor }>
           <input
             id="valorUnitario"
             value={ valorUnitario }
-            onChange={ ( evento ) => setValorUnitario ( evento.target.value ) }
+            onChange={ ( evento ) =>
+            {
+              setValorUnitario ( evento.target.value );
+              setErroValor ( validarDecimal ( evento.target.value, 2, 'O valor unitário' ) );
+            } }
             placeholder="150.00"
           />
         </FormCampo>

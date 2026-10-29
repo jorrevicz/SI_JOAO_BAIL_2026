@@ -76,7 +76,7 @@ export interface OrdemServico
   obsTecnica:            string | null;
   entreguePara:          string | null;
   tipoOdS:               string;
-  codEquipamento:         number;
+  codEquipamento:         number | null;
   historicoManutencao:   string | null;
   solicitante:           string | null;
   dtCriacao:             string;
@@ -88,7 +88,7 @@ export interface OrdemServico
 export interface OrdemServicoDetalhe extends OrdemServico
 {
   aparelho:          Aparelho;
-  equipamento:       Equipamento;
+  equipamento:       Equipamento | null;
   procedimentos:     ProcedimentoOdS[];
   servicos:          ServicoOdS[];
   orcamentoPecas:    OrcamentoPecaOdS[];
@@ -131,7 +131,6 @@ export interface AbrirOrdemServicoInput
   tipoOdS:     string;
   solicitante?: string | null;
   aparelho:    AparelhoInput;
-  equipamento: EquipamentoInput;
 }
 
 export interface ProcedimentoEstruturaOdSInput
@@ -148,7 +147,7 @@ export interface DefinirProcedimentosInput
 export interface ProcedimentoOdSInput
 {
   codProcedimento: number;
-  posicao:         string;
+  posicao?:        string | null;
   checagem:        boolean;
   dthFim:          string;
   obsProcedimento?: string | null;
@@ -165,6 +164,7 @@ export interface RegistrarDiagnosticoInput
   historicoManutencao?: string | null;
   procedimentos:        ProcedimentoOdSInput[];
   orcamentoPecas:       OrcamentoPecaOdSInput[];
+  equipamento?:         EquipamentoInput | null;
 }
 
 export interface ServicoOdSInput
@@ -216,6 +216,11 @@ export const ordensServicoService = {
   ) => api
     .patch < OrdemServicoDetalhe > ( `/api/ordens-servico/${ numOdS }/procedimentos`, dados )
     .then ( ( resposta ) => resposta.data ),
+
+  remover: (
+    numOdS: number
+  ) => api
+    .delete ( `/api/ordens-servico/${ numOdS }` ),
 
   registrarDiagnostico: (
     numOdS: number,

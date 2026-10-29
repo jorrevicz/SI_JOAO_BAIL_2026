@@ -107,7 +107,7 @@ export class ProcedimentosOdSRepository
         const client = transaction ?? sql;
         const [ row ] = await client < ProcedimentosOdS[] >`
             UPDATE "ProcedimentosOdS"
-            SET "posicao"         = ${ item.posicao },
+            SET "posicao"         = ${ item.posicao ?? null },
                 "checagem"        = ${ item.checagem },
                 "obsProcedimento" = ${ item.obsProcedimento ?? null },
                 "dthFim"          = ${ item.dthFim },

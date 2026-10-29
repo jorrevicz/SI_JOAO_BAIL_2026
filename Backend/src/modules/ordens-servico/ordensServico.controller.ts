@@ -180,6 +180,28 @@ export class OrdensServicoController
         }
     };
 
+    RemoveOrdemServicoController = async (
+        req:  Request,
+        res:  Response,
+        next: NextFunction
+    ) =>
+    {
+        try
+        {
+            await this.service.DeleteOrdemServico
+            (
+                Number ( req.params.numOdS ),
+                req.codUser!
+            );
+
+            res.status ( 204 ).send();
+        }
+        catch ( err )
+        {
+            next ( err );
+        }
+    };
+
     ReprovarOrcamentoPecaController = async (
         req:  Request,
         res:  Response,

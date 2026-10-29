@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../services/api';
-import { ordensServicoService, type OrdemServico } from '../../services/ordensServico';
+import { ordensServicoService, type OrdemServico, type EquipamentoInput } from '../../services/ordensServico';
 import { procedimentosService } from '../../services/procedimentos';
 import { pecasService } from '../../services/pecas';
 import { CaixaSelecao } from '../../components/caixaSelecao';
-import { FormModal, FormSecao, FormCampo, FormAcoes, Botao, GrupoBotoes, TabelaWrapper, Tabela } from './style';
+import { FormModal, FormSecao, FormCampo, FormAcoes, Botao, GrupoBotoes, TabelaWrapper, Tabela, ErroCampo } from './style';
 import { OrcamentoPecaOdSForm, type OrcamentoPecaOdSLocal } from './OrcamentoPecaOdSForm';
+import { InfoBlock } from '../compras/style';
 
 interface ProcedimentoChecagemLocal
 {
@@ -16,6 +17,22 @@ interface ProcedimentoChecagemLocal
   dthFim:           string;
   obsProcedimento:  string;
 }
+
+const FICHA_EQUIPAMENTO_VAZIA: EquipamentoInput = {
+  equipamento:    '',
+  grupoUser:      '',
+  soEq:           '',
+  socketEq:       '',
+  memoriaRam:     '',
+  tipoOffice:     '',
+  placaMae:       '',
+  bios:           '',
+  capacidadeRam:  '',
+  possuiSSD:      false,
+  possuiHD:       false,
+  capacidadeArmz: '',
+  usoArmz:        '',
+};
 
 interface Props
 {
@@ -30,6 +47,7 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
   const [ historicoManutencao, setHistoricoManutencao ] = useState ( '' );
   const [ procedimentos, setProcedimentos ]   = useState < ProcedimentoChecagemLocal[] > ( [] );
   const [ orcamentoPecas, setOrcamentoPecas ] = useState < OrcamentoPecaOdSLocal[] > ( [] );
+  const [ equipamento, setEquipamento ]       = useState < EquipamentoInput > ( FICHA_EQUIPAMENTO_VAZIA );
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
   const [ salvando, setSalvando ]     = useState ( false );
@@ -60,6 +78,26 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
       const hoje = new Date().toISOString().slice ( 0, 10 );
 
       setHistoricoManutencao ( detalhe.historicoManutencao ?? '' );
+
+      if ( detalhe.equipamento )
+      {
+        setEquipamento ( {
+          equipamento:    detalhe.equipamento.equipamento,
+          grupoUser:      detalhe.equipamento.grupoUser ?? '',
+          soEq:           detalhe.equipamento.soEq,
+          socketEq:       detalhe.equipamento.socketEq,
+          memoriaRam:     detalhe.equipamento.memoriaRam,
+          tipoOffice:     detalhe.equipamento.tipoOffice,
+          placaMae:       detalhe.equipamento.placaMae,
+          bios:           detalhe.equipamento.bios,
+          capacidadeRam:  detalhe.equipamento.capacidadeRam,
+          possuiSSD:      detalhe.equipamento.possuiSSD,
+          possuiHD:       detalhe.equipamento.possuiHD,
+          capacidadeArmz: detalhe.equipamento.capacidadeArmz,
+          usoArmz:        detalhe.equipamento.usoArmz,
+        } );
+      }
+
       setProcedimentos (
         [ ...detalhe.procedimentos ]
           .sort ( ( a, b ) => a.ordem - b.ordem )
@@ -109,8 +147,19 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
     setOrcamentoPecas ( ( anterior ) => anterior.filter ( ( item ) => item._uid !== uid ) );
   };
 
+  const HandleAtualizarEquipamento = ( campo: Partial < EquipamentoInput > ) =>
+  {
+    setEquipamento ( ( anterior ) => ( { ...anterior, ...campo } ) );
+  };
+
+  // A ficha é opcional: sem nenhum campo preenchido ela não é enviada. Preenchida só em
+  // parte, o Backend (Zod) rejeita e a mensagem aparece na seção.
+  const fichaEquipamentoPreenchida = Object.values ( equipamento ).some ( ( valor ) =>
+    typeof valor === 'boolean' ? valor : valor.trim() !== ''
+  );
+
   const procedimentosPendentes = procedimentos.filter ( ( item ) =>
-    !item.posicao.trim() || !item.dthFim || ( !item.checagem && !item.obsProcedimento.trim() )
+    !item.dthFim || ( !item.checagem && !item.obsProcedimento.trim() )
   );
   const podeSalvar = procedimentos.length === 0 || procedimentosPendentes.length === 0;
 
@@ -133,7 +182,7 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
         historicoManutencao: historicoManutencao || null,
         procedimentos: procedimentos.map ( ( item ) => ({
           codProcedimento: item.codProcedimento,
-          posicao:         item.posicao,
+          posicao:         item.posicao || null,
           checagem:        item.checagem,
           dthFim:          item.dthFim,
           obsProcedimento: item.obsProcedimento || null,
@@ -142,6 +191,9 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
           codPeca: item.codPeca,
           vlrPv:   item.vlrPv,
         }) ),
+        equipamento: fichaEquipamentoPreenchida
+          ? { ...equipamento, grupoUser: equipamento.grupoUser || null }
+          : null,
       } );
 
       onSalvo();
@@ -175,9 +227,7 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
         {
           !carregando && procedimentos.length === 0 && (
             <p style={ { fontSize: '0.875rem' } }>
-              Nenhum procedimento definido para esta OS — use a tela de
-              {' '}
-              <a href={ `/procedimentos-os?numOdS=${ os.numOdS }` }>Procedimentos</a>
+              Nenhum procedimento definido para esta OS — use o botão Procedimentos na listagem
               {' '}
               para montar a checklist antes de registrar o diagnóstico.
             </p>
@@ -200,10 +250,14 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
                   {
                     procedimentos.map ( ( item ) => (
                       <tr key={ item.codProcedimento }>
-                        <td>{ item.nomeProcedimento }</td>
+                        <td>
+                          <InfoBlock>
+                            { item.nomeProcedimento }
+                          </InfoBlock>
+                        </td>
                         <td>
                           <input
-                            type="date"
+                            type="datetime-local"
                             value={ item.dthFim }
                             onChange={ ( evento ) => HandleAtualizarProcedimento ( item.codProcedimento, { dthFim: evento.target.value } ) }
                           />
@@ -221,7 +275,7 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
                             onChange={ ( novoValor ) => HandleAtualizarProcedimento ( item.codProcedimento, { checagem: novoValor } ) }
                           />
                         </td> 
-                        <td>
+                        <td style={ { display: 'table-cell' } }>
                           <input
                             value={ item.obsProcedimento }
                             onChange={ ( evento ) => HandleAtualizarProcedimento ( item.codProcedimento, { obsProcedimento: evento.target.value } ) }
@@ -248,6 +302,126 @@ export default function DiagnosticoModal ( { os, onSalvo, onCancelar }: Props )
           />
         </FormCampo>
       </FormSecao>
+
+      <div>
+        <h4 style={ { marginBottom: '0.75rem', fontWeight: 600 } }>Equipamento</h4>
+        <FormSecao>
+          <FormCampo label="Equipamento" colunas={ 6 } htmlFor="equipamento">
+            <input
+              id="equipamento"
+              value={ equipamento.equipamento }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { equipamento: evento.target.value } ) }
+              maxLength={ 80 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Grupo de usuários (rede)" colunas={ 6 } htmlFor="grupoUser">
+            <input
+              id="grupoUser"
+              value={ equipamento.grupoUser ?? '' }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { grupoUser: evento.target.value } ) }
+              maxLength={ 40 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Sistema operacional" colunas={ 3 } htmlFor="soEq">
+            <input
+              id="soEq"
+              value={ equipamento.soEq }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { soEq: evento.target.value } ) }
+              maxLength={ 8 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Socket" colunas={ 3 } htmlFor="socketEq">
+            <input
+              id="socketEq"
+              value={ equipamento.socketEq }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { socketEq: evento.target.value } ) }
+              maxLength={ 15 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Memória RAM" colunas={ 3 } htmlFor="memoriaRam">
+            <input
+              id="memoriaRam"
+              value={ equipamento.memoriaRam }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { memoriaRam: evento.target.value } ) }
+              maxLength={ 15 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Office" colunas={ 3 } htmlFor="tipoOffice">
+            <input
+              id="tipoOffice"
+              value={ equipamento.tipoOffice }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { tipoOffice: evento.target.value } ) }
+              maxLength={ 15 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Placa-mãe" colunas={ 4 } htmlFor="placaMae">
+            <input
+              id="placaMae"
+              value={ equipamento.placaMae }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { placaMae: evento.target.value } ) }
+              maxLength={ 20 }
+            />
+          </FormCampo>
+
+          <FormCampo label="BIOS" colunas={ 4 } htmlFor="bios">
+            <input
+              id="bios"
+              value={ equipamento.bios }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { bios: evento.target.value } ) }
+              maxLength={ 15 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Capacidade de RAM" colunas={ 4 } htmlFor="capacidadeRam">
+            <input
+              id="capacidadeRam"
+              value={ equipamento.capacidadeRam }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { capacidadeRam: evento.target.value } ) }
+              maxLength={ 10 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Capacidade de armazenamento" colunas={ 4 } htmlFor="capacidadeArmz">
+            <input
+              id="capacidadeArmz"
+              value={ equipamento.capacidadeArmz }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { capacidadeArmz: evento.target.value } ) }
+              maxLength={ 8 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Uso de armazenamento" colunas={ 4 } htmlFor="usoArmz">
+            <input
+              id="usoArmz"
+              value={ equipamento.usoArmz }
+              onChange={ ( evento ) => HandleAtualizarEquipamento ( { usoArmz: evento.target.value } ) }
+              maxLength={ 8 }
+              placeholder="Ex.: 50%"
+            />
+          </FormCampo>
+
+          <FormCampo label="Possui SSD" colunas={ 2 }>
+            <CaixaSelecao
+              value={ equipamento.possuiSSD }
+              onChange={ ( novoValor ) => HandleAtualizarEquipamento ( { possuiSSD: novoValor } ) }
+            />
+          </FormCampo>
+
+          <FormCampo label="Possui HD" colunas={ 2 }>
+            <CaixaSelecao
+              value={ equipamento.possuiHD }
+              onChange={ ( novoValor ) => HandleAtualizarEquipamento ( { possuiHD: novoValor } ) }
+            />
+          </FormCampo>
+        </FormSecao>
+        { errosCampo.equipamento && <ErroCampo>{ errosCampo.equipamento }</ErroCampo> }
+      </div>
 
       <div>
         <h4 style={ { marginBottom: '0.75rem', fontWeight: 600 } }>Orçamento de peças</h4>
