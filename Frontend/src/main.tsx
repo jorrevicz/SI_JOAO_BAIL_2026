@@ -20,8 +20,8 @@ import { FormasPagamentoPage }    from './pages/formasPagamento';
 import ContasPagamentoPage    from './pages/contasPagamento';
 import ContasReceberPage      from './pages/contasReceber';
 import ComprasPage            from './pages/compras';
+import NotasFiscaisPage       from './pages/notasFiscais';
 import ProcedimentosPage      from './pages/procedimentos';
-import ProcedimentosOSPage    from './pages/procedimentosOS';
 import OrdensServicoPage      from './pages/ordensServico';
 
 ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
@@ -46,8 +46,8 @@ ReactDOM.createRoot ( document.getElementById ( 'root' )! ).render(
             <Route path="/contas-pagamento"    element={<ContasPagamentoPage />} />
             <Route path="/contas-receber"      element={<ContasReceberPage />} />
             <Route path="/compras"             element={<ComprasPage />} />
+            <Route path="/notas-fiscais"       element={<NotasFiscaisPage />} />
             <Route path="/procedimentos"       element={<ProcedimentosPage />} />
-            <Route path="/procedimentos-os"    element={<ProcedimentosOSPage />} />
             <Route path="/ordens-servico"      element={<OrdensServicoPage />} />
           </Routes>
         </Layout>
