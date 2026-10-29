@@ -84,6 +84,23 @@ describe('ErrorHandler', () => {
     expect ( jsonArg.erros.ddi ).toBe ( 'Este DDI já está cadastrado.' );
   } );
 
+  // O postgres.js entrega o nome da constraint em `constraint_name` (não em `constraint`).
+  it.each ( [
+    [ 'NotasFiscaisEletronicas_chaveAcessoNfe_key', 'chaveAcessoNfe', 'Esta chave de acesso já pertence a outra nota fiscal.' ],
+    [ 'NotasFiscaisEletronicas_pkey',               'numero',         'Esta compra já possui nota fiscal.'                    ],
+  ] ) ( 'mapeia %s pelo constraint_name do postgres.js (PG 23505)', ( constraintName, campo, mensagem ) => {
+    const pgError = Object.assign ( new Error ( 'unique violation' ), {
+      code:            '23505',
+      constraint_name: constraintName,
+    } );
+    const mockRes = makeRes();
+
+    ErrorHandler ( pgError, mockReq, mockRes, next );
+
+    expect ( mockRes.status ).toHaveBeenCalledWith ( 409 );
+    expect ( mockRes.json ).toHaveBeenCalledWith ( { mensagem, erros: { [ campo ]: mensagem } } );
+  } );
+
   it ( 'retorna 409 para violação de FK (PG 23503)', () => {
     const pgError = Object.assign ( new Error ( 'fk violation' ), { code: '23503' } );
     const mockRes = makeRes();
