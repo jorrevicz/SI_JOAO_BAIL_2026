@@ -5,7 +5,6 @@ import {
     createColumnHelper, 
     type PaginationState,
     getCoreRowModel,
-    getSortedRowModel, 
     getFilteredRowModel,
     getPaginationRowModel,
     flexRender,  
@@ -22,7 +21,7 @@ import {
     Tabela, 
     TabelaWrapper, 
     Toolbar } from "../cidades/style";
-import { useTabelaOrdenada } from "../../hooks/tabela";
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from "../../hooks/tabela";
 import { Paginacao, TrSelecionavel, PaginacaoInfo } from "../paises/style";
 import { formatarData } from '../../utils/formatters';
 import { CidadeForm } from "./CidadeForm";
@@ -137,7 +136,7 @@ export function CidadeConsulta ( { onSelecionar, onCancelar }: Props )
           onGlobalFilterChange: setGlobalFilter,
           onPaginationChange: setPagination,
           getCoreRowModel: getCoreRowModel ( ),
-          getSortedRowModel: getSortedRowModel ( ),
+          getSortedRowModel: getSortedRowModelInativosAoFinal ( ),
           getFilteredRowModel: getFilteredRowModel ( ),
           getPaginationRowModel: getPaginationRowModel ( ),
         }

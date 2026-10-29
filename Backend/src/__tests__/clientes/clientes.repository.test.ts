@@ -117,7 +117,7 @@ describe ( 'ClientesRepository (rollback)', () =>
             await repo.Delete ( novo.codCliente, 1, transaction );
 
             const achado = await repo.FindById ( novo.codCliente, transaction );
-            expect ( achado ).toBeNull();
+            expect ( achado?.isActive ).toBe ( false );
 
             const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
                 SELECT "isActive" FROM "Clientes" WHERE "codCliente" = ${ novo.codCliente }

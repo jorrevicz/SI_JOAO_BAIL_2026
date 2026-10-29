@@ -6,7 +6,6 @@ import
     createColumnHelper,
     type PaginationState,
     getCoreRowModel,
-    getSortedRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
     flexRender,
@@ -28,7 +27,7 @@ import
     PaginacaoInfo,
 } from './style';
 import { TrSelecionavel } from '../../components/tabela/style';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { CaixaSelecao } from '../../components/caixaSelecao';
 import ProcedimentoForm from './ProcedimentoForm';
 
@@ -118,7 +117,7 @@ export function ProcedimentoConsulta ( { onSelecionarVarios, onCancelar }: Props
             onGlobalFilterChange: setGlobalFilter,
             onPaginationChange:   setPagination,
             getCoreRowModel:       getCoreRowModel ( ),
-            getSortedRowModel:     getSortedRowModel ( ),
+            getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
             getFilteredRowModel:   getFilteredRowModel ( ),
             getPaginationRowModel: getPaginationRowModel ( ),
         }

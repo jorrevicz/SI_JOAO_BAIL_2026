@@ -30,8 +30,7 @@ export class ProdutosRepository
                       `
                     : client``
             }
-            WHERE produto."isActive" = true
-            AND produto."codProd" > ${ afterId }
+            WHERE produto."codProd" > ${ afterId }
             ORDER BY produto."codProd"
             LIMIT ${ limit }
         `;
@@ -49,7 +48,6 @@ export class ProdutosRepository
             SELECT *
             FROM "Produtos"
             WHERE "codProd" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

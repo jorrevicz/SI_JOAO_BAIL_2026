@@ -54,7 +54,7 @@ describe ( 'CidadesRepository (rollback)', () => {
 
             const achado = await repo.FindById ( novo.codCidade, transaction );
 
-            expect ( achado ).toBeNull();
+            expect ( achado?.isActive ).toBe ( false );
 
             const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
                 SELECT "isActive" FROM "Cidades" WHERE "codCidade" = ${ novo.codCidade }

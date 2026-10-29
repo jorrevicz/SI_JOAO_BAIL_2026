@@ -17,8 +17,7 @@ export class ProcedimentosRepository
         return client < Procedimentos[] >`
             SELECT *
             FROM "Procedimentos"
-            WHERE "isActive" = true
-            AND "codProcedimento" > ${ afterId }
+            WHERE "codProcedimento" > ${ afterId }
             ORDER BY "codProcedimento"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class ProcedimentosRepository
             SELECT *
             FROM "Procedimentos"
             WHERE "codProcedimento" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

@@ -18,8 +18,7 @@ export class EstadosRepository
     return client < Estados[] >`
       SELECT *
       FROM   "Estados"
-      WHERE  "isActive" = true
-      AND  "codEstado" > ${ afterId } 
+      WHERE "codEstado" > ${ afterId } 
       ${ codPais ? client 
         `
             AND "codPais" = ${ codPais }
@@ -41,7 +40,6 @@ export class EstadosRepository
         SELECT * 
         FROM "Estados" 
         WHERE "codEstado" = ${ id } 
-        AND "isActive" = true
         `;
         
         return row ?? null;

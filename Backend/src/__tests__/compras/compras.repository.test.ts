@@ -119,7 +119,7 @@ describe ( 'ComprasRepository (rollback)', () =>
         });
     });
 
-    it ( 'List não traz compras removidas (soft delete)', async () =>
+    it ( 'List também traz compras removidas (soft delete), marcadas como inativas', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
@@ -131,7 +131,8 @@ describe ( 'ComprasRepository (rollback)', () =>
 
             const lista = await repo.List ( 100, undefined, { codForn: compra.codForn }, transaction );
 
-            expect ( lista ).toHaveLength ( 0 );
+            expect ( lista ).toHaveLength ( 1 );
+            expect ( lista[ 0 ].isActive ).toBe ( false );
         });
     });
 
@@ -258,7 +259,7 @@ describe ( 'ComprasRepository (rollback)', () =>
             const id   = { numero: base.numero, modelo: base.modelo, serie: base.serie, codForn: base.codForn };
 
             const cancelada = await repo.Cancelar ( id, 'Nota devolvida', 1, transaction );
-            expect ( cancelada ).toMatchObject ( { justificativaCancelamento: 'Nota devolvida' } );
+            expect ( cancelada ).toMatchObject ( { justificativaCancelamento: 'Nota devolvida', isActive: false } );
 
             expect ( await repo.Cancelar ( id, 'De novo', 1, transaction ) ).toBeNull();
         });

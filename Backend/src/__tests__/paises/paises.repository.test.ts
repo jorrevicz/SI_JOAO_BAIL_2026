@@ -54,7 +54,7 @@ describe ( 'PaisesRepository (rollback)', () => {
                 await repo.Delete ( novo.codPais, 1, transaction );
 
                 const achado = await repo.FindById ( novo.codPais, transaction );
-                expect ( achado ).toBeNull();
+                expect ( achado?.isActive ).toBe ( false );
 
                 const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
                     SELECT "isActive" FROM "Paises" WHERE "codPais" = ${ novo.codPais }

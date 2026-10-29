@@ -47,7 +47,7 @@ describe ( 'PecasRepository (rollback)', () =>
             await repo.Delete ( nova.codPeca, 1, transaction );
 
             const achada = await repo.FindById ( nova.codPeca, transaction );
-            expect ( achada ).toBeNull();
+            expect ( achada?.isActive ).toBe ( false );
         });
     });
 

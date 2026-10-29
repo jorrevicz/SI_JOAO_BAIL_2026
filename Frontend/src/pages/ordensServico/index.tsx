@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
   createColumnHelper,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
 import { ordensServicoService, type OrdemServico } from '../../services/ordensServico';
 import { type Cliente } from '../../services/clientes';
@@ -200,7 +199,7 @@ export default function OrdensServicoPage ()
       onGlobalFilterChange: setGlobalFilter,
       onPaginationChange:   setPagination,
       getCoreRowModel:       getCoreRowModel ( ),
-      getSortedRowModel:     getSortedRowModel ( ),
+      getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
       getFilteredRowModel:   getFilteredRowModel ( ),
       getPaginationRowModel: getPaginationRowModel ( ),
     }

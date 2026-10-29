@@ -9,7 +9,7 @@ import {
   createColumnHelper,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
 import { clientesService, type Cliente } from '../../services/clientes';
 import {
@@ -209,7 +209,7 @@ export default function ClientesPage ()
       onGlobalFilterChange: setGlobalFilter,
       onPaginationChange:   setPagination,
       getCoreRowModel:       getCoreRowModel(),
-      getSortedRowModel:     getSortedRowModel(),
+      getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
       getFilteredRowModel:   getFilteredRowModel(),
       getPaginationRowModel: getPaginationRowModel(),
     }

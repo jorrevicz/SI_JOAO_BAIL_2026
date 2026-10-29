@@ -9,7 +9,7 @@ import {
   createColumnHelper,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
 import { fornecedoresService, type Fornecedor } from '../../services/fornecedores';
 import {
@@ -183,7 +183,7 @@ export default function FornecedoresPage ()
       onGlobalFilterChange: setGlobalFilter,
       onPaginationChange:   setPagination,
       getCoreRowModel:       getCoreRowModel ( ),
-      getSortedRowModel:     getSortedRowModel ( ),
+      getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
       getFilteredRowModel:   getFilteredRowModel ( ),
       getPaginationRowModel: getPaginationRowModel ( ),
     }

@@ -56,7 +56,7 @@ describe ( 'ServicosRepository (rollback)', () =>
         });
     });
 
-    it ( 'Delete faz soft delete e uma nova busca por FindById retorna null', async () =>
+    it ( 'Delete faz soft delete e uma nova busca por FindById o retorna inativo', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
@@ -68,7 +68,7 @@ describe ( 'ServicosRepository (rollback)', () =>
             await repo.Delete ( novo.codServico, 1, transaction );
 
             const achado = await repo.FindById ( novo.codServico, transaction );
-            expect ( achado ).toBeNull();
+            expect ( achado?.isActive ).toBe ( false );
         });
     });
 

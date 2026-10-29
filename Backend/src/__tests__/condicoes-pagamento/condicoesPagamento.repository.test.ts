@@ -94,7 +94,7 @@ describe ( 'CondicoesPagamentoRepository (rollback)', () =>
             await repoCondicoes.Delete ( nova.codCondDePag, 1, transaction );
 
             const achada = await repoCondicoes.FindById ( nova.codCondDePag, transaction );
-            expect ( achada ).toBeNull();
+            expect ( achada?.isActive ).toBe ( false );
 
             const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
                 SELECT "isActive" FROM "CondicaoDePagamento" WHERE "codCondDePag" = ${ nova.codCondDePag }

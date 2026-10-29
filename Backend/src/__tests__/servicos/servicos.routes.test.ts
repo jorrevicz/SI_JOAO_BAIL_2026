@@ -121,10 +121,11 @@ describe ( 'Servicos routes', () =>
             expect ( res.status ).toBe ( 204 );
         });
 
-        it ( 'GET /api/servicos/:id após a remoção retorna 404', async () =>
+        it ( 'GET /api/servicos/:id após a remoção continua retornando o registro, inativo', async () =>
         {
             const res = await request ( app ).get ( `/api/servicos/${ codServicoCriado }` );
-            expect ( res.status ).toBe ( 404 );
+            expect ( res.status ).toBe ( 200 );
+            expect ( res.body.isActive ).toBe ( false );
         });
     });
 });

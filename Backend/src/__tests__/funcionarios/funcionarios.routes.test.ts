@@ -114,10 +114,11 @@ describe ( 'Funcionarios routes', () =>
             expect ( res.status ).toBe ( 204 );
         });
 
-        it ( 'GET /api/funcionarios/:id após a remoção retorna 404', async () =>
+        it ( 'GET /api/funcionarios/:id após a remoção continua retornando o registro, inativo', async () =>
         {
             const res = await request ( app ).get ( `/api/funcionarios/${ codFuncionarioCriado }` );
-            expect ( res.status ).toBe ( 404 );
+            expect ( res.status ).toBe ( 200 );
+            expect ( res.body.isActive ).toBe ( false );
         });
     });
 });

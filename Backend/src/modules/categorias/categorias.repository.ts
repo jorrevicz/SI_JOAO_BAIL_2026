@@ -17,8 +17,7 @@ export class CategoriasRepository
         return client < Categorias[] >`
             SELECT *
             FROM "Categorias"
-            WHERE "isActive" = true
-            AND "codCategoria" > ${ afterId }
+            WHERE "codCategoria" > ${ afterId }
             ORDER BY "codCategoria"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class CategoriasRepository
             SELECT *
             FROM "Categorias"
             WHERE "codCategoria" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

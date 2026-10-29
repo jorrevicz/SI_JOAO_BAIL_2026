@@ -101,7 +101,7 @@ describe ( 'TransportadorasRepository (rollback)', () =>
             await repo.Delete ( nova.codTransp, 1, transaction );
 
             const achada = await repo.FindById ( nova.codTransp, transaction );
-            expect ( achada ).toBeNull();
+            expect ( achada?.isActive ).toBe ( false );
 
             const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
                 SELECT "isActive" FROM "Transportadoras" WHERE "codTransp" = ${ nova.codTransp }

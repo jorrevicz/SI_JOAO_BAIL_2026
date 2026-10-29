@@ -17,8 +17,7 @@ export class FuncionariosRepository
         return client < Funcionarios[] >`
             SELECT *
             FROM "Funcionarios"
-            WHERE "isActive" = true
-            AND "codFuncionario" > ${ afterId }
+            WHERE "codFuncionario" > ${ afterId }
             ORDER BY "codFuncionario"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class FuncionariosRepository
             SELECT *
             FROM "Funcionarios"
             WHERE "codFuncionario" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

@@ -419,7 +419,8 @@ vira um módulo no backend. Ver [docs/02-arquitetura.md](docs/02-arquitetura.md)
 9. **Acesso a dados seguro (postgres.js)** — SQL escrito à mão na camada de repositório:
    valores **sempre** por *tagged template* (`sql\`... ${valor}\``), nunca concatenados
    (defesa SQLi/RNF05); identificadores dinâmicos só por whitelist com `sql(coluna)`;
-   consultas filtram `isActive = true` e "remoção" é soft delete; paginação por cursor
+   "remoção" é soft delete e `Update`/`Delete`/`HasDependents` filtram `isActive = true`, mas
+   `List`/`FindById` dos cadastros devolvem também os inativos (o Frontend os ordena ao final das tabelas); paginação por cursor
    sobre `codX` (sem `OFFSET`). Detalhes em
    [docs/02-arquitetura.md](docs/02-arquitetura.md#acesso-a-dados-postgresjs).
 

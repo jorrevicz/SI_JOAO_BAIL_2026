@@ -17,8 +17,7 @@ export class PecasRepository
         return client < Pecas[] >`
             SELECT *
             FROM "Pecas"
-            WHERE "isActive" = true
-            AND "codPeca" > ${ afterId }
+            WHERE "codPeca" > ${ afterId }
             ORDER BY "codPeca"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class PecasRepository
             SELECT *
             FROM "Pecas"
             WHERE "codPeca" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

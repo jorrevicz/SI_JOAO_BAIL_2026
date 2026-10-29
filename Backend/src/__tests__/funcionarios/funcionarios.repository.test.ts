@@ -59,7 +59,7 @@ describe ( 'FuncionariosRepository (rollback)', () =>
         });
     });
 
-    it ( 'Delete faz soft delete e uma nova busca por FindById retorna null', async () =>
+    it ( 'Delete faz soft delete e uma nova busca por FindById o retorna inativo', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
@@ -75,7 +75,7 @@ describe ( 'FuncionariosRepository (rollback)', () =>
             await repo.Delete ( novo.codFuncionario, 1, transaction );
 
             const achado = await repo.FindById ( novo.codFuncionario, transaction );
-            expect ( achado ).toBeNull();
+            expect ( achado?.isActive ).toBe ( false );
         });
     });
 

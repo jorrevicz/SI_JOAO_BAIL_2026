@@ -67,7 +67,7 @@ describe ( 'ProcedimentosRepository (rollback)', () =>
             await repo.Delete ( novo.codProcedimento, 1, transaction );
 
             const achado = await repo.FindById ( novo.codProcedimento, transaction );
-            expect ( achado ).toBeNull();
+            expect ( achado?.isActive ).toBe ( false );
         });
     });
 

@@ -6,7 +6,6 @@ import
     createColumnHelper, 
     type PaginationState,
     getCoreRowModel,
-    getSortedRowModel, 
     getFilteredRowModel,
     getPaginationRowModel,
     flexRender,  
@@ -25,7 +24,7 @@ import
     TabelaWrapper, 
     Toolbar 
 } from "../veiculos/style";
-import { useTabelaOrdenada } from "../../hooks/tabela";
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from "../../hooks/tabela";
 import { Paginacao, TrSelecionavel, PaginacaoInfo } from "../paises/style";
 import { formatarData } from '../../utils/formatters';
 import { VeiculoForm } from "./VeiculoForm";
@@ -163,7 +162,7 @@ export function VeiculoConsulta ( { onSelecionar, onCancelar }: Props )
           onGlobalFilterChange: setGlobalFilter,
           onPaginationChange: setPagination,
           getCoreRowModel: getCoreRowModel(),
-          getSortedRowModel: getSortedRowModel(),
+          getSortedRowModel: getSortedRowModelInativosAoFinal ( ),
           getFilteredRowModel: getFilteredRowModel(),
           getPaginationRowModel: getPaginationRowModel(),
         }

@@ -17,8 +17,7 @@ export class FormasPagamentoRepository
         return client < FormaDePagamento[] >`
             SELECT *
             FROM   "FormaDePagamento"
-            WHERE  "isActive"       = true
-            AND    "codFormaDePag"  > ${ afterId }
+            WHERE  "codFormaDePag"  > ${ afterId }
             ORDER BY "codFormaDePag"
             LIMIT  ${ limit }
         `;
@@ -35,7 +34,6 @@ export class FormasPagamentoRepository
             SELECT *
             FROM   "FormaDePagamento"
             WHERE  "codFormaDePag" = ${ id }
-            AND    "isActive"      = true
         `;
 
         return row ?? null;

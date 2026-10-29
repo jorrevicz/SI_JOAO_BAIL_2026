@@ -17,8 +17,7 @@ export class ServicosRepository
         return client < Servicos[] >`
             SELECT *
             FROM "Servicos"
-            WHERE "isActive" = true
-            AND "codServico" > ${ afterId }
+            WHERE "codServico" > ${ afterId }
             ORDER BY "codServico"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class ServicosRepository
             SELECT *
             FROM "Servicos"
             WHERE "codServico" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

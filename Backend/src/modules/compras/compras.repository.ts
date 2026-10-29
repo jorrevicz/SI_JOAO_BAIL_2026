@@ -83,7 +83,8 @@ export class ComprasRepository
             FROM   "Compras" compra
             INNER JOIN "Fornecedores" fornecedor
                     ON fornecedor."codForn" = compra."codForn"
-            WHERE  compra."isActive" = true
+            -- Inativos também são listados; os filtros abaixo são todos opcionais.
+            WHERE  TRUE
             ${
                 filtros.codForn
                     ? client`AND compra."codForn" = ${ filtros.codForn }`
@@ -125,7 +126,6 @@ export class ComprasRepository
             AND    compra."modelo" = ${ id.modelo }
             AND    compra."serie"  = ${ id.serie }
             AND   compra."codForn" = ${ id.codForn }
-            AND    compra."isActive" = true
         `;
 
         return row ?? null;

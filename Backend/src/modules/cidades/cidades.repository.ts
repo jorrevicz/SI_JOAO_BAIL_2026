@@ -18,8 +18,7 @@ export class CidadesRepository
         return client < Cidades[] >`
             SELECT *
             FROM   "Cidades"
-            WHERE  "isActive"  = true
-            AND    "codCidade" > ${ afterId }
+            WHERE  "codCidade" > ${ afterId }
             ${ codEstado ? client`AND "codEstado" = ${ codEstado }` : client`` }
             ORDER BY "codCidade"
             LIMIT  ${ limit }
@@ -37,7 +36,6 @@ export class CidadesRepository
             SELECT *
             FROM   "Cidades"
             WHERE  "codCidade" = ${ id }
-            AND    "isActive"  = true
         `;
 
         return row ?? null;

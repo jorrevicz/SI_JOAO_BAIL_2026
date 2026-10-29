@@ -67,7 +67,7 @@ describe ( 'CategoriasRepository (rollback)', () =>
             await repo.Delete ( nova.codCategoria, 1, transaction );
 
             const achada = await repo.FindById ( nova.codCategoria, transaction );
-            expect ( achada ).toBeNull();
+            expect ( achada?.isActive ).toBe ( false );
 
             const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
                 SELECT "isActive" FROM "Categorias" WHERE "codCategoria" = ${ nova.codCategoria }

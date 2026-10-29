@@ -47,7 +47,7 @@ describe ( 'CargosRepository (rollback)', () =>
             await repo.Delete ( novo.codCargo, 1, transaction );
 
             const achado = await repo.FindById ( novo.codCargo, transaction );
-            expect ( achado ).toBeNull();
+            expect ( achado?.isActive ).toBe ( false );
         });
     });
 

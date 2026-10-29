@@ -7,7 +7,6 @@ import
     createColumnHelper,
     type PaginationState,
     getCoreRowModel,
-    getSortedRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
     flexRender,
@@ -29,7 +28,7 @@ import
     PaginacaoInfo,
 } from './style';
 import { TrSelecionavel } from '../../components/tabela/style';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 
 export const NomeCargoNormalizado = ( nome: string ) =>
     nome.normalize ( 'NFD' ).replace ( /[̀-ͯ]/g, '' ).trim().toLowerCase();
@@ -103,7 +102,7 @@ export function TecnicoConsulta ( { onSelecionar, onCancelar }: Props )
             onGlobalFilterChange: setGlobalFilter,
             onPaginationChange:   setPagination,
             getCoreRowModel:       getCoreRowModel ( ),
-            getSortedRowModel:     getSortedRowModel ( ),
+            getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
             getFilteredRowModel:   getFilteredRowModel ( ),
             getPaginationRowModel: getPaginationRowModel ( ),
         }

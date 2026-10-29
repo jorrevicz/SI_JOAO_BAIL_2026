@@ -17,8 +17,7 @@ export class TransportadorasRepository
         return client < Transportadoras[] >`
             SELECT *
             FROM "Transportadoras"
-            WHERE "isActive" = true
-            AND "codTransp" > ${ afterId }
+            WHERE "codTransp" > ${ afterId }
             ORDER BY "codTransp"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class TransportadorasRepository
             SELECT *
             FROM "Transportadoras"
             WHERE "codTransp" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

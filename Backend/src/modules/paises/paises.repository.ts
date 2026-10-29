@@ -17,8 +17,7 @@ export class PaisesRepository
         return client < Paises[] >`
             SELECT *
             FROM "Paises"
-            WHERE "isActive" = true
-            AND "codPais" > ${ afterId }
+            WHERE "codPais" > ${ afterId }
             ORDER BY "codPais"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class PaisesRepository
             SELECT *
             FROM "Paises"
             WHERE "codPais" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

@@ -119,7 +119,12 @@ Convenções obrigatórias de cada repository (detalhes em
   postgres.js os envia como parâmetros, nunca como texto concatenado (defesa SQLi, RNF05).
 - **Identificadores dinâmicos** (coluna de ordenação, nome de tabela) apenas via
   `sql(coluna)` a partir de uma **whitelist** — nunca interpolar string crua.
-- **Soft delete:** consultas filtram `isActive = true`; "remover" é `UPDATE ... SET isActive = false`.
+- **Soft delete:** "remover" é `UPDATE ... SET isActive = false`. A listagem (`List`) e a busca por
+  código (`FindById`) dos cadastros **não** filtram `isActive` — os inativos também são devolvidos e o
+  Frontend os exibe ao final das tabelas (`getSortedRowModelInativosAoFinal`, em `hooks/tabela.ts`).
+  Continuam filtrando `isActive = true`: `Update`/`Delete`, as checagens de dependentes
+  (`HasDependents`), as listas de itens embutidos (Parcelas, checklist/serviços/peças da OS) e as
+  leituras internas de movimentação (ex.: `FindByIdForUpdate` de Produtos).
 - **Auditoria:** toda escrita preenche `codUser`, `dtCriacao`/`dtEdicao`.
 - **Paginação por cursor** sobre o `codX` (sem `OFFSET`) — ver
   [Modelo de Dados](06-modelo-de-dados.md#princípios-de-modelagem).

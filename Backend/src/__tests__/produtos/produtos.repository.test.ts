@@ -109,7 +109,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
             await repoProdutos.Delete ( novo.codProd, 1, transaction );
 
             const achado = await repoProdutos.FindById ( novo.codProd, transaction );
-            expect ( achado ).toBeNull();
+            expect ( achado?.isActive ).toBe ( false );
 
             const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
                 SELECT "isActive" FROM "Produtos" WHERE "codProd" = ${ novo.codProd }

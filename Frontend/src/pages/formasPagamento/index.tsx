@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
   createColumnHelper,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
 import { InfoBlock } from '../../components/tabela/style';
 import { formasPagamentoService, type FormaPagamento } from '../../services/formasPagamento';
@@ -99,7 +98,7 @@ export function FormasPagamentoPage ()
       onGlobalFilterChange: setGlobalFilter,
       onPaginationChange: setPagination,
       getCoreRowModel: getCoreRowModel(),
-      getSortedRowModel: getSortedRowModel(),
+      getSortedRowModel: getSortedRowModelInativosAoFinal ( ),
       getFilteredRowModel: getFilteredRowModel(),
       getPaginationRowModel: getPaginationRowModel(),
     }

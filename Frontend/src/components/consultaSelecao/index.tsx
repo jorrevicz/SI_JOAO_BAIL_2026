@@ -3,14 +3,13 @@ import
 {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
   type ColumnDef,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { Botao, GrupoBotoes } from '../botao/style';
 import { ModalOverlay, ModalCard, AcoesBotoes } from '../modal/style';
 import { Toolbar, InputBusca, Alerta } from '../pagina/style';
@@ -59,7 +58,7 @@ export function ConsultaSelecao < T > (
       onGlobalFilterChange: setGlobalFilter,
       onPaginationChange:   setPagination,
       getCoreRowModel:       getCoreRowModel ( ),
-      getSortedRowModel:     getSortedRowModel ( ),
+      getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
       getFilteredRowModel:   getFilteredRowModel ( ),
       getPaginationRowModel: getPaginationRowModel ( ),
     }

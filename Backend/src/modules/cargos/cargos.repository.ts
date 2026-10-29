@@ -17,8 +17,7 @@ export class CargosRepository
         return client < Cargos[] >`
             SELECT *
             FROM "Cargos"
-            WHERE "isActive" = true
-            AND "codCargo" > ${ afterId }
+            WHERE "codCargo" > ${ afterId }
             ORDER BY "codCargo"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class CargosRepository
             SELECT *
             FROM "Cargos"
             WHERE "codCargo" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

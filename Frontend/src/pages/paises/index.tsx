@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
   createColumnHelper,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
 import { InfoBlock } from '../../components/tabela/style';
 import { paisesService, type Pais } from '../../services/paises';
@@ -113,7 +112,7 @@ export function PaisesPage ()
       onGlobalFilterChange: setGlobalFilter,
       onPaginationChange: setPagination,
       getCoreRowModel: getCoreRowModel ( ),
-      getSortedRowModel: getSortedRowModel ( ),
+      getSortedRowModel: getSortedRowModelInativosAoFinal ( ),
       getFilteredRowModel: getFilteredRowModel ( ),
       getPaginationRowModel: getPaginationRowModel ( ),
     }

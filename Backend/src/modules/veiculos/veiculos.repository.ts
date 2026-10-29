@@ -17,8 +17,7 @@ export class VeiculosRepository
         return client < Veiculos[] >`
             SELECT *
             FROM "Veiculos"
-            WHERE "isActive" = true
-            AND "codVeiculo" > ${ afterId }
+            WHERE "codVeiculo" > ${ afterId }
             ORDER BY "codVeiculo"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class VeiculosRepository
             SELECT *
             FROM "Veiculos"
             WHERE "codVeiculo" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

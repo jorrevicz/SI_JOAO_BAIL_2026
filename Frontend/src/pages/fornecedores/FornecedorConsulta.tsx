@@ -28,7 +28,7 @@ import
     PaginacaoInfo,
 } from './style';
 import { InfoBlock, TrSelecionavel } from '../../components/tabela/style';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { formatarData } from '../../utils/formatters';
 import FornecedorForm from './FornecedorForm';
 
@@ -156,7 +156,7 @@ export function FornecedorConsulta ( { onSelecionar, onCancelar }: Props )
             onGlobalFilterChange: setGlobalFilter,
             onPaginationChange:   setPagination,
             getCoreRowModel:       getCoreRowModel ( ),
-            getSortedRowModel:     getSortedRowModel ( ),
+            getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
             getFilteredRowModel:   getFilteredRowModel ( ),
             getPaginationRowModel: getPaginationRowModel ( ),
         }

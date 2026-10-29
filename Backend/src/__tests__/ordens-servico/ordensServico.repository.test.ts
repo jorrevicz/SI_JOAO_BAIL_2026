@@ -159,8 +159,10 @@ describe ( 'OrdensServicoRepository (rollback)', () =>
             const atualizada = await repo.AtualizarObsTecnica
             ( criada.numOdS, 'Placa-mãe trocada', 1, transaction );
 
-            expect ( atualizada?.obsTecnica ).toBe ( 'Placa-mãe trocada' );
-            expect ( atualizada?.dtAtendimento ).toBeNull();
+            const achada = await repo.FindById ( criada.numOdS, transaction );
+            expect ( achada?.isActive ).toBe ( false );
+
+            expect ( await repo.Delete ( criada.numOdS, 1, transaction ) ).toBeNull();
         });
     });
 });

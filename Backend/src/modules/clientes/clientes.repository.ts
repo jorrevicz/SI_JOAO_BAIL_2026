@@ -17,8 +17,7 @@ export class ClientesRepository
         return client < Clientes[] >`
             SELECT *
             FROM "Clientes"
-            WHERE "isActive" = true
-            AND "codCliente" > ${ afterId }
+            WHERE "codCliente" > ${ afterId }
             ORDER BY "codCliente"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class ClientesRepository
             SELECT *
             FROM "Clientes"
             WHERE "codCliente" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

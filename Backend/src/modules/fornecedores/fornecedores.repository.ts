@@ -17,8 +17,7 @@ export class FornecedoresRepository
         return client < Fornecedores[] >`
             SELECT *
             FROM "Fornecedores"
-            WHERE "isActive" = true
-            AND "codForn" > ${ afterId }
+            WHERE "codForn" > ${ afterId }
             ORDER BY "codForn"
             LIMIT ${ limit }
         `;
@@ -36,7 +35,6 @@ export class FornecedoresRepository
             SELECT *
             FROM "Fornecedores"
             WHERE "codForn" = ${ id }
-            AND "isActive" = true
         `;
 
         return row ?? null;

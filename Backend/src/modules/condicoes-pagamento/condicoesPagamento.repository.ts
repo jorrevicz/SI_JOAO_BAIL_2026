@@ -17,8 +17,7 @@ export class CondicoesPagamentoRepository
         return client < CondicaoDePagamento[] >`
             SELECT *
             FROM   "CondicaoDePagamento"
-            WHERE  "isActive"      = true
-            AND    "codCondDePag"  > ${ afterId }
+            WHERE  "codCondDePag"  > ${ afterId }
             ORDER BY "codCondDePag"
             LIMIT  ${ limit }
         `;
@@ -35,7 +34,6 @@ export class CondicoesPagamentoRepository
             SELECT *
             FROM   "CondicaoDePagamento"
             WHERE  "codCondDePag" = ${ id }
-            AND    "isActive"     = true
         `;
 
         return row ?? null;

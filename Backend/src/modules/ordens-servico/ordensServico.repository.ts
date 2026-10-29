@@ -34,8 +34,7 @@ export class OrdensServicoRepository
         return client < OrdemDeServicos[] >`
             SELECT *
             FROM "OrdemDeServicos"
-            WHERE "isActive" = true
-            ${ afterId ? client`AND "numOdS" > ${ afterId }` : client`` }
+            WHERE "numOdS" > ${ afterId }
             ${ codCliente ? client`AND "codCliente" = ${ codCliente }` : client`` }
             ORDER BY "numOdS"
             LIMIT ${ limit }
@@ -54,7 +53,6 @@ export class OrdensServicoRepository
             SELECT *
             FROM "OrdemDeServicos"
             WHERE "numOdS" = ${ numOdS }
-            AND "isActive" = true
         `;
 
         return row ?? null;

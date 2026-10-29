@@ -72,7 +72,7 @@ describe ( 'FormasPagamentoRepository (rollback)', () =>
             await repoFormas.Delete ( nova.codFormaDePag, 1, transaction );
 
             const achada = await repoFormas.FindById ( nova.codFormaDePag, transaction );
-            expect ( achada ).toBeNull();
+            expect ( achada?.isActive ).toBe ( false );
 
             const [ linhaCrua ] = await transaction < { isActive: boolean }[] >`
                 SELECT "isActive" FROM "FormaDePagamento" WHERE "codFormaDePag" = ${ nova.codFormaDePag }
