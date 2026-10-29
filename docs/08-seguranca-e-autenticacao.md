@@ -19,7 +19,7 @@ e o módulo de usuários ([Users](05-modelo-de-dominio.md#users)).
 ## Reautenticação para cancelamento (RN003)
 
 Além da sessão ativa exigida por RN001, toda operação de **cancelamento** —
-`cancelarCompra()`, `cancelarContaPagar()`, `cancelarContaReceber()`,
+`cancelarCompra()` (que também exclui as contas a pagar da compra), `cancelarContaReceber()`,
 `cancelarNotaFiscal()` e o cancelamento de parcela — exige que o usuário
 **reautentique** (informe a senha novamente) imediatamente antes de confirmar a
 ação, mesmo com sessão ativa. O objetivo é um segundo fator de confirmação para uma

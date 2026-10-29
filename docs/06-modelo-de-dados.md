@@ -46,6 +46,16 @@ conforme DER) e ao requisito de **formas normais**.
 - **Datas de NF-e como `DateTime`:** `dhEmiNfe` e `dhSaiNfe` armazenam data e hora
   em campo único (tipo `DateTime`), substituindo os campos separados `dtEmissaoNfe`,
   `hrEmissaoNfe`, `dtSaidaNfe`, `hrSaidaNfe` que existiam no diagrama original.
+- **NF-e normalizada (migration `nfe-entrada-da-compra`):** o cabeçalho da nota perdeu os
+  campos de item (`codProduto`, `cfopNfe`, `qtdProdNfe`, alíquotas e valores de ICMS/IPI —
+  já vivem em `ProdutoNfe`), o `codVeiculo` (vive em `VeiculoNfe`), a transportadora e os
+  documentos do emitente (vêm da compra e do fornecedor) e `modelo`/`numSerie` (substituídos
+  pela chave da compra). Os valores calculados de `ProdutoNfe` (`prodBcIcms`,
+  `prodVlrIcmsNfe`, `prodVlrIpiNfe`) também saíram — mesma decisão de Compras.
+- **NF-e com a chave da compra (migration `nfe-chave-da-compra`):** o código gerado
+  `codNfe` foi removido; a PK de `NotasFiscaisEletronicas` é a chave natural da compra
+  (`modelo`, `numero`, `serie`, `codFornecedor`), e `ProdutoNfe`/`VeiculoNfe` passaram a
+  referenciá-la por FK composta — mesmo padrão de `CompraProduto`/`CompraParcelas`.
 - **Toda coluna de data/hora é `TimestampTz` (UTC), nunca `Timestamp` sem fuso:** um
   valor "sem fuso" depende implicitamente do `TimeZone` da sessão do Postgres para ser
   reinterpretado corretamente — frágil a um dump/restore ou a uma sessão com fuso
@@ -71,14 +81,14 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 ### Parceiros
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Fornecedores` | `codForn` | `codCidade` → `Cidades` | `nomeFantasia`, `enderecoForn`, `bairroForn`, `cepForn` (8 díg.), `foneForn`, `cpfCnpjForn` (14 díg.), `inscEstSubTrib`, `tipoPessoa`, `apelido`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
-| `Clientes` | `codCliente` | `codCidade` → `Cidades`, `codCondDePag` → `CondicaoDePagamento` | `enderecoCl`, `bairroCl`, `cepCl` (8 díg.), `foneCl`, `cpfCnpjCl` (11/14 díg.), `inscEstCl`, `tipoPessoa`, `apelido`, `nomeFantasia`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
-| `Transportadoras` | `codTransp` | `codCidade` → `Cidades`, `codVeiculo` → `Veiculos` | `nomeFantasia`, `tipoPessoa`, `enderecoTransp`, `bairroTransp`, `cepTransp` (8 díg.), `foneTransp`, `cpfCnpjTransp`, `inscEstTransp`, `apelido`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
+| `Fornecedores` | `codForn` | `codCidade` → `Cidades` | `nomeFantasia`, `enderecoForn`, `numeroForn` (Int, opcional, > 0), `bairroForn`, `cepForn` (8 díg.), `foneForn`, `cpfCnpjForn` (14 díg.), `inscEstSubTrib`, `tipoPessoa`, `apelido`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
+| `Clientes` | `codCliente` | `codCidade` → `Cidades`, `codCondDePag` → `CondicaoDePagamento` | `enderecoCl`, `numeroCl` (Int, opcional, > 0), `bairroCl`, `cepCl` (8 díg.), `foneCl`, `cpfCnpjCl` (11/14 díg.), `inscEstCl`, `tipoPessoa`, `apelido`, `nomeFantasia`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
+| `Transportadoras` | `codTransp` | `codCidade` → `Cidades`, `codVeiculo` → `Veiculos` | `nomeFantasia`, `tipoPessoa`, `enderecoTransp`, `numeroTransp` (Int, opcional, > 0), `bairroTransp`, `cepTransp` (8 díg.), `foneTransp`, `cpfCnpjTransp`, `inscEstTransp` (opcional), `apelido`, `rg`, `dtNascimento`, `dtFundacao`, `genero` (enum `Genero`), `foneFixo`, `email` |
 
 ### Produtos e Catálogo
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `Produtos` | `codProd` | — (a categoria é N:N, via `ProdutoCategoria`) | `estoque` INTEGER (def. 0) — é o saldo do produto (a antiga `saldoProd` foi removida por duplicá-lo); `custoProd` Decimal(10,2) (custo inicial / da última compra); `custoMedioProd` Decimal(10,2) (def. 0, só calculado pelas compras lançadas); `precoVenda` Decimal(10,2) obrigatório |
+| `Produtos` | `codProd` | — (a categoria é N:N, via `ProdutoCategoria`) | `estoque` INTEGER (def. 0) — é o saldo do produto (a antiga `saldoProd` foi removida por duplicá-lo); `custoProd` Decimal(16,6) (custo inicial / da última compra); `custoMedioProd` Decimal(16,6) (def. 0, só calculado pelas compras lançadas); `precoVenda` Decimal(10,2) obrigatório |
 | `Categorias` | `codCategoria` | — | `categoria` VarChar(40) |
 | `ProdutoCategoria` | (`codProduto`, `codCategoria`) | → `Produtos`, → `Categorias` | associativa N:N — FK puras, sem auditoria nem `isActive`; remoção é exclusão física. Índice `ProdutoCategoria_codCategoria_idx` cobre o caminho categoria → produtos |
 | `ProdutoFornecedor` | (`codProd`, `codForn`) | → `Produtos`, → `Fornecedores` | associativa N:N — FK puras |
@@ -87,7 +97,7 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
 | `Veiculos` | `codVeiculo` | `codEstado` → `Estados` | `modeloVeiculo`, `marca`, `placaVeiculo` VarChar(7), `placaMercoSul`, `codAntt` |
-| `VeiculoNfe` | (`codNfe`, `codVeiculo`) | → `NotasFiscaisEletronicas`, → `Veiculos`, → `Fornecedores` | associativa N:N — `modelo`/`numSerie` removidos (redundantes com NF-e) |
+| `VeiculoNfe` | (`modelo`, `numero`, `serie`, `codFornecedor`, `codVeiculo`) | → `NotasFiscaisEletronicas` (composta de 4 colunas), → `Veiculos` | associativa N:N — herda a chave composta da NF-e (`codForn` virou `codFornecedor`, parte da FK) |
 
 ### Financeiro
 | Tabela | PK | FKs | Campos notáveis |
@@ -95,17 +105,17 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 | `CondicaoDePagamento` | `codCondDePag` | — | `descricao` VarChar(60), `juroCondPag`, `multaCondPag`, `descontoCondPag` |
 | `FormaDePagamento` | `codFormaDePag` | — | `formaDePag` VarChar(50), `prazoCompensacao` |
 | `Parcelas` | (`codCondDePag`, `numParcela`) | `codCondDePag` → `CondicaoDePagamento`, `codFormaDePag` → `FormaDePagamento` | `numParcela` Int **informado manualmente, sem identity** (por condição, único), `percentual` Decimal(5,2), `numDias` |
-| `ContasAPagar` | (`numero`, `modelo`, `serie`, `codFornecedor`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(9), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`/`dtVencimento` `TimestampTz(3)` obrigatórias (`dtVencimento` ≥ `dtEmissao`), `valor`, `juro`, `desconto`, `multa`, `valorBaixa`/`dtBaixa` obrigatórias (a conta nasce baixada), `justificativaCancelamento` VarChar(255) |
-| `ContasAReceber` | (`numero`, `modelo`, `serie`, `codCliente`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(9), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtEmissao`/`dtVencimento` `TimestampTz(3)` obrigatórias (`dtVencimento` ≥ `dtEmissao`), `valor`, `juro`, `desconto`, `multa`, `valorBaixa`/`dtBaixa`/`dtPagamento` obrigatórias (a conta nasce baixada), `justificativaCancelamento` VarChar(255) |
+| `ContasAPagar` | (`numero`, `modelo`, `serie`, `codFornecedor`, `parcela`) | `codFornecedor` → `Fornecedores`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(9), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtVencimento` `TimestampTz(3)` obrigatória (sem `dtEmissao`: a `dtBaixa` ocupa o lugar), `valor`, `juro`, `desconto`, `multa`, `valorBaixa`/`dtBaixa` obrigatórias (a conta nasce baixada), `justificativaCancelamento` VarChar(255) |
+| `ContasAReceber` | (`numero`, `modelo`, `serie`, `codCliente`, `parcela`) | `codCliente` → `Clientes`, `codFormaDePag` → `FormaDePagamento` | `numero` VarChar(9), `modelo` VarChar(2), `serie` VarChar(2), `parcela` Int, `dtVencimento` `TimestampTz(3)` obrigatória (sem `dtEmissao`: a `dtBaixa` ocupa o lugar), `valor`, `juro`, `desconto`, `multa`, `valorBaixa`/`dtBaixa` obrigatórias (a conta nasce baixada), `justificativaCancelamento` VarChar(255) |
 
 ### Atendimento (Ordem de Serviço)
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
 | `Aparelhos` | `codAparelho` | — | `aparelho`/`serie` opcionais, `modelo`/`voltagem`/`garantia` obrigatórios — unidade física do cliente, nasce com a OS |
-| `Equipamentos` | `codEquipamento` | — | `equipamento`, `grupoUser` (opcional), `soEq`, `socketEq`, `memoriaRam`, `tipoOffice`, `placaMae`, `bios`, `capacidadeRam`, `possuiSSD`, `possuiHD`, `capacidadeArmz`, `usoArmz` — ficha técnica da máquina daquela OS |
+| `Equipamentos` | `codEquipamento` | — | `equipamento`, `grupoUser` (opcional), `soEq`, `socketEq`, `memoriaRam`, `tipoOffice`, `placaMae`, `bios`, `capacidadeRam`, `possuiSSD`, `possuiHD`, `capacidadeArmz`, `usoArmz` — ficha técnica da máquina daquela OS; opcional, criada no diagnóstico (não na abertura) |
 | `Procedimentos` | `codProcedimento` | — | `procedimento` VarChar(150) — catálogo de checagens padrão |
-| `ProcedimentosOdS` | (`numOdS`, `codProcedimento`) | → `OrdemDeServicos`, → `Procedimentos` | associativa N:N — `posicao` VarChar(8), `checagem` VarChar(8), `obsProcedimento` VarChar(244) opcional, `dthFim` — checklist respondido por OS |
-| `OrdemDeServicos` | `numOdS` INTEGER (`GENERATED BY DEFAULT AS IDENTITY`) | `codCliente` → `Clientes`, `codAparelho` → `Aparelhos`, `codEquipamento` → `Equipamentos` | `atendente`, `solicitante`, `defeito` obrigatórios; `dtAtendimento`, `obsTecnica`, `historicoManutencao`, `entreguePara`, `dtExecucao`, `acessorio`, `obsBalcao` opcionais; `tipoOdS` (classificação livre, ex.: "Garantia"); `situacao` VarChar(24) (máquina de estados — Lote OS-B, `DEFAULT 'Aberta'`, domínio fechado só em Zod, sem tabela de apoio) |
+| `ProcedimentosOdS` | (`numOdS`, `codProcedimento`) | → `OrdemDeServicos`, → `Procedimentos` | associativa N:N — `posicao` VarChar(8) opcional, `checagem` VarChar(8), `obsProcedimento` VarChar(244) opcional, `dthFim` — checklist respondido por OS |
+| `OrdemDeServicos` | `numOdS` INTEGER (`GENERATED BY DEFAULT AS IDENTITY`) | `codCliente` → `Clientes`, `codAparelho` → `Aparelhos`, `codEquipamento` → `Equipamentos` (anulável — preenchida no diagnóstico) | `atendente`, `solicitante`, `defeito` obrigatórios; `dtAtendimento`, `obsTecnica`, `historicoManutencao`, `entreguePara`, `dtExecucao`, `acessorio`, `obsBalcao` opcionais; `tipoOdS` (classificação livre, ex.: "Garantia"); `situacao` VarChar(24) (máquina de estados — Lote OS-B, `DEFAULT 'Aberta'`, domínio fechado só em Zod, sem tabela de apoio) |
 | `Cargos` | `codCargo` | — | `cargo` VarChar(15) — Lote OS-B |
 | `Funcionarios` | `codFuncionario` | `codCidade` → `Cidades`, `codCargo` → `Cargos` | `funcionario`, `funcFone` — Lote OS-B |
 | `Servicos` | `codServico` | `codFuncionario` → `Funcionarios` | `servico`, `valor` — catálogo de serviços, Lote OS-B |
@@ -124,8 +134,8 @@ Legenda: **PK** chave primária · **FK** chave estrangeira.
 ### Fiscal
 | Tabela | PK | FKs | Campos notáveis |
 |--------|----|-----|-----------------|
-| `NotasFiscaisEletronicas` | `codNfe` | `codFornecedor` → `Fornecedores`, `codTransportadora` → `Transportadoras`, `codProduto` → `Produtos` | `chaveAcessoNfe` Char(44) unique, `fretePorConta` VarChar(20), `dhEmiNfe`/`dhSaiNfe` DateTime, campos tributários |
-| `ProdutoNfe` | (`codNfe`, `codProduto`) | → `NotasFiscaisEletronicas`, → `Produtos` | itens da nota — ICMS/IPI por produto |
+| `NotasFiscaisEletronicas` | (`modelo`, `numero`, `serie`, `codFornecedor`) | a própria PK → `Compras` (composta), `codFornecedor` → `Fornecedores` | NF-e de entrada gerada da compra (Lote C-5), com **as mesmas chaves da compra** — no máximo uma NF-e por compra, inclusive depois de cancelada (RN003). `chaveAcessoNfe` Char(44) unique. Obrigatórios: `chaveAcessoNfe`, `dhEmiNfe`, `fretePorConta` VarChar(20); opcionais: `dhSaiNfe`, `infoCompl`, `dtReciboNfe`, `dtAcessoProduto`; `justificativaCancelamento` VarChar(255). Transportadora, CPF/CNPJ e IE do emitente vêm da compra/fornecedor (sem colunas próprias — 3FN) |
+| `ProdutoNfe` | (`modelo`, `numero`, `serie`, `codFornecedor`, `codProduto`) | → `NotasFiscaisEletronicas` (composta de 4 colunas), → `Produtos` | itens da nota, todos obrigatórios: `prodCfopNfe` VarChar(4), `prodCsosnNfe`, `prodQtdNfe`/`prodVlrUnNfe`/`prodVlrDescNfe` (copiados da compra), `prodAliqIcmsNfe`/`prodAliqIpiNfe`. Base e valores de ICMS/IPI **não** são colunas — calculados pelo Backend a cada leitura |
 
 ### Acesso
 | Tabela | PK | FKs | Campos notáveis |

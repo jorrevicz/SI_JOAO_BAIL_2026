@@ -9,8 +9,9 @@ Passo-a-passo de desenvolvimento do sistema, organizado em **épicos** (`EP-NN`)
 - Execute os épicos **em ordem**: EP-00 → EP-03, depois **EP-13** (transição da camada de
   dados), e então EP-04 → EP-09. EP-12 é contínuo/transversal; EP-10/EP-11 conforme suas notas.
   **Concluídos até aqui:** EP-00→EP-07, EP-11 e EP-13 (cadastros, financeiro e Contas
-  a Pagar/Receber com telas). **Foco atual:** EP-08 (Compras — Fase 4; T-079
-  a T-082 concluídas, próximo: EP-09 / T-083).
+  a Pagar/Receber com telas). **Fase 4 (Compras) e Lote C-5:** T-079 a T-083 e T-090
+  a T-092 concluídas (NF-e de entrada da compra); T-093/T-094 pendentes. Próximo: retomar
+  a Fase OS (a confirmar com o responsável).
 - Dentro de um CRUD, siga sempre **consultas (Read) primeiro**, depois Create/Update/Delete.
 - Marque `[x]` ao concluir. Uma task só está "pronta" quando seus **critérios de aceite**
   passam (inclui testes Vitest quando aplicável).
@@ -364,7 +365,10 @@ soft-delete, auditoria e paginação por cursor.
       estorna estoque e custo médio (409 se o estoque atual for
       menor que a quantidade comprada); RN002; fluxo consulta → justificativa → popup de
       reautenticação **só no Frontend** até o EP-10 (RN014). **Dep:** T-081b
-- [ ] **T-083 — `gerarNotaFiscal` (gatilho)** — disponível só **após validação completa** da compra (RN002); compra com NF gerada expõe só consultar/solicitar (RN003).
+- [x] **T-083 — `gerarNotaFiscal` (gatilho)** — disponível só **após validação completa** da compra (RN002); compra com NF gerada expõe só consultar/solicitar (RN003).
+  - **Feito (Lote C-5):** a listagem de Compras mostra **Gerar NF-e** para compra não
+    cancelada sem nota e **Consultar NF-e** quando já há nota (`situacaoNotaFiscal` na API
+    da compra); compra com nota ativa não é cancelável (409) até a nota ser cancelada.
   - **Aceite:** opção de gerar NF aparece/oculta conforme estado da compra. **Dep:** T-081, EP-09
 
 ---
@@ -373,18 +377,30 @@ soft-delete, auditoria e paginação por cursor.
 **Fase:** 4 · **Docs:** [Casos de Uso](07-casos-de-uso.md#gerenciar-nota-fiscal), [Domínio](05-modelo-de-dominio.md#7-fiscal-nf-e), [Glossário](10-glossario.md)
 **Objetivo:** gerenciar NF-e e seus itens (`ProdutoNfe`), vínculo de veículo (`VeiculoNfe`). RNF10.
 
-- [ ] **T-090 — NF-e: consultas** — `GET /api/notas-fiscais[/:id]` com itens e dados de transporte; testes. **Dep:** EP-08
-- [ ] **T-091 — NF-e: criar/editar com itens (transacional)** — `adicionarNotaFiscal` + `ProdutoNfe` (ICMS/IPI por item); cálculo de totais. **Dep:** T-090, T-032
-- [ ] **T-092 — NF-e: cancelar** — `cancelarNotaFiscal` com RN002. **Dep:** T-091
+- [x] **T-090 — NF-e: consultas** — `GET /api/notas-fiscais[/:id]` com itens e dados de transporte; testes. **Dep:** EP-08
+  - **Feito:** a nota é identificada pelas chaves da compra —
+    `GET /api/notas-fiscais/:numero/:modelo/:serie/:codFornecedor` — e há
+    `POST /api/notas-fiscais/calculo` (prévia dos impostos).
+- [x] **T-091 — NF-e: criar com itens (transacional)** — `adicionarNotaFiscal` + `ProdutoNfe` (ICMS/IPI por item); cálculo de totais. **Dep:** T-090, T-032
+  - **Feito:** `POST /api/notas-fiscais` gera a nota **a partir da compra** (itens copiados,
+    tributação informada); base/ICMS/IPI/totais em `notasFiscais.calculo.ts`, nunca
+    persistidos. Migrations `nfe-entrada-da-compra` (normalização) e `nfe-chave-da-compra`
+    (PK = chaves da compra; `codNfe` removido). **Edição fica para
+    a T-093** (a nota de entrada não é editada neste escopo).
+- [x] **T-092 — NF-e: cancelar** — `cancelarNotaFiscal` com RN002. **Dep:** T-091
+  - **Feito:** `PATCH /api/notas-fiscais/:numero/:modelo/:serie/:codFornecedor/cancelar` (justificativa, `isActive = false`;
+    409 se já cancelada); popup de senha só no Frontend até o EP-10.
 - [ ] **T-093 — Fluxos por ator** — `solicitarNotaFiscal`, `confirmarEntregaProduto`, `vincularVeiculoNfe` (Fornecedor/Cliente/Transportadora). **Dep:** T-091
 - [ ] **T-094 — Emissão (RNF10)** — interface de emissão; integração real com SEFAZ marcada como fora do MVP ([Visão Geral](01-visao-geral.md#fora-de-escopo-por-enquanto)). **Dep:** T-091
 
 ### Frontend
 
-- [ ] **T-115B — Telas de compras e NF-e** — ✓ parte de compras concluída (Lote C-4):
+- [x] **T-115B — Telas de compras e NF-e** — ✓ parte de compras concluída (Lote C-4):
       registrar (botão Lançar compra no lugar do salvar), consultar e cancelar compras, com prévia dos totais
-      calculada pelo Backend (`POST /api/compras/calculo`). Falta: consultar e gerenciar
-      notas fiscais (após T-094). **Dep:** T-082 (parte compras), T-094 (parte NF-e), EP-11 (T-112)
+      calculada pelo Backend (`POST /api/compras/calculo`). ✓ NF-e (Lote C-5): página
+      **Notas Fiscais** (consultar/cancelar) e `NotaFiscalForm` (gerar a partir da compra,
+      com prévia dos impostos pelo Backend). Telas de T-093/T-094 entram com essas tasks.
+      **Dep:** T-082 (parte compras), T-091/T-092 (parte NF-e), EP-11 (T-112)
 
 ---
 

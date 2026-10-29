@@ -107,8 +107,9 @@ compra e financeiro. Web API REST + SPA.
 > (`ajustar-procedimentos-checklist-ods`) que move `posicao`/`checagem`/`obsProcedimento`/
 > `dthFim` de `Procedimentos` para a nova associativa `ProcedimentosOdS` — um único
 > `codProcedimento` no cabeçalho da OS não comporta a checklist de múltiplas checagens por
-> atendimento. `abrirOS()` cria a OS e, na mesma transação (RNF06), os registros de
-> `Aparelhos`/`Equipamentos` daquela unidade; `registrarDiagnosticoOS()` é operação
+> atendimento. `abrirOS()` cria a OS e, na mesma transação (RNF06), o registro de
+> `Aparelhos` daquela unidade (a ficha de `Equipamentos` passou a ser registrada no
+> diagnóstico — ver nota "Equipamento no diagnóstico" mais abaixo); `registrarDiagnosticoOS()` é operação
 > dedicada que reconcilia a checklist por diferença de conjuntos (mesmo padrão de Condição
 > de Pagamento × Parcelas). `Cargos`/`Funcionarios`/`Servicos`/`Pecas`/`ServicosOdS`/
 > `OrcamentoPecasOdS`/`SubstituirPecasOdS` já existem no banco (mesma migration original)
@@ -116,7 +117,7 @@ compra e financeiro. Web API REST + SPA.
 >
 > **Frontend do Lote OS-A concluído:** telas de `Procedimentos` (cadastro simples) e
 > `Ordens de Serviço` (listagem com filtro por cliente, formulário de abertura com
-> Aparelho/Equipamento embutidos, modal de diagnóstico dedicado com checklist de
+> Aparelho embutido — o Equipamento passou ao diagnóstico —, modal de diagnóstico dedicado com checklist de
 > `ProcedimentosOdS` embutido e reconciliado) — mesmos padrões de UI já estabelecidos
 > (`FormModal`/`FormSecao`/`FormCampo`, picker `Consulta` reaproveitado de `ClienteConsulta`,
 > reconciliação embutida de `CondicaoPagamentoForm`/`ParcelaForm`).
@@ -143,7 +144,7 @@ compra e financeiro. Web API REST + SPA.
 > `OrcamentoPecasOdS`; `registrarExecucaoOS()` reconcilia `ServicosOdS` e atualiza
 > `obsTecnica` (schema/service/repository e os 4 arquivos de teste do módulo
 > `ordens-servico` foram ajustados). **`DiagnosticoModal`** exibe, nessa ordem,
-> checklist de procedimentos → histórico de manutenção → orçamento de peças;
+> checklist de procedimentos → histórico de manutenção → equipamento → orçamento de peças;
 > **`ExecucaoModal`** exibe serviços efetuados → peças substituídas (agora com tela
 > própria, ligada a `registrarSubstituicaoPecasOS()`, que já existia só no backend) →
 > observações técnicas. O registro de serviço efetuado ganhou consulta de técnico
@@ -153,6 +154,19 @@ compra e financeiro. Web API REST + SPA.
 > `ProcedimentoOdSForm`/`ClienteConsulta`; o técnico não é persistido em `ServicosOdS`
 > (a tabela não tem essa coluna — ver [docs/05 §8](docs/05-modelo-de-dominio.md#servicosods-associativa-os--servico)),
 > é só conferência no ato do lançamento.
+>
+> **Equipamento no diagnóstico:** a ficha técnica da máquina (`Equipamentos`: SO, socket,
+> RAM, placa-mãe, BIOS, armazenamento…) deixou de ser preenchida na abertura e passou a
+> ser levantada pelo técnico na **fase de diagnóstico**. Migration
+> `equipamento-no-diagnostico` torna `OrdemDeServicos.codEquipamento` anulável;
+> `abrirOS()` cria só OS + `Aparelhos` e o `abrirOrdemServicoSchema` não recebe mais
+> `equipamento`. `registrarDiagnosticoOS()` aceita `equipamento` **opcional**: ausente, a
+> OS segue sem ficha; presente, valida todos os campos (Zod) e, na mesma transação, cria
+> a ficha e a vincula (`VincularEquipamento`) na primeira vez ou a atualiza
+> (`EquipamentosRepository.Update`) nas seguintes. `FindOrdemServico` devolve
+> `equipamento: null` enquanto não houver ficha. Frontend: o bloco foi removido do
+> `OrdemServicoForm` e entrou no `DiagnosticoModal` (a mensagem de erro do Zod chega
+> pelo campo `equipamento`, já que o `validate` usa só o primeiro segmento do caminho).
 >
 > **Ainda fora deste lote:** telas de cadastro (CRUD completo) de `Cargos`,
 > `Funcionarios`, `Servicos` e `Pecas` — só existem no backend; o frontend só tem o
@@ -251,8 +265,8 @@ compra e financeiro. Web API REST + SPA.
 > Produtos continua contando qualquer `CompraProduto` (proteção com soft delete) e o
 > `precoVenda` segue o bloqueio da RN004 transversal. **C-4 (frontend):** página Compras,
 > `CompraForm` (modos novo/editar/consulta/excluir/cancelar, campos na ordem das RNs),
-> `CompraItemForm`, consultas de Produto/Transportadora sobre o genérico
-> `components/consultaSelecao` e `components/confirmarSenha` (popup só visual até o EP-10).
+> `CompraItemForm`, consultas de Produto/Transportadora no padrão de `ClienteConsulta`
+> (com botão de cadastro embutido; o genérico `consultaSelecao` foi removido) e `components/confirmarSenha` (popup só visual até o EP-10).
 >
 > **Compra sem estado "aberto" (lançamento direto):** a regra do rascunho (RN013/RN008) foi
 > removida — migration `compras-sem-estado-aberto` apaga rascunhos pré-existentes, **remove
@@ -271,6 +285,21 @@ compra e financeiro. Web API REST + SPA.
 > baixada; 409 se já cancelada). No Frontend, o botão **Lançar conta** substitui o "Salvar"
 > (valor da baixa em branco = `vlrTotal`), a listagem só tem Consultar/Cancelar e os modais
 > `RegistrarBaixaModal`/`RegistrarPagamentoModal` foram excluídos.
+>
+> **Cancelamento desativa o registro:** `Cancelar` de Compras, Contas a Pagar e Contas a
+> Receber grava `isActive = false` (além da justificativa) e essas consultas **não filtram
+> `isActive`**, então a cancelada continua visível (listagem com Status Inativo e botão
+> Consultar; o botão Cancelar some). Cancelar uma já cancelada → 409.
+>
+> **Conta a pagar só é excluída pela compra cancelada:** `PATCH /api/contas-pagamento/.../cancelar`
+> (controller, `CancelarConta` do service e `cancelarContaPagarSchema`) foi removido, e a
+> página de Contas a Pagar perdeu o botão/modo **Cancelar** (listagem só com Consultar).
+> `ComprasService.CancelarCompra`, depois de desativar a compra e na mesma transação, chama
+> `ContasPagamentoService.CancelarContasDaCompra`, que **valida que a compra relacionada
+> está desativada** (`isActive = false`, 409 se ativa), lista as contas ativas do documento
+> (`ListAtivasPorDocumento`, `FOR UPDATE`) e cancela cada uma com `Cancelar` pela **chave
+> primária completa** (`numero`, `modelo`, `serie`, `codFornecedor`, `parcela`) — SQL de
+> exclusão de conta a pagar/NF-e nunca filtra por parte da chave. Contas a Receber não mudou.
 >
 > **Parcelas com número manual (chave composta):** `Parcelas.codParcela` (identity) virou
 > `numParcela`, informado **manualmente** por condição, sem geração automática; a PK passou a ser
@@ -295,9 +324,14 @@ compra e financeiro. Web API REST + SPA.
 > ajustar valor/vencimento/forma e adicionar/remover linhas só na compra; `POST`/`PUT` exigem
 > ≥ 1 parcela, vencimentos crescentes e posteriores à emissão (Zod) e soma = `vlrTotal`
 > (service, 400). Detalhe/`PUT` da compra devolvem `parcelas`. Lançar continua **não** gerando
-> Contas a Pagar. Observação: `CalcularCompra` hoje não soma frete/seguro/despesas ao `vlrTotal`
-> nem as rateia (decisão em andamento, coberta pelos testes atuais); as parcelas fecham no
-> `vlrTotal` que o Backend calcula.
+> Contas a Pagar. Regra de cálculo definida (docs/05, RN011/RN012 em docs/07, docs/09):
+> líquido = (valor unitário − desconto) × quantidade; total dos produtos = Σ líquidos;
+> `vlrTotal` = total dos produtos + frete + seguro + despesas; rateio do item = (líquido ÷
+> total dos produtos) × (frete + seguro + despesas); custo unitário = (líquido + rateio) ÷
+> quantidade; custo médio = (saldo × custo + qtd × custo unit.) ÷ (saldo + qtd). A
+> regra está implementada em `CalcularCompra` (rateio e percentual repartidos pelo método dos
+> maiores restos; custo unitário com 6 casas); as parcelas fecham no `vlrTotal` que o Backend
+> calcula.
 >
 > **Valores calculados não são persistidos (3FN):** migration `remover-campos-calculados-compras`
 > removeu `Compras.vlrTotal` e `CompraProduto.percentualRateio`/`valorRateio`/`custoMedioProduto`.
@@ -306,9 +340,35 @@ compra e financeiro. Web API REST + SPA.
 > contas foram mantidos por decisão do responsável (estado de movimentação / valor pago real).
 > Migration `remover-classificacoes-compra` também eliminou a tabela `ClassificacoesCompra`.
 >
-> **Próximo passo: Lote C-5 — NF-e (EP-09) e `gerarNotaFiscal` da compra.** Só então a
-> Fase OS é retomada (telas de Cargos/Funcionarios/Servicos/Pecas e UI de aprovação de
-> orçamento de peças).
+> **Lote C-5 — NF-e de entrada da compra concluído (T-083, T-090–T-092):** a NF-e tem
+> **as mesmas chaves da compra como chave primária** — (`modelo`, `numero`, `serie`,
+> `codFornecedor`), que é também FK composta para `Compras` (migrations
+> `nfe-entrada-da-compra` e `nfe-chave-da-compra`; o `codNfe` gerado foi removido).
+> `ProdutoNfe` (+ `codProduto`) e `VeiculoNfe` (+ `codVeiculo`; `codForn` virou
+> `codFornecedor`) herdam a chave composta. Consequência: **no máximo uma NF-e por compra,
+> inclusive cancelada** — depois de cancelada a nota não se gera outra (409); a compra pode
+> então ser cancelada. Tabelas normalizadas: o cabeçalho não tem campos de item, veículo,
+> transportadora nem documentos do emitente (vêm da compra/fornecedor), e `ProdutoNfe` não
+> guarda valores calculados. Módulo `notas-fiscais` (`GET` lista com cursor sobre a chave,
+> `GET /:numero/:modelo/:serie/:codFornecedor`, `POST /calculo`, `POST` gera,
+> `PATCH .../cancelar`): itens = os da compra (quantidade/valor/desconto copiados) com CFOP
+> de entrada, CSOSN e alíquotas informados; chave de acesso com DV módulo 11 e
+> modelo/série/número da compra. Impostos e totais calculados no Backend
+> (`notasFiscais.calculo.ts`). A compra expõe `situacaoNotaFiscal` (`'Gerada'`/
+> `'Cancelada'`/`null`) e **não pode ser cancelada** com nota gerada (409). Frontend:
+> **Gerar NF-e**/**Consultar NF-e** na listagem de Compras, página **Notas Fiscais** e
+> `NotaFiscalForm`. Corrigido no `errorHandler` o nome da constraint do postgres.js
+> (`constraint_name`). Pendentes do EP-09: fluxos por ator/vínculo de veículo (T-093) e
+> emissão SEFAZ (T-094).
+>
+> **Custos do produto com 6 casas decimais:** migration `custos-produto-6-casas` alargou
+> `Produtos.custoProd`/`custoMedioProd` de `DECIMAL(10,2)` para `DECIMAL(16,6)`. O custo unitário do
+> item da compra, a média ponderada e o estorno (`compras.calculo.ts`) são calculados em
+> BigInt (micro-reais) com um único arredondamento no resultado; o Frontend exibe até 6 casas
+> (mínimo 2) via `formatarCusto` e o campo "Custo inicial" aceita `step` de 0,000001.
+>
+> **Próximo passo:** retomar a Fase OS (telas de Cargos/Funcionarios/Servicos/Pecas e UI de
+> aprovação de orçamento de peças) — ou T-093/T-094, a confirmar.
 
 ## Fonte de verdade: leia `docs/` primeiro
 
@@ -416,6 +476,13 @@ vira um módulo no backend. Ver [docs/02-arquitetura.md](docs/02-arquitetura.md)
    integração (usam `supertest` contra a instância Express); testes de *repository* são de
    integração contra um banco de teste, cada um em transação revertida (rollback). Não
    avance para o próximo método/rota sem todos os testes anteriores passando.
+   Os testes são divididos em duas configs do Vitest: **unitários** (`vitest.config.unit.ts`:
+   services, cálculos e utilitários, sem banco) e **de integração** (`vitest.config.integration.ts`:
+   `*.repository.test.ts` e `*.routes.test.ts`). O banco de teste é **separado e descartável**
+   (`<banco>_test`, criado, migrado e descartado pelo `globalSetup` da config de integração —
+   `npm test` nunca toca o banco de dev); os arquivos de integração rodam **em série**
+   (`fileParallelism: false`) sobre ele — ver
+   [docs/02](docs/02-arquitetura.md#estratégia-de-testes-tdd).
 9. **Acesso a dados seguro (postgres.js)** — SQL escrito à mão na camada de repositório:
    valores **sempre** por *tagged template* (`sql\`... ${valor}\``), nunca concatenados
    (defesa SQLi/RNF05); identificadores dinâmicos só por whitelist com `sql(coluna)`;
@@ -477,13 +544,6 @@ frontend). Exemplos do padrão adotado:
 | `fmtData`    | `formatarData`       | função utilitária de formatação            |
 
 Exceções consagradas e já estabelecidas no código: `req`, `res`, `next` (Express), `sql`
-   Os testes são divididos em duas configs do Vitest: **unitários** (`vitest.config.unit.ts`:
-   services, cálculos e utilitários, sem banco) e **de integração** (`vitest.config.integration.ts`:
-   `*.repository.test.ts` e `*.routes.test.ts`). O banco de teste é **separado e descartável**
-   (`<banco>_test`, criado, migrado e descartado pelo `globalSetup` da config de integração —
-   `npm test` nunca toca o banco de dev); os arquivos de integração rodam **em série**
-   (`fileParallelism: false`) sobre ele — ver
-   [docs/02](docs/02-arquitetura.md#estratégia-de-testes-tdd).
 (cliente postgres.js), `id`, `repo`, `data` (camada de dados). Não invente novas abreviações
 fora dessas.
 

@@ -15,7 +15,7 @@ Aplicam-se a praticamente todos os casos de uso:
   (integridade referencial). Implementação em
   [Modelo de Dados](06-modelo-de-dados.md#integridade-referencial-e-exclusão).
 - **RN003 — Reautenticação para cancelamento:** toda operação de **cancelamento**
-  (`cancelarCompra()`, `cancelarContaPagar()`, `cancelarContaReceber()`,
+  (`cancelarCompra()` — que também exclui as contas a pagar da compra —, `cancelarContaReceber()`,
   `cancelarNotaFiscal()`, cancelamento de parcela) exige que o usuário **reautentique**
   (informe a senha novamente) imediatamente antes de confirmar a ação, mesmo com sessão
   ativa. Detalhamento em
@@ -42,7 +42,7 @@ Aplicam-se a praticamente todos os casos de uso:
   serviço **não possuem estado intermediário "pendente"** (meio-termo). Cada documento
   está sempre em um estado definido do seu ciclo — Compras: nascem `lançadas`
   e só podem ser canceladas (ver [Gerenciar Compras](#gerenciar-compras), RN013); Contas: nascem baixadas
-  e só podem ser canceladas (cancelamento derivado de `justificativaCancelamento`, sem coluna
+  e só podem ser canceladas — a pagar, só pelo cancelamento da compra (cancelamento derivado de `justificativaCancelamento`, sem coluna
   de status "pendente"); OS: máquina de estados própria (ver [Gerenciar Ordem de Serviço](#gerenciar-ordem-de-serviço)).
 - **RN006 — Datas no padrão `dd/mm/aa`:** toda data exibida na interface segue o padrão
   brasileiro `dd/mm/aa` ([RNF14](04-requisitos.md#requisitos-não-funcionais)).
@@ -167,43 +167,46 @@ Ativação comum: **clicar no item de menu** correspondente.
 
 ### Gerenciar Contas a Pagar
 - **Ator:** Usuário · **RF:** RF11
-- **RN003 (transversal):** `cancelarContaPagar()` exige reautenticação — ver
+- **RN003 (transversal):** a exclusão da conta a pagar acontece dentro de
+  `cancelarCompra()`, que exige reautenticação — ver
   [regras transversais](#regras-de-negócio-transversais).
 - **RN004 — Conta nasce já baixada (sem estado "em aberto"):** `valorBaixa` e `dtBaixa`
   são **obrigatórios no cadastro** — o botão do formulário passa a ser **Lançar conta** e
   grava a conta já baixada (valor em branco = `vlrTotal` calculado pelo Backend). Não há
-  edição, exclusão nem baixa posterior (`PUT`, `DELETE` e `PATCH .../baixa` removidos): a
-  conta só pode ser **cancelada** (`cancelarContaPagar()`, 409 se já cancelada), inclusive
-  depois de baixada.
-- **RN005 — Emissão e vencimento obrigatórios e consistentes:** `dtEmissao` e
-  `dtVencimento` são obrigatórios (não são mais opcionais), armazenados como
-  `TimestampTz(3)` (data **e hora**, com fuso explícito — não mais `Timestamp`
-  sem fuso) e `dtVencimento` precisa ser **estritamente posterior** a `dtEmissao` —
-  datas/horários iguais não são permitidos, mesmo no mesmo dia. Validado no Zod
-  (`superRefine` comparando as duas datas), o mesmo padrão de `validarParcelas` em
-  Condição de Pagamento — ver
-  [validação backend-driven](ref/validacao-frontend-backend-driven.md). O Frontend usa
-  `<input type="datetime-local">` para capturar data e hora (sempre em UTC — ver
-  princípio de datas em [docs/06](06-modelo-de-dados.md#princípios-de-modelagem)) e
-  pré-preenche, na criação, a emissão com a data/hora atual e o vencimento com o fim
-  do dia de hoje (23:59 UTC) — combinação que já nasce válida e o usuário ajusta se
-  precisar.
+  edição, exclusão nem baixa posterior (`PUT`, `DELETE` e `PATCH .../baixa` removidos).
+- **RN007 — Exclusão só a partir da compra cancelada:** a conta a pagar **não** pode ser
+  cancelada nem excluída pela própria tela/API de Contas a Pagar (`PATCH .../cancelar`
+  removido; a listagem só tem **Consultar**). Ela é excluída (soft delete:
+  `isActive = false` + justificativa da compra) **somente** pelo cancelamento da compra
+  do mesmo documento (`numero`, `modelo`, `serie`, fornecedor — ver
+  [Gerenciar Compras](#gerenciar-compras), RN014): na mesma transação, o service de
+  contas valida que a **compra relacionada está desativada** (409 se ainda ativa) e
+  cancela cada parcela pela **chave primária completa**. Conta a pagar sem compra
+  correspondente permanece ativa.
+- **RN005 — Data da baixa no lugar da emissão:** a conta **não tem `dtEmissao`** (migration
+  `remove-data-emissao-das-contas`): como nasce já baixada, `dtBaixa` ocupa esse papel.
+  `dtVencimento` e `dtBaixa` são obrigatórios, armazenados como `TimestampTz(3)` (data **e
+  hora**, com fuso explícito). Não há checagem cruzada entre as duas datas — pagar depois
+  do vencimento é legítimo (com juro e multa). O Frontend usa
+  `<input type="datetime-local">` (sempre em UTC — ver princípio de datas em
+  [docs/06](06-modelo-de-dados.md#princípios-de-modelagem)) e pré-preenche, na criação, o
+  vencimento com o fim do dia de hoje (23:59 UTC) e a baixa com a data/hora atual.
 - **RN006 — Ordenação da listagem:** a listagem é ordenada por **fornecedor**, depois
   por **número da nota** (`numero`) e, por fim, por **número da parcela** (`parcela`).
-- **Pós-condição:** cadastrar (já baixada), consultar e **cancelar** contas a pagar.
+- **Pós-condição:** cadastrar (já baixada) e consultar contas a pagar; a exclusão vem do
+  cancelamento da compra.
 
 ### Gerenciar Contas a Receber
 - **Ator:** Usuário · **RF:** RF12
 - **RN003 (transversal):** `cancelarContaReceber()` exige reautenticação — ver
   [regras transversais](#regras-de-negócio-transversais).
-- **RN004 — Conta nasce já baixada (sem estado "em aberto"):** `valorBaixa`, `dtBaixa` e
-  `dtPagamento` são **obrigatórios no cadastro** (botão **Lançar conta**); não há edição,
+- **RN004 — Conta nasce já baixada (sem estado "em aberto"):** `valorBaixa` e `dtBaixa`
+  são **obrigatórios no cadastro** (botão **Lançar conta**); não há edição,
   exclusão nem baixa posterior — mesma regra de
   [Contas a Pagar](#gerenciar-contas-a-pagar). Só o cancelamento
   (`cancelarContaReceber()`, 409 se já cancelada) é permitido.
-- **RN005 — Emissão e vencimento obrigatórios e consistentes:** mesma regra de Contas a
-  Pagar (`dtEmissao`/`dtVencimento` obrigatórios; `dtVencimento` estritamente posterior a
-  `dtEmissao`) — ver RN005 de [Gerenciar Contas a Pagar](#gerenciar-contas-a-pagar).
+- **RN005 — Data da baixa no lugar da emissão:** mesma regra de Contas a Pagar (sem
+  `dtEmissao`; `dtVencimento` e `dtBaixa` obrigatórios, sem checagem cruzada) — ver RN005 de [Gerenciar Contas a Pagar](#gerenciar-contas-a-pagar).
 - **RN006 — Ordenação da listagem:** a listagem é ordenada por **cliente**, depois por
   **número da nota** (`numero`) e, por fim, por **número da parcela** (`parcela`).
 - **Pós-condição:** cadastrar, consultar, editar, remover e **cancelar** contas a receber.
@@ -212,20 +215,23 @@ Ativação comum: **clicar no item de menu** correspondente.
 - **Atores:** Usuário, **Técnico**, **Cliente** (cada um em fluxo próprio) · **RF:** RF16
 - **Lote OS-A (abertura, consulta, diagnóstico):**
   - **RN001 — Abertura atômica:** `abrirOS()` cria o cabeçalho da OS e, na mesma
-    transação (RNF06), os registros de `Aparelhos` e `Equipamentos` daquela unidade —
-    os três nascem ou não nascem juntos.
+    transação (RNF06), o registro de `Aparelhos` daquela unidade — os dois nascem ou não
+    nascem juntos. A ficha de `Equipamentos` não é criada aqui: é levantada no
+    diagnóstico (ver RN003) e `OrdemDeServicos.codEquipamento` nasce nulo.
   - **RN002 — Chave gerada:** `numOdS` é um inteiro auto-incrementado pelo banco
     (`INTEGER GENERATED BY DEFAULT AS IDENTITY`) na abertura — o requisitante não informa nem valida
     formato de número de OS (diferente do padrão de chave natural informada de
     `Compras`/`ContasAPagar`/`ContasAReceber`).
   - **RN003 — Diagnóstico não é edição livre:** `registrarDiagnosticoOS()` é operação
     dedicada (não passa pelo `Update` genérico) — atualiza `historicoManutencao`,
-    preenche `dtAtendimento` (na primeira vez), preenche a checagem (`posicao`,
-    `checagem`, `obsProcedimento`, `dthFim` — informados pelo técnico) de itens **já
+    preenche `dtAtendimento` (na primeira vez), preenche a checagem (`posicao` —
+    opcional —, `checagem`, `obsProcedimento`, `dthFim` — informados pelo técnico) de itens **já
     existentes** na checklist de `ProcedimentosOdS` (ver RN009 — não adiciona, remove nem
     reordena) e reconcilia, por diferença de conjuntos, o orçamento de peças
     `OrcamentoPecasOdS` (chave `codPeca`) — o orçamento é cotado já na inspeção, junto do
-    diagnóstico; ao final recalcula `situacao` (`Aguardando aprovação` se houver peça
+    diagnóstico; registra a ficha técnica do `Equipamento` quando informada (opcional —
+    cria e vincula à OS na primeira vez, atualiza nas seguintes; sem ela a OS segue sem
+    Equipamento); ao final recalcula `situacao` (`Aguardando aprovação` se houver peça
     orçada ainda não decidida pelo cliente, `Em execução` caso contrário), mesmo padrão
     de Condição de Pagamento × Parcelas.
   - **RN009 — Estrutura da checklist é operação própria:** `definirProcedimentosOS()`
@@ -268,8 +274,15 @@ Ativação comum: **clicar no item de menu** correspondente.
 
 ### Gerenciar Compras
 - **Ator:** Usuário · **RF:** RF13
-- **RN002:** a geração de NF-e só aparece **após validação completa** da compra.
-- **RN003:** compra com nota fiscal já gerada mostra opção apenas para **consultar/solicitar**.
+- **RN002:** a geração de NF-e só aparece **após validação completa** da compra — como a
+  compra nasce lançada (RN013), a ação **Gerar NF-e** aparece para toda compra **não
+  cancelada** e sem nota ativa; o Backend recusa (409) gerar nota de compra cancelada.
+- **RN003:** compra com nota fiscal já gerada — ativa **ou cancelada** — mostra opção
+  apenas para **consultar** a nota (**Consultar NF-e** no lugar de **Gerar NF-e**): a NF-e
+  usa as mesmas chaves da compra como chave primária, então cada compra tem no máximo uma
+  nota e o Backend recusa (409) gerar outra. Enquanto a nota estiver ativa, a compra **não
+  pode ser cancelada** (o Backend responde 409 e a tela exibe a mensagem) — cancele a nota
+  primeiro; depois disso a compra pode ser cancelada (e relançada com outro documento).
 - **RN004 — Data de chegada:** `dtChegada` não pode ser **anterior** a `dtEmissao`
   (pode ser igual ou posterior a ela) e deve estar **entre `dtEmissao` e a data
   atual** — não é permitida data de chegada futura.
@@ -287,16 +300,18 @@ Ativação comum: **clicar no item de menu** correspondente.
   não renumerar as demais regras.
 - **RN009 — (removida):** a regra de posição das despesas (frete, seguro e outras
   despesas) deixou de existir; no formulário atual elas aparecem **depois** da tabela de
-  produtos (ver RN019 e RN021). Não entram no rateio dos produtos (RN011); somam-se apenas
-  ao total da compra. O número é mantido para não renumerar as demais regras.
+  produtos (ver RN019 e RN021). São rateadas entre os produtos (RN011) e somam-se ao total
+  da compra. O número é mantido para não renumerar as demais regras.
 - **RN010 — (removida):** a regra de apresentação do total da compra foi retirada. O total
   (`vlrTotal` = total dos produtos + frete + seguro + outras despesas) é exibido logo abaixo
   das despesas. O número é mantido para não renumerar as demais regras.
-- **RN011 — Rateio de produtos:** a tabela de produtos apresenta o rateio de cada
-  produto tanto em **percentual** (fatia no total dos produtos) quanto em **valor**, sem
-  considerar as despesas.
+- **RN011 — Rateio de despesas nos produtos:** a tabela de produtos apresenta o rateio de
+  cada produto tanto em **percentual** (fatia do produto no total dos produtos) quanto em
+  **valor**: `valor do rateio = ( valor do produto ÷ total dos produtos ) × ( frete + seguro +
+  despesas )`, em que o valor do produto é `( valor unitário − desconto ) × quantidade`. O
+  custo unitário do item é `( valor do produto + valor do rateio ) ÷ quantidade`.
 - **RN012 — Total dos produtos junto à tabela:** o **total dos produtos**
-  (Σ quantidade × valor unitário de cada item) é exibido **logo após a tabela de
+  (Σ ( valor unitário − desconto ) × quantidade de cada item) é exibido **logo após a tabela de
   produtos**, visível junto aos totais por coluna da própria tabela. A linha de totais cobre todas as colunas numéricas: quantidade, valor unitário,
   desconto, valor líquido, rateio (% e R$) e custo unitário — calculados no Backend.
 - **RN013 — Lançamento direto, sem estado "aberto":** a compra **não tem rascunho nem
@@ -314,7 +329,11 @@ Ativação comum: **clicar no item de menu** correspondente.
   **popup de login/confirmação** valida a identidade — só então o cancelamento é
   efetivado (RN003 transversal). **Antes de qualquer operação de cancelamento é
   necessário fazer login novamente** (reautenticação). Toda compra ainda
-  não cancelada pode ser cancelada; o cancelamento estorna estoque e custo médio de cada item (409 se o
+  não cancelada pode ser cancelada; o cancelamento **desativa** o registro (`isActive = false`,
+  que continua visível nas consultas com a justificativa) e, na mesma transação, **exclui
+  as contas a pagar** do mesmo documento (cada parcela pela chave primária completa, com a
+  justificativa da compra — único caminho de exclusão de conta a pagar, ver
+  [Gerenciar Contas a Pagar](#gerenciar-contas-a-pagar), RN007); o cancelamento estorna estoque e custo médio de cada item (409 se o
   estoque atual já não comportar a quantidade comprada). Até o EP-10 o popup de senha
   é só do Frontend (o Backend ainda não confere a senha).
 - **RN015 — Saldo e preço de venda ao final:** ao final do formulário a compra
@@ -370,12 +389,27 @@ Ativação comum: **clicar no item de menu** correspondente.
 ### Gerenciar Nota Fiscal
 - **Atores:** Usuário, **Fornecedor, Cliente, Transportadora** (cada um em fluxo próprio).
 - **RF:** RF14 · **RNF10** (emissão de NF-e).
+- **Escopo implementado (Lote C-5):** NF-e de **entrada**, gerada a partir de uma compra
+  lançada (ação **Gerar NF-e** da listagem de Compras), consultada e cancelada na tela
+  **Notas Fiscais**. Não há NF-e avulsa, edição nem exclusão. A nota é identificada pelas
+  **mesmas chaves da compra** (`modelo`, `numero`, `serie`, `codFornecedor`).
+- **Geração:** documento, emitente, transporte e despesas vêm da compra (somente leitura).
+  O usuário informa a chave de acesso (44 dígitos, dígito verificador válido e com o
+  modelo/série/número da compra), a emissão (pré-preenchida com a
+  da compra), a saída (opcional, não anterior à emissão), o frete por conta e as
+  informações complementares; por item, CFOP de entrada (1xxx/2xxx/3xxx), CSOSN e
+  alíquotas de ICMS/IPI. Os itens são exatamente os produtos da compra (quantidade, valor
+  e desconto copiados). Base, ICMS, IPI e totais são calculados **no Backend**
+  (`POST /api/notas-fiscais/calculo` para a prévia); a gravação é transacional (RNF06).
 - **RN002:** fornecedor, cliente e transportadora participam de fluxos específicos
-  (solicitar, confirmar entrega).
-- **RN003 (transversal):** `cancelarNotaFiscal()` exige reautenticação — ver
-  [regras transversais](#regras-de-negócio-transversais).
-- **Pós-condição:** consultar, adicionar, editar, remover, gerar, solicitar,
-  confirmar entrega/recebimento e fornecer dados de transporte da nota.
+  (solicitar, confirmar entrega) — **pendentes (T-093)**, assim como a emissão junto à
+  SEFAZ (T-094, fora do MVP).
+- **RN003 (transversal):** `cancelarNotaFiscal()` exige justificativa e reautenticação —
+  ver [regras transversais](#regras-de-negócio-transversais); até o EP-10 o popup de senha
+  é só do Frontend. O cancelamento desativa a nota (`isActive = false`), que continua
+  visível nas consultas; cancelar uma já cancelada → 409.
+- **Pós-condição:** consultar, gerar e cancelar a nota de entrada da compra. Pendentes:
+  editar, solicitar, confirmar entrega/recebimento e fornecer dados de transporte.
 
 ### Gerenciamento do Usuário (Cadastro)
 - **Atores:** Usuário · **RF:** RF15

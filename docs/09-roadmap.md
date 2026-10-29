@@ -130,14 +130,16 @@ dividida em lotes, backend-first e consultas primeiro, com TDD em todo *service*
 | **C-2** ✓ | Cadastro da compra: validar documento (RN007), criar com itens embutidos, rateio e totais calculados no service (a edição e a exclusão foram removidas junto com o estado "aberto") | T-081a |
 | **C-3** ✓ | Lançamento transacional no próprio cadastro (estoque + custo médio ponderado) e `cancelarCompra()` com estorno | T-081b, T-082 |
 | **C-4** ✓ | Frontend de Compras: listagem, formulário, lançar (substitui o salvar) e cancelar | T-115B (compras) |
-| **C-5** | NF-e: `gerarNotaFiscal` (RN002/RN003 de Compras) e EP-09 | T-083, T-090… |
+| **C-5** ✓ | NF-e de entrada: `gerarNotaFiscal` a partir da compra (RN002/RN003), consultas e cancelamento — backend + frontend | T-083, T-090–T-092, T-115B |
 
 **Ciclo da compra (RN013):** sem rascunho — a compra nasce `lançada` e só pode ser cancelada
 (sem coluna `situacao`). O cadastro/lançamento, numa única transação, grava a compra e soma a quantidade ao
 `estoque`, recalcula `custoMedioProd` (média ponderada; se ainda for 0, parte de
 `custoProd`), grava `custoProd` com o custo unitário da compra e preenche `dtEntrada`
 (RN018). **Não gera Contas a Pagar** — elas continuam lançadas manualmente. Cancelar uma
-compra lançada estorna estoque e custo médio; "cancelada" é derivada de
+compra lançada estorna estoque e custo médio e exclui (soft delete), na mesma transação, as
+contas a pagar do mesmo documento — único caminho de exclusão de conta a pagar (sem
+`PATCH /api/contas-pagamento/.../cancelar` nem botão na tela); "cancelada" é derivada de
 `justificativaCancelamento` (sem terceiro estado, RN005 transversal). A reautenticação do
 cancelamento (RN014) é, até o EP-10, só um popup no Frontend.
 
@@ -146,17 +148,18 @@ Frontend.** O formulário pede a prévia a `POST /api/compras/calculo` a cada mu
 ou despesa e apenas exibe o resultado; o repository só lê o produto com trava de linha
 (`FOR UPDATE`) e grava os valores já calculados:
 
-- `líquido do item = quantidade × valorUnitario − desconto` (desconto só por item, RN016);
+- `líquido do item = ( valorUnitario − desconto ) × quantidade` (desconto só por item, RN016);
 - `total dos produtos = Σ líquidos` (RN012);
-- rateio de `frete + seguro + despesas` proporcional ao líquido de cada item, em % e R$
-  (RN011), arredondado em 2 casas com os centavos residuais distribuídos pelos maiores
-  restos (as somas fecham em 100% e no total das despesas);
-- `percentualRateio`/`valorRateio` do item = fatia e valor do produto no total dos produtos (`valorRateio` = líquido); as despesas **não** entram no rateio dos produtos;
-- `custoMedioProduto` do item (histórico) = `valorRateio / quantidade`;
+- rateio de `frete + seguro + despesas` entre os itens (RN011):
+  `valorRateio = ( líquido ÷ total dos produtos ) × ( frete + seguro + despesas )` e
+  `percentualRateio = líquido ÷ total dos produtos × 100`, este apenas arredondado em 2 casas
+  (a soma pode diferir de 100%); o `valorRateio` tem os centavos residuais distribuídos pelos
+  maiores restos, para que a soma feche no total das despesas;
+- `custoMedioProduto` do item = `( líquido + valorRateio ) ÷ quantidade`, com 6 casas decimais;
 - `vlrTotal = total dos produtos + frete + seguro + despesas` — os encargos da
   condição de pagamento não entram (aplicam-se a títulos em atraso);
-- lançamento: `novoCustoMédio = ( estoque × base + qtd × custoUnitário ) / ( estoque + qtd )`,
-  com `base = custoMedioProd` (ou `custoProd` enquanto o médio for 0); estorno faz a conta
+- lançamento: `novoCustoMédio = ( saldo × custo + qtd × custoUnitário ) ÷ ( saldo + qtd )`,
+  com `saldo = estoque` antes da entrada e `custo = custoMedioProd` (ou `custoProd` enquanto o médio for 0); estorno faz a conta
   inversa e zera o custo médio quando o estoque zera.
 
 > **Lotes C-0 e C-1 concluídos:** Produtos corrigido (migration `produtos-custo-preco-venda`)
@@ -173,7 +176,7 @@ ou despesa e apenas exibe o resultado; o repository só lê o produto com trava 
 > formulário na ordem das RNs (documento validado → fornecedor/transportadora/classificação/
 > datas → frete, seguro e outras despesas → tabela de produtos com rateio e totais →
 > condição herdada do fornecedor → subtotais e total → saldo e preço de venda), consultas
-> de Produto e Transportadora (`ConsultaSelecao` genérica) e popup de senha
+> de Produto e Transportadora (padrão `ClienteConsulta`, com cadastro embutido) e popup de senha
 > (`ConfirmarSenhaModal`, só visual até o EP-10).
 >
 > **Lote C-4B concluído (RN019–RN023 + RNF14):** bloqueio do documento fiscal após o
@@ -186,7 +189,20 @@ ou despesa e apenas exibe o resultado; o repository só lê o produto com trava 
 > Frontend passaram a `dd/mm/aa` (RNF14). Ver
 > [Gerenciar Compras](07-casos-de-uso.md#gerenciar-compras).
 >
-> **▶ Próximo passo:** Lote C-5 — NF-e (EP-09) e o gatilho `gerarNotaFiscal` da compra.
+> **Lote C-5 concluído (NF-e de entrada):** migrations `nfe-entrada-da-compra` e
+> `nfe-chave-da-compra` dão à NF-e **as mesmas chaves da compra** como chave primária
+> (`modelo`, `numero`, `serie`, `codFornecedor` — uma nota por compra, inclusive cancelada;
+> `ProdutoNfe`/`VeiculoNfe` herdam a chave composta) e normalizam `NotasFiscaisEletronicas`/
+> `ProdutoNfe` (sem campos de item no cabeçalho nem valores calculados). Módulo
+> `notas-fiscais`: consultas, prévia (`POST /calculo`), geração transacional com os itens
+> da compra e a tributação informada (CFOP, CSOSN, alíquotas de ICMS/IPI), e cancelamento.
+> Base, ICMS, IPI e totais são calculados no Backend (`notasFiscais.calculo.ts`). Compra
+> com nota ativa não pode ser cancelada. Frontend: ações **Gerar NF-e**/**Consultar NF-e**
+> na listagem de Compras e página **Notas Fiscais**. Ficam pendentes do EP-09 os fluxos por
+> ator e o vínculo de veículo (T-093) e a emissão junto à SEFAZ (T-094, fora do MVP).
+>
+> **▶ Próximo passo:** retomar a Fase OS (telas de Cargos/Funcionários/Serviços/Peças e UI de
+> aprovação de orçamento de peças) — ou T-093/T-094, a confirmar com o responsável.
 
 ## Fase OS — Ordem de Serviço ⭐ módulo central da Kaneko Informática
 
@@ -219,7 +235,7 @@ Campos principais (Lote OS-A):
   registro por unidade física, nasce com a OS.
 - **Ficha técnica do equipamento:** SO, socket, RAM, placa-mãe, BIOS, armazenamento
   (SSD/HD, capacidade, uso), Office, grupo de usuários de rede — levantada para a
-  máquina daquela OS.
+  máquina daquela OS, durante o diagnóstico (opcional; não é criada na abertura).
 - **Cliente** responsável (referencia `Clientes`); **atendente** e **solicitante**
   (texto livre).
 - **Defeito relatado**, **acessórios entregues**, **observações de balcão**, **tipo da
@@ -238,7 +254,8 @@ Dependências (Lote OS-A):
 
 ```
 Clientes → OrdemDeServico
-Aparelhos + Equipamentos → OrdemDeServico (nascem juntos em abrirOS())
+Aparelhos → OrdemDeServico (nascem juntos em abrirOS())
+Equipamentos → OrdemDeServico (ficha criada/atualizada em registrarDiagnosticoOS(); codEquipamento anulável)
 Procedimentos → ProcedimentosOdS → OrdemDeServico (checklist do diagnóstico)
 ```
 
@@ -257,7 +274,8 @@ de backend + frontend, consultas antes de escrita:
 3. [x] **Frontend:** formulário de abertura e de diagnóstico (modal).
 
 > **Backend concluído:** `abrirOS()` cria o cabeçalho e, na mesma transação (RNF06),
-> os registros de `Aparelhos`/`Equipamentos` daquela unidade. Na abertura original do
+> o registro de `Aparelhos` daquela unidade (a ficha de `Equipamentos` foi **movida para
+> o diagnóstico** — ver nota ao fim deste bloco). Na abertura original do
 > Lote OS-A, `numOdS` era uma chave natural (`CHAR(8)`) informada pelo requisitante e
 > validada quanto à disponibilidade (`23505` → 409 PT) — **revisado posteriormente**:
 > por decisão do responsável pelo projeto, `numOdS` passou a ser gerado pelo banco
@@ -271,11 +289,16 @@ de backend + frontend, consultas antes de escrita:
 > **Frontend concluído:** telas de **Procedimentos** (cadastro simples, mesmo padrão de
 > Categorias) e **Ordens de Serviço** — listagem com filtro por cliente (picker
 > `ClienteConsulta` reaproveitado), formulário de abertura (seleção de cliente libera
-> a edição dos demais campos + campos de Aparelho/Equipamento embutidos, tudo num único
+> a edição dos demais campos + campos de Aparelho embutidos, tudo num único
 > `POST` — o número da OS não é mais digitado, nasce do `DEFAULT` do banco) e modal de
 > diagnóstico dedicado (`PATCH .../diagnostico`) com checklist de `ProcedimentosOdS`
 > embutido e reconciliado (mesmo padrão de Parcelas × Condição de Pagamento, via um
 > `ProcedimentoOdSForm` que reaproveita um novo `ProcedimentoConsulta`).
+>
+> **Revisão posterior — Equipamento no diagnóstico:** a ficha de `Equipamentos` saiu da
+> abertura e passou a ser registrada em `registrarDiagnosticoOS()` (opcional;
+> `OrdemDeServicos.codEquipamento` anulável — migration `equipamento-no-diagnostico`);
+> no Frontend, o bloco migrou do formulário de abertura para o `DiagnosticoModal`.
 >
 > **▶ Próximo passo:** Lote OS-B — Execução (serviços e peças) e Aprovação (após a Fase 4).
 

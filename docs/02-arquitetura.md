@@ -204,11 +204,6 @@ Regras:
 - Testes de rota cobrem os verbos implementados (GET, POST, PUT, DELETE) e os casos
   de erro (400 validação, 404 não encontrado, 409 conflito/dependentes).
 - Nenhum *service* novo ou modificado é considerado concluído sem cobertura de testes.
-
-## Documentos relacionados
-
-- [Stack Tecnológica](03-stack-tecnologica.md) — ferramentas concretas de cada camada.
-- [Modelo de Domínio](05-modelo-de-dominio.md) — as classes que vivem na camada de domínio.
 - **Duas configs do Vitest:** `vitest.config.unit.ts` (services, cálculos e utilitários,
   sem banco e sem `globalSetup`; `DATABASE_URL` aponta para um valor inválido de propósito) e
   `vitest.config.integration.ts` (`*.repository.test.ts` e `*.routes.test.ts`, com banco).
@@ -223,6 +218,11 @@ Regras:
   — os testes de rota comitam dados e os removem no `afterAll`. Mesmo assim, não use valores fixos em colunas
   únicas (sigla/DDI de país etc.) em testes de repository — use as fixtures — e não compare
   contagens globais em testes de rota (procure o próprio registro).
+
+## Documentos relacionados
+
+- [Stack Tecnológica](03-stack-tecnologica.md) — ferramentas concretas de cada camada.
+- [Modelo de Domínio](05-modelo-de-dominio.md) — as classes que vivem na camada de domínio.
 - [Modelo de Dados](06-modelo-de-dados.md) — o esquema que as migrations SQL materializam.
 - [Segurança e Autenticação](08-seguranca-e-autenticacao.md) — middleware de auth e auditoria.
 - [Princípios de Engenharia](12-principios-de-engenharia.md#1-programação-orientada-a-objetos-poo) - lista de princípios adotados para o projeto.
