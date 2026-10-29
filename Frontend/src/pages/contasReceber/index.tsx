@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
   createColumnHelper,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { formatarData, formatarDataHora } from '../../utils/formatters';
 import { contasReceberService, type ContaAReceber } from '../../services/contasReceber';
 import {
@@ -55,14 +54,14 @@ export default function ContasReceberPage ()
 
   const columns = [
     columnHelper.accessor ( 'modelo', { header: 'Modelo' } ),
-    columnHelper.accessor ( 'numero', { header: 'Número' } ),
     columnHelper.accessor ( 'serie', { header: 'Série' } ),
+    columnHelper.accessor ( 'numero', { header: 'Número' } ), 
     columnHelper.accessor ( 'parcela', { header: 'Parcela' } ),
     columnHelper.accessor ( 'codCliente', { header: () => <>Código<br/>Cliente</> } ),
     columnHelper.accessor ( 'codFormaDePag', { header: () => <>Código<br/>Forma de Pagamento</> } ),
     columnHelper.accessor (
-      'dtEmissao',
-      { header: 'Emissão', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarDataHora ( info.getValue()! ) : '—' }</InfoBlock> }
+      'dtBaixa',
+      { header: 'Data da Baixa', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '—' }</InfoBlock> }
     ),
     columnHelper.accessor (
       'dtVencimento',
@@ -73,14 +72,6 @@ export default function ContasReceberPage ()
     columnHelper.accessor ( 'desconto', { header: 'Desconto' } ),
     columnHelper.accessor ( 'multa', { header: 'Multa' } ),
     columnHelper.accessor ( 'valorBaixa', { header: 'Valor Recebido', cell: ( info ) => info.getValue() ?? '—' } ),
-    columnHelper.accessor (
-      'dtBaixa',
-      { header: 'Data da Baixa', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '—' }</InfoBlock> }
-    ),
-    columnHelper.accessor (
-      'dtPagamento',
-      { header: 'Data do Pagamento', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '—' }</InfoBlock> }
-    ),
     columnHelper.accessor (
       'justificativaCancelamento',
       { header: 'Cancelamento',
@@ -99,7 +90,7 @@ export default function ContasReceberPage ()
       { header: 'Edição', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor ( 'codUser', { header: 'Código Usuário', cell: ( info ) => info.getValue() ?? '-' } ),
-    columnHelper.accessor ( 'isActive', { header: 'Status' } ),
+    columnHelper.accessor ( 'isActive', { header: 'Status', cell: ( info ) => ( info.getValue() ? 'Ativo' : 'Inativo' ) } ),
     columnHelper.display ( {
       id:     'acoes',
       header: 'Ações',
@@ -142,7 +133,7 @@ export default function ContasReceberPage ()
       onGlobalFilterChange: setGlobalFilter,
       onPaginationChange:   setPagination,
       getCoreRowModel:       getCoreRowModel ( ),
-      getSortedRowModel:     getSortedRowModel ( ),
+      getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
       getFilteredRowModel:   getFilteredRowModel ( ),
       getPaginationRowModel: getPaginationRowModel ( ),
     }

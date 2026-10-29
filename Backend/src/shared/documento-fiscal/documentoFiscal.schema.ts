@@ -88,37 +88,15 @@ export function ValidarDatasDocumentoFiscal
     }
 }
 
-// Datas do documento parcelado (contas a pagar/receber): emissão e vencimento. A checagem
-// cruzada fica em `ValidarVencimentoDocumentoFiscal`.
+// Data do documento parcelado (contas a pagar/receber): só o vencimento — a conta nasce já
+// baixada, então a data da baixa (`dtBaixa`) ocupa o lugar da antiga data de emissão. Não há
+// checagem cruzada: o vencimento pode ser anterior à baixa (pagamento em atraso, com juro e multa).
 export const vencimentoDocumentoFiscalSchema = z.object
 (
     {
-        dtEmissao:    campoDataEmissao,
         dtVencimento: z
             .coerce.date ( { message: 'A data de vencimento é inválida.' } ),
     }
 );
 
 export type VencimentoDocumentoFiscal = z.infer < typeof vencimentoDocumentoFiscalSchema >;
-
-/**
- * O vencimento precisa ser estritamente posterior à emissão — datas e horários iguais (ou
- * o vencimento antes) não são permitidos, nem no mesmo dia. O vencimento pode ser futuro.
- * Usar no `superRefine` do schema da conta (create e update).
- */
-export function ValidarVencimentoDocumentoFiscal
-(
-    dados: VencimentoDocumentoFiscal,
-    ctx:   z.RefinementCtx
-): void
-{
-    if ( dados.dtVencimento <= dados.dtEmissao )
-    {
-        ctx.addIssue
-        ( {
-            code:    'custom',
-            path:    [ 'dtVencimento' ],
-            message: 'A data de vencimento não pode ser igual ou anterior à data de emissão.',
-        } );
-    }
-}

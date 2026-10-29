@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
   createColumnHelper,
   type PaginationState,
 } from '@tanstack/react-table';
-import { useTabelaOrdenada } from '../../hooks/tabela';
+import { useTabelaOrdenada, getSortedRowModelInativosAoFinal } from '../../hooks/tabela';
 import { formatarData, formatarDataHora } from '../../utils/formatters';
 import { contasPagamentoService, type ContaAPagar } from '../../services/contasPagamento';
 import {
@@ -55,28 +54,24 @@ export default function ContasPagamentoPage ()
 
   const columns = [
     columnHelper.accessor ( 'modelo', { header: 'Modelo' } ),
-    columnHelper.accessor ( 'numero', { header: 'Número' } ),
     columnHelper.accessor ( 'serie', { header: 'Série' } ),
+    columnHelper.accessor ( 'numero', { header: 'Número' } ), 
     columnHelper.accessor ( 'parcela', { header: 'Parcela' } ),
     columnHelper.accessor ( 'codFornecedor', { header: () => <>Código<br/>Fornecedor</> } ),
     columnHelper.accessor ( 'codFormaDePag', { header: () => <>Código<br/>Forma de Pagamento</> } ),
     columnHelper.accessor (
-      'dtEmissao',
-      { header: 'Emissão', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarDataHora ( info.getValue()! ) : '—' }</InfoBlock> }
+      'dtBaixa',
+      { header: 'Data da Baixa', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '—' }</InfoBlock> }
     ),
     columnHelper.accessor (
       'dtVencimento',
       { header: 'Vencimento', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarDataHora ( info.getValue()! ) : '—' }</InfoBlock> }
-    ),
+    ), 
     columnHelper.accessor ( 'valor', { header: 'Valor' } ),
     columnHelper.accessor ( 'juro', { header: 'Juro' } ),
     columnHelper.accessor ( 'desconto', { header: 'Desconto' } ),
     columnHelper.accessor ( 'multa', { header: 'Multa' } ),
     columnHelper.accessor ( 'valorBaixa', { header: 'Valor da Baixa', cell: ( info ) => info.getValue() ?? '—' } ),
-    columnHelper.accessor (
-      'dtBaixa',
-      { header: 'Data da Baixa', cell: ( info ) => <InfoBlock>{ info.getValue() ? formatarData ( info.getValue()! ) : '—' }</InfoBlock> }
-    ),
     columnHelper.accessor (
       'justificativaCancelamento',
       { header: 'Cancelamento',
@@ -95,36 +90,22 @@ export default function ContasPagamentoPage ()
       { header: 'Edição', cell: ( info ) => <InfoBlock>{ formatarData ( info.getValue() ) }</InfoBlock> }
     ),
     columnHelper.accessor ( 'codUser', { header: 'Código Usuário', cell: ( info ) => info.getValue() ?? '-' } ),
-    columnHelper.accessor ( 'isActive', { header: 'Status' } ),
+    columnHelper.accessor ( 'isActive', { header: 'Status', cell: ( info ) => ( info.getValue() ? 'Ativo' : 'Inativo' ) } ),
     columnHelper.display ( {
       id:     'acoes',
       header: 'Ações',
-      cell: ( { row } ) =>
-      {
-        const conta     = row.original;
-        const cancelada = conta.justificativaCancelamento !== null;
-
-        return (
-          <GrupoBotoes>
-            <Botao
-              $variante="secundario"
-              onClick={ ( evento ) => { evento.stopPropagation(); abrirForm ( conta, 'consulta' ); } }
-            >
-              Consultar
-            </Botao>
-            {
-              !cancelada && (
-                <Botao
-                  $variante="perigo"
-                  onClick={ ( evento ) => { evento.stopPropagation(); abrirForm ( conta, 'cancelar' ); } }
-                >
-                  Cancelar
-                </Botao>
-              )
-            }
-          </GrupoBotoes>
-        );
-      },
+      // Só consulta: a conta a pagar não é cancelada nem excluída por esta tela — ela cai
+      // junto com o cancelamento da compra do mesmo documento.
+      cell: ( { row } ) => (
+        <GrupoBotoes>
+          <Botao
+            $variante="secundario"
+            onClick={ ( evento ) => { evento.stopPropagation(); abrirForm ( row.original, 'consulta' ); } }
+          >
+            Consultar
+          </Botao>
+        </GrupoBotoes>
+      ),
     } ),
   ];
 
@@ -138,7 +119,7 @@ export default function ContasPagamentoPage ()
       onGlobalFilterChange: setGlobalFilter,
       onPaginationChange:   setPagination,
       getCoreRowModel:       getCoreRowModel ( ),
-      getSortedRowModel:     getSortedRowModel ( ),
+      getSortedRowModel:     getSortedRowModelInativosAoFinal ( ),
       getFilteredRowModel:   getFilteredRowModel ( ),
       getPaginationRowModel: getPaginationRowModel ( ),
     }

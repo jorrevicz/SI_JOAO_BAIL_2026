@@ -3,11 +3,11 @@ import
 {
     documentoFiscalSchema,
     vencimentoDocumentoFiscalSchema,
-    ValidarVencimentoDocumentoFiscal,
 } from '../../shared/documento-fiscal/documentoFiscal.schema';
 
 // A conta nasce já baixada (valorBaixa e dtBaixa obrigatórios): não há edição nem baixa
-// posterior, só o cancelamento.
+// posterior. Também não há cancelamento avulso — a conta só é desativada junto com a compra
+// cancelada do mesmo documento (ver `CancelarContasDaCompra`).
 // Chave natural da conta: o documento (número, modelo, série) mais o fornecedor e a parcela.
 export const chaveContaAPagarSchema = z.object
 (
@@ -58,19 +58,7 @@ const camposContaAPagar = {
 };
 
 export const createContasAPagarSchema = z
-    .object ( camposContaAPagar )
-    .superRefine ( ValidarVencimentoDocumentoFiscal );
-
-export const cancelarContaPagarSchema = z.object
-(
-    {
-        justificativaCancelamento: z
-            .string ( { message: "A justificativa deve ser uma string" } )
-            .trim()
-            .min ( 1, 'Informe a justificativa do cancelamento.' )
-            .max ( 255 ),
-    }
-);
+    .object ( camposContaAPagar );
 
 // Prévia do valor total (valor + juro + multa − desconto): só os campos que entram na conta.
 export const calcularTotalContaSchema = z.object
@@ -84,4 +72,3 @@ export const calcularTotalContaSchema = z.object
 );
 
 export type CreateContasAPAgarInput = z.infer < typeof createContasAPagarSchema >;
-export type CancelarContaPagarInput = z.infer < typeof cancelarContaPagarSchema >;

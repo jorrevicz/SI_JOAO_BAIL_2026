@@ -3,7 +3,6 @@ import
 {
     documentoFiscalSchema,
     vencimentoDocumentoFiscalSchema,
-    ValidarVencimentoDocumentoFiscal,
 } from '../../shared/documento-fiscal/documentoFiscal.schema';
 
 // Chave natural da conta: o documento (número, modelo, série) mais o cliente e a parcela.
@@ -50,16 +49,13 @@ const camposContaAReceber = {
         .refine ( ( valor ) => !/^[0-9]+\.[0-9]{2}$/.test ( valor ) || Number ( valor ) > 0, "O valor da baixa deve ser maior que zero." ),
     dtBaixa: z
         .coerce.date ( { message: "A data da baixa é inválida"}),
-    dtPagamento: z
-        .coerce.date ( { message: "A data de pagamento é inválida"}),
     isActive: z
         .boolean()
         .default ( true )
 };
 
 export const createContasAReceberSchema = z
-    .object ( camposContaAReceber )
-    .superRefine ( ValidarVencimentoDocumentoFiscal );
+    .object ( camposContaAReceber );
 
 export const cancelarContaReceberSchema = z.object
 (

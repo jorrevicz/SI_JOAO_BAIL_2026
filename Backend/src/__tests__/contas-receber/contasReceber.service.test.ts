@@ -143,7 +143,7 @@ describe ( 'ContasReceberService', () =>
         it ( 'delega ao repositório e cancela a conta baixada (a conta nasce já baixada)', async () =>
         {
             const cancelada = { ...ID_TESTE, justificativaCancelamento: 'motivo' };
-            repo.FindById.mockResolvedValue ( { ...ID_TESTE, valorBaixa: '100.00', dtBaixa: new Date(), dtPagamento: new Date(), justificativaCancelamento: null } );
+            repo.FindById.mockResolvedValue ( { ...ID_TESTE, valorBaixa: '100.00', dtBaixa: new Date(), justificativaCancelamento: null } );
             repo.Cancelar.mockResolvedValue ( cancelada );
 
             await expect ( service.CancelarConta ( ID_TESTE, 'motivo', 1 ) ).resolves.toMatchObject ( cancelada );

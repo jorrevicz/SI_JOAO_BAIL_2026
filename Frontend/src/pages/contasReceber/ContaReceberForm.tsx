@@ -15,7 +15,8 @@ import { FormaPagamentoConsulta } from '../formasPagamento/FormaPagamentoConsult
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { ConfirmarSenhaModal } from '../../components/confirmarSenha';
-import { paraDataHoraInputUtc, inicioDoDiaUtc, fimDoDiaUtc, doInputUtcParaIso } from '../../utils/formatters';
+import { paraDataHoraInputUtc, fimDoDiaUtc, doInputUtcParaIso } from '../../utils/formatters';
+import { comErroDoCampo, validarDecimal, validarDigitos } from '../../utils/validators';
 
 // Novo: o botão "Lançar conta" cadastra a conta já baixada (sem edição, baixa posterior nem
 // exclusão). consulta: só leitura. cancelar: o formulário abre em modo de consulta e o botão
@@ -42,13 +43,10 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
     numero:        inicial.numero        ?? '',
     modelo:        inicial.modelo        ?? '',
     serie:         inicial.serie         ?? '',
-    parcela:       inicial.parcela       ?? 1,
+    parcela:       inicial.parcela       ?? 0,
     codCliente:    inicial.codCliente    ?? 0,
     codFormaDePag: inicial.codFormaDePag ?? 0,
-    // Ao criar (sem inicial.dtEmissao), a emissão nasce com a data/hora atual (UTC) e o
-    // vencimento com o fim do dia de hoje (UTC) — RN005: vencimento estritamente
-    // posterior à emissão, mesmo no mesmo dia (ver contasReceber.schema.ts).
-    dtEmissao:     inicial.dtEmissao     ? inicial.dtEmissao.slice ( 0, 16 )    : paraDataHoraInputUtc ( inicioDoDiaUtc ( new Date() ) ),
+    // Ao criar, o vencimento nasce com o fim do dia de hoje (UTC).
     dtVencimento:  inicial.dtVencimento  ? inicial.dtVencimento.slice ( 0, 16 ) : paraDataHoraInputUtc ( fimDoDiaUtc ( new Date() ) ),
     valor:         inicial.valor         ?? '',
     juro:          inicial.juro          ?? '0.00',
@@ -57,8 +55,8 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
     // A conta nasce baixada: valor em branco = valor total calculado pelo Backend.
     valorBaixa:    inicial.valorBaixa    ?? '',
     dtBaixa:       inicial.dtBaixa       ? inicial.dtBaixa.slice ( 0, 16 ) : paraDataHoraInputUtc ( new Date() ),
-    dtPagamento:   inicial.dtPagamento   ? inicial.dtPagamento.slice ( 0, 16 ) : paraDataHoraInputUtc ( new Date() ),
-    isActive:      inicial.isActive      ?? true,
+    // Cancelar muda o status para inativo (isActive = false) no Backend; o formulário já o mostra assim.
+    isActive:      modo === 'cancelar' ? false : inicial.isActive ?? true,
   } );
 
   const campoCliente = useCampoConsulta (
@@ -180,52 +178,91 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
   const AlterarChave = ( campo: 'numero' | 'modelo' | 'serie', valor: string ) =>
   {
     setForm ( { ...form, [ campo ]: valor } );
-    setChaveValidada ( false );
-    setErroChave ( '' );
   };
 
-  const ValidarChave = async () =>
-  {
-    setValidandoChave ( true );
-    setErroChave ( '' );
-    setErrosCampo ( {} );
+  // A validação dispara sozinha quando todos os campos da chave estão preenchidos.
+  const chaveCompleta = form.numero.length === 9 && form.modelo.length === 2 && form.serie.length === 2
+    && campoCliente.codigo > 0 && form.parcela >= 1;
 
-    // O cliente faz parte da chave: precisa existir antes de validar o documento.
-    if ( !( await campoCliente.validar() ) )
+  useEffect ( () =>
+  {
+    if ( editando )
     {
-      setValidandoChave ( false );
       return;
     }
 
-    try
+    // Mudou a chave: a validação anterior deixa de valer.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setChaveValidada ( false );
+    setErroChave ( '' );
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    if ( !chaveCompleta )
     {
-      await contasReceberService.validarChave (
+      return;
+    }
+
+    let ativo = true;
+
+    const temporizador = setTimeout ( async () =>
+    {
+      setValidandoChave ( true );
+      setErrosCampo ( {} );
+
+      try
+      {
+        // O cliente faz parte da chave: precisa existir antes de validar o documento.
+        if ( !( await campoCliente.validar() ) )
         {
+          return;
+        }
+
+        await contasReceberService.validarChave (
+          {
           numero:  form.numero,
           modelo:  form.modelo,
           serie:   form.serie,
           codCliente: campoCliente.codigo,
           parcela: form.parcela,
         }
-      );
-      setChaveValidada ( true );
-    }
-    catch ( err )
-    {
-      if ( err instanceof ApiError && err.erros )
-      {
-        setErrosCampo ( err.erros );
+        );
+
+        if ( ativo )
+        {
+          setChaveValidada ( true );
+        }
       }
-      else
+      catch ( err )
       {
-        setErroChave ( ( err as Error ).message );
+        if ( ativo )
+        {
+          if ( err instanceof ApiError && err.erros )
+          {
+            setErrosCampo ( err.erros );
+          }
+          else
+          {
+            setErroChave ( ( err as Error ).message );
+          }
+        }
       }
-    }
-    finally
+      finally
+      {
+        if ( ativo )
+        {
+          setValidandoChave ( false );
+        }
+      }
+    }, 400 );
+
+    return () =>
     {
+      ativo = false;
+      clearTimeout ( temporizador );
       setValidandoChave ( false );
-    }
-  };
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ form.numero, form.modelo, form.serie, form.parcela, campoCliente.codigo ] );
 
   const submit = async ( evento: React.SyntheticEvent ) =>
   {
@@ -263,7 +300,6 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
       parcela:       form.parcela,
       codCliente:    campoCliente.codigo,
       codFormaDePag: campoFormaPag.codigo,
-      dtEmissao:     doInputUtcParaIso ( form.dtEmissao ),
       dtVencimento:  doInputUtcParaIso ( form.dtVencimento ),
       valor:         Number ( form.valor ).toFixed ( 2 ),
       juro:          Number ( form.juro ).toFixed ( 2 ),
@@ -271,7 +307,6 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
       multa:         Number ( form.multa ).toFixed ( 2 ),
       valorBaixa:    Number ( form.valorBaixa || vlrTotal ).toFixed ( 2 ),
       dtBaixa:       doInputUtcParaIso ( form.dtBaixa ),
-      dtPagamento:   doInputUtcParaIso ( form.dtPagamento ),
       isActive:      form.isActive,
     };
 
@@ -310,10 +345,31 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
             <input
               id="modelo"
               value={ form.modelo }
-              onChange={ ( evento ) => AlterarChave ( 'modelo', evento.target.value.replace ( /\D/g, '' ) ) }
+              onChange={ ( evento ) =>
+              {
+                AlterarChave ( 'modelo', evento.target.value.replace ( /\D/g, '' ) );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'modelo', validarDigitos ( evento.target.value, [ 2 ], 'O modelo' ) ) );
+              } }
               maxLength={ 2 }
               placeholder="2 dígitos"
-              disabled={ editando || chaveValidada }
+              disabled={ editando }
+              readOnly={ editando }
+              required
+            />
+          </FormCampo>
+
+          <FormCampo label="Série" obrigatorio colunas={ 1 } htmlFor="serie" erro={ errosCampo.serie }>
+            <input
+              id="serie"
+              value={ form.serie }
+              onChange={ ( evento ) =>
+              {
+                AlterarChave ( 'serie', evento.target.value.replace ( /\D/g, '' ) );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'serie', validarDigitos ( evento.target.value, [ 2 ], 'A série' ) ) );
+              } }
+              maxLength={ 2 }
+              placeholder="2 dígitos"
+              disabled={ editando }
               readOnly={ editando }
               required
             />
@@ -323,28 +379,19 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
             <input
               id="numero"
               value={ form.numero }
-              onChange={ ( evento ) => AlterarChave ( 'numero', evento.target.value.replace ( /\D/g, '' ) ) }
+              onChange={ ( evento ) =>
+              {
+                AlterarChave ( 'numero', evento.target.value.replace ( /\D/g, '' ) );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'numero', validarDigitos ( evento.target.value, [ 9 ], 'O número' ) ) );
+              } }
               maxLength={ 9 }
               placeholder="9 dígitos"
-              disabled={ editando || chaveValidada }
+              disabled={ editando }
               readOnly={ editando }
               required
               autoFocus
             />
-          </FormCampo>
- 
-          <FormCampo label="Série" obrigatorio colunas={ 1 } htmlFor="serie" erro={ errosCampo.serie }>
-            <input
-              id="serie"
-              value={ form.serie }
-              onChange={ ( evento ) => AlterarChave ( 'serie', evento.target.value.replace ( /\D/g, '' ) ) }
-              maxLength={ 2 }
-              placeholder="2 dígitos"
-              disabled={ editando || chaveValidada }
-              readOnly={ editando }
-              required
-            />
-          </FormCampo>
+          </FormCampo> 
 
           <FormCampo label="Parcela" obrigatorio colunas={ 1 } htmlFor="parcela" erro={ errosCampo.parcela }>
             <input
@@ -353,14 +400,14 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
               min="1"
               value={ form.parcela }
               onChange={ ( evento ) => setForm ( { ...form, parcela: Number ( evento.target.value ) } ) }
-              disabled={ editando || chaveValidada }
+              disabled={ editando }
               readOnly={ editando }
               required
             />
           </FormCampo> 
-        </FormSecao> 
-
-        <FormSecao>
+          <FormCampo colunas={ 0.5 }>
+            <div></div>
+          </FormCampo>
           <CampoConsulta
             campo={ campoCliente }
             Consulta={ ClienteConsulta }
@@ -369,25 +416,47 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
             rotuloNome="Nome do cliente"
             obrigatorio
             erroApi={ errosCampo.codCliente }
-            colunas={ [ 2, 1, 5 ] }
-            desabilitado={ editando || chaveValidada }
+            colunas={ [ 2, 1, 3.5 ] }
+            desabilitado={ editando }
           />
+        </FormSecao> 
 
+        <FormSecao>
           {
             !editando && (
-              <FormCampo label="Chave do documento" colunas={ 2 } erro={ erroChave }>
-                <Botao
-                  type="button"
-                  $variante={ chaveValidada ? 'secundario' : undefined }
-                  onClick={ ValidarChave }
-                  disabled={ chaveValidada }
-                >
-                  { chaveValidada ? 'Chave validada ✓' : validandoChave ? 'Validando…' : 'Validar chave' }
-                </Botao>
+              <FormCampo label="Chave do documento" colunas={ 12 } erro={ erroChave }>
+                <span role="status">
+                  { validandoChave ? 'Validando…' : chaveValidada ? 'Chave válida ✓' : 'Preencha a chave para validar' }
+                </span>
               </FormCampo>
             )
           }
         </FormSecao>
+
+        <FormSecao>
+          <FormCampo label="Data e hora da baixa (UTC)" obrigatorio colunas={ 3 } htmlFor="dtBaixa" erro={ errosCampo.dtBaixa }>
+            <input
+              id="dtBaixa"
+              type="datetime-local"
+              value={ form.dtBaixa }
+              onChange={ ( evento ) => setForm ( { ...form, dtBaixa: evento.target.value } ) }
+              required
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
+            />
+          </FormCampo>
+
+          <FormCampo label="Data e hora de vencimento (UTC)" obrigatorio colunas={ 3 } htmlFor="dtVencimento" erro={ errosCampo.dtVencimento }>
+            <input
+              id="dtVencimento"
+              type="datetime-local"
+              value={ form.dtVencimento }
+              onChange={ ( evento ) => setForm ( { ...form, dtVencimento: evento.target.value } ) }
+              required
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
+            />
+          </FormCampo>
+        </FormSecao>
+
 
         <FormSecao>
           <CampoConsulta
@@ -411,7 +480,11 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
               step="0.01"
               min="0"
               value={ form.valor }
-              onChange={ ( evento ) => setForm ( { ...form, valor: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, valor: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'valor', validarDecimal ( evento.target.value, 2, 'O valor' ) ) );
+              } }
               placeholder="0.00"
               required
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
@@ -427,7 +500,11 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
               step="0.01"
               min="0"
               value={ form.juro }
-              onChange={ ( evento ) => setForm ( { ...form, juro: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, juro: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'juro', validarDecimal ( evento.target.value, 2, 'O juro' ) ) );
+              } }
               placeholder="0.00"
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
@@ -442,7 +519,11 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
               step="0.01"
               min="0"
               value={ form.desconto }
-              onChange={ ( evento ) => setForm ( { ...form, desconto: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, desconto: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'desconto', validarDecimal ( evento.target.value, 2, 'O desconto' ) ) );
+              } }
               placeholder="0.00"
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
@@ -457,39 +538,12 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
               step="0.01"
               min="0"
               value={ form.multa }
-              onChange={ ( evento ) => setForm ( { ...form, multa: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, multa: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'multa', validarDecimal ( evento.target.value, 2, 'A multa' ) ) );
+              } }
               placeholder="0.00"
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            />
-          </FormCampo>
-        </FormSecao>
-
-        <FormSecao>
-          <FormCampo label="Valor total" colunas={ 2 } htmlFor="vlrTotal">
-            <input id="vlrTotal" disabled readOnly value={ vlrTotal } style={ { fontWeight: 700 } } />
-          </FormCampo>
-        </FormSecao>
-
-        <FormSecao>
-          <FormCampo label="Data e hora de emissão (UTC)" obrigatorio colunas={ 3 } htmlFor="dtEmissao" erro={ errosCampo.dtEmissao }>
-            <input
-              id="dtEmissao"
-              type="datetime-local"
-              value={ form.dtEmissao }
-              onChange={ ( evento ) => setForm ( { ...form, dtEmissao: evento.target.value } ) }
-              required
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            />
-          </FormCampo>
-
-          <FormCampo label="Data e hora de vencimento (UTC)" obrigatorio colunas={ 3 } htmlFor="dtVencimento" erro={ errosCampo.dtVencimento }>
-            <input
-              id="dtVencimento"
-              type="datetime-local"
-              value={ form.dtVencimento }
-              onChange={ ( evento ) => setForm ( { ...form, dtVencimento: evento.target.value } ) }
-              min={ form.dtEmissao || undefined }
-              required
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
           </FormCampo>
@@ -503,33 +557,17 @@ export default function ContaReceberForm ( { modo, inicial, onSalvo, onCancelar 
               step="0.01"
               min="0"
               value={ form.valorBaixa }
-              onChange={ ( evento ) => setForm ( { ...form, valorBaixa: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, valorBaixa: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'valorBaixa', validarDecimal ( evento.target.value, 2, 'O valor da baixa' ) ) );
+              } }
               placeholder={ vlrTotal }
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
+              readOnly
+              style={ { fontWeight: 700 } }
             />
-          </FormCampo>
-
-          <FormCampo label="Data e hora da baixa (UTC)" obrigatorio colunas={ 3 } htmlFor="dtBaixa" erro={ errosCampo.dtBaixa }>
-            <input
-              id="dtBaixa"
-              type="datetime-local"
-              value={ form.dtBaixa }
-              onChange={ ( evento ) => setForm ( { ...form, dtBaixa: evento.target.value } ) }
-              required
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            />
-          </FormCampo>
-
-          <FormCampo label="Data e hora do pagamento (UTC)" obrigatorio colunas={ 3 } htmlFor="dtPagamento" erro={ errosCampo.dtPagamento }>
-            <input
-              id="dtPagamento"
-              type="datetime-local"
-              value={ form.dtPagamento }
-              onChange={ ( evento ) => setForm ( { ...form, dtPagamento: evento.target.value } ) }
-              required
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            />
-          </FormCampo>
+          </FormCampo> 
         </FormSecao>
 
         <FormSecao>

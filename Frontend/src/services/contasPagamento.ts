@@ -18,7 +18,6 @@ export interface ContaAPagar
   parcela:                    number;
   codFornecedor:               number;
   codFormaDePag:               number;
-  dtEmissao:                   string | null;
   dtVencimento:                string | null;
   valor:                       string;
   juro:                        string;
@@ -42,21 +41,16 @@ export interface CreateContaAPagarInput
   parcela:       number;
   codFornecedor: number;
   codFormaDePag: number;
-  dtEmissao:     string;
   dtVencimento:  string;
   valor:         string;
   juro:          string;
   desconto:      string;
   multa:         string;
-  // A conta nasce já baixada: não há edição nem baixa posterior, só cancelamento.
+  // A conta nasce já baixada: não há edição nem baixa posterior. O cancelamento só acontece
+  // pela compra do mesmo documento (PATCH /api/compras/.../cancelar).
   valorBaixa:    string;
   dtBaixa:       string;
   isActive:      boolean;
-}
-
-export interface CancelarContaAPagarInput
-{
-  justificativaCancelamento: string;
 }
 
 function montarPath ( id: ContaAPagarId )
@@ -96,13 +90,6 @@ export const contasPagamentoService = {
     dados: CreateContaAPagarInput
   ) => api
     .post < ContaAPagar > ( '/api/contas-pagamento', dados )
-    .then ( ( resposta ) => resposta.data ),
-
-  cancelar: (
-    id:    ContaAPagarId,
-    dados: CancelarContaAPagarInput
-  ) => api
-    .patch < ContaAPagar > ( `/api/contas-pagamento/${ montarPath ( id ) }/cancelar`, dados )
     .then ( ( resposta ) => resposta.data ),
 
   validarChave: (

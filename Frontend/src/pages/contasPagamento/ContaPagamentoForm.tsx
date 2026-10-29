@@ -14,18 +14,18 @@ import { FornecedorConsulta } from '../fornecedores/FornecedorConsulta';
 import { FormaPagamentoConsulta } from '../formasPagamento/FormaPagamentoConsulta';
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
-import { ConfirmarSenhaModal } from '../../components/confirmarSenha';
-import { paraDataHoraInputUtc, inicioDoDiaUtc, fimDoDiaUtc, doInputUtcParaIso } from '../../utils/formatters';
+import { fimDoDiaUtc, doInputUtcParaIso } from '../../utils/formatters';
+import { paraDataHoraInputUtc } from '../../utils/formatters';
+import { comErroDoCampo, validarDecimal, validarDigitos } from '../../utils/validators';
 
 // Novo: o botão "Lançar conta" cadastra a conta já baixada (sem edição, baixa posterior nem
-// exclusão). consulta: só leitura. cancelar: o formulário abre em modo de consulta e o botão
-// de lançar dá lugar à confirmação (exige justificativa + confirmação de senha).
-export type ModoConta = 'consulta' | 'cancelar';
+// exclusão). consulta: só leitura. Não há cancelamento/exclusão por esta tela: a conta a
+// pagar só é desativada pelo cancelamento da compra do mesmo documento (tela de Compras).
+export type ModoConta = 'consulta';
 
 const TITULOS: Record < ModoConta, string > =
 {
   consulta: 'Consultar conta a pagar',
-  cancelar: 'Cancelar conta a pagar',
 };
 
 interface Props
@@ -42,13 +42,10 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
     numero:        inicial.numero        ?? '',
     modelo:        inicial.modelo        ?? '',
     serie:         inicial.serie         ?? '',
-    parcela:       inicial.parcela       ?? 1,
+    parcela:       inicial.parcela       ?? 0,
     codFornecedor: inicial.codFornecedor ?? 0,
     codFormaDePag: inicial.codFormaDePag ?? 0,
-    // Ao criar (sem inicial.dtEmissao), a emissão nasce com a data/hora atual (UTC) e o
-    // vencimento com o fim do dia de hoje (UTC) — RN005: vencimento estritamente
-    // posterior à emissão, mesmo no mesmo dia (ver contasPagamento.schema.ts).
-    dtEmissao:     inicial.dtEmissao     ? inicial.dtEmissao.slice ( 0, 16 )    : paraDataHoraInputUtc ( inicioDoDiaUtc ( new Date() ) ),
+    // Ao criar, o vencimento nasce com o fim do dia de hoje (UTC).
     dtVencimento:  inicial.dtVencimento  ? inicial.dtVencimento.slice ( 0, 16 ) : paraDataHoraInputUtc ( fimDoDiaUtc ( new Date() ) ),
     valor:         inicial.valor         ?? '',
     juro:          inicial.juro          ?? '0.00',
@@ -57,7 +54,7 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
     // A conta nasce baixada: valor em branco = valor total calculado pelo Backend.
     valorBaixa:    inicial.valorBaixa    ?? '',
     dtBaixa:       inicial.dtBaixa       ? inicial.dtBaixa.slice ( 0, 16 ) : paraDataHoraInputUtc ( new Date() ),
-    isActive:      inicial.isActive      ?? true,
+    isActive:      inicial.isActive ?? true,
   } );
 
   const campoFornecedor = useCampoConsulta (
@@ -81,8 +78,6 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
   const [ erro, setErro ]             = useState ( '' );
   const [ errosCampo, setErrosCampo ] = useState < Record < string, string > > ( {} );
   const [ salvando, setSalvando ]     = useState ( false );
-  const [ justificativa, setJustificativa ] = useState ( inicial.justificativaCancelamento ?? '' );
-  const [ confirmandoSenha, setConfirmandoSenha ] = useState ( false );
 
   // Valor total (valor + juro + multa − desconto): calculado pelo Backend a cada mudança.
   const [ vlrTotal, setVlrTotal ] = useState ( inicial.vlrTotal ?? '0.00' );
@@ -121,54 +116,11 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
 
   const editando = !!( inicial.numero && inicial.modelo && inicial.serie && inicial.codFornecedor && inicial.parcela );
 
-  // Sem edição: fora do modo novo (consulta/cancelar) tudo fica somente leitura.
+  // Sem edição: fora do modo novo (consulta) tudo fica somente leitura. Uma conta cancelada
+  // (pela compra) mostra a justificativa só para leitura.
   const contaCancelada  = !!inicial.justificativaCancelamento;
   const somenteLeitura  = modo !== undefined;
   const edicaoBloqueada = somenteLeitura;
-
-  const idConta =
-  {
-    numero:  inicial.numero!,
-    modelo:  inicial.modelo!,
-    serie:   inicial.serie!,
-    codFornecedor: inicial.codFornecedor!,
-    parcela: inicial.parcela!,
-  };
-
-  const Executar = async ( acao: () => Promise < void > ) =>
-  {
-    setSalvando ( true );
-    setErro ( '' );
-    setErrosCampo ( {} );
-
-    try
-    {
-      await acao();
-      onSalvo();
-    }
-    catch ( err )
-    {
-      if ( err instanceof ApiError && err.erros )
-      {
-        setErrosCampo ( err.erros );
-      }
-      else
-      {
-        setErro ( ( err as Error ).message );
-      }
-    }
-    finally
-    {
-      setSalvando ( false );
-    }
-  };
-
-  const ConfirmarCancelamento = () =>
-  {
-    setConfirmandoSenha ( false );
-
-    void Executar ( () => contasPagamentoService.cancelar ( idConta, { justificativaCancelamento: justificativa } ).then ( () => undefined ) );
-  };
 
   // A chave (numero/modelo/serie/fornecedor/parcela) precisa ser validada — formato e
   // inexistência prévia — antes de liberar a edição dos demais campos (ver docs/02-arquitetura.md).
@@ -179,63 +131,95 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
   const AlterarChave = ( campo: 'numero' | 'modelo' | 'serie', valor: string ) =>
   {
     setForm ( { ...form, [ campo ]: valor } );
-    setChaveValidada ( false );
-    setErroChave ( '' );
   };
 
-  const ValidarChave = async () =>
-  {
-    setValidandoChave ( true );
-    setErroChave ( '' );
-    setErrosCampo ( {} );
+  // A validação dispara sozinha quando todos os campos da chave estão preenchidos.
+  const chaveCompleta = form.numero.length === 9 && form.modelo.length === 2 && form.serie.length === 2
+    && campoFornecedor.codigo > 0 && form.parcela >= 1;
 
-    // O fornecedor faz parte da chave: precisa existir antes de validar o documento.
-    if ( !( await campoFornecedor.validar() ) )
+  useEffect ( () =>
+  {
+    if ( editando )
     {
-      setValidandoChave ( false );
       return;
     }
 
-    try
+    // Mudou a chave: a validação anterior deixa de valer.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setChaveValidada ( false );
+    setErroChave ( '' );
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    if ( !chaveCompleta )
     {
-      await contasPagamentoService.validarChave (
+      return;
+    }
+
+    let ativo = true;
+
+    const temporizador = setTimeout ( async () =>
+    {
+      setValidandoChave ( true );
+      setErrosCampo ( {} );
+
+      try
+      {
+        // O fornecedor faz parte da chave: precisa existir antes de validar o documento.
+        if ( !( await campoFornecedor.validar() ) )
         {
+          return;
+        }
+
+        await contasPagamentoService.validarChave (
+          {
           numero:  form.numero,
           modelo:  form.modelo,
           serie:   form.serie,
           codFornecedor: campoFornecedor.codigo,
           parcela: form.parcela,
         }
-      );
-      setChaveValidada ( true );
-    }
-    catch ( err )
-    {
-      if ( err instanceof ApiError && err.erros )
-      {
-        setErrosCampo ( err.erros );
+        );
+
+        if ( ativo )
+        {
+          setChaveValidada ( true );
+        }
       }
-      else
+      catch ( err )
       {
-        setErroChave ( ( err as Error ).message );
+        if ( ativo )
+        {
+          if ( err instanceof ApiError && err.erros )
+          {
+            setErrosCampo ( err.erros );
+          }
+          else
+          {
+            setErroChave ( ( err as Error ).message );
+          }
+        }
       }
-    }
-    finally
+      finally
+      {
+        if ( ativo )
+        {
+          setValidandoChave ( false );
+        }
+      }
+    }, 400 );
+
+    return () =>
     {
+      ativo = false;
+      clearTimeout ( temporizador );
       setValidandoChave ( false );
-    }
-  };
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ form.numero, form.modelo, form.serie, form.parcela, campoFornecedor.codigo ] );
 
   const submit = async ( evento: React.SyntheticEvent ) =>
   {
     evento.preventDefault();
-
-    if ( modo === 'cancelar' )
-    {
-      // Justificativa informada, falta o popup de login/confirmação.
-      setConfirmandoSenha ( true );
-      return;
-    }
 
     if ( modo === 'consulta' )
     {
@@ -262,7 +246,6 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
       parcela:       form.parcela,
       codFornecedor: campoFornecedor.codigo,
       codFormaDePag: campoFormaPag.codigo,
-      dtEmissao:     doInputUtcParaIso ( form.dtEmissao ),
       dtVencimento:  doInputUtcParaIso ( form.dtVencimento ),
       valor:         Number ( form.valor ).toFixed ( 2 ),
       juro:          Number ( form.juro ).toFixed ( 2 ),
@@ -308,11 +291,32 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
             <input
               id="modelo"
               value={ form.modelo }
-              onChange={ ( evento ) => AlterarChave ( 'modelo', evento.target.value.replace ( /\D/g, '' ) ) }
+              onChange={ ( evento ) =>
+              {
+                AlterarChave ( 'modelo', evento.target.value.replace ( /\D/g, '' ) );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'modelo', validarDigitos ( evento.target.value, [ 2 ], 'O modelo' ) ) );
+              } }
               maxLength={ 2 }
               placeholder="2 dígitos"
-              disabled={ editando || chaveValidada }
-              readOnly={ editando || chaveValidada }
+              disabled={ editando }
+              readOnly={ editando }
+              required
+            />
+          </FormCampo>
+
+          <FormCampo label="Série" obrigatorio colunas={ 1 } htmlFor="serie" erro={ errosCampo.serie }>
+            <input
+              id="serie"
+              value={ form.serie }
+              onChange={ ( evento ) =>
+              {
+                AlterarChave ( 'serie', evento.target.value.replace ( /\D/g, '' ) );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'serie', validarDigitos ( evento.target.value, [ 2 ], 'A série' ) ) );
+              } }
+              maxLength={ 2 }
+              placeholder="2 dígitos"
+              disabled={ editando }
+              readOnly={ editando }
               required
             />
           </FormCampo>
@@ -321,28 +325,19 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
             <input
               id="numero"
               value={ form.numero }
-              onChange={ ( evento ) => AlterarChave ( 'numero', evento.target.value.replace ( /\D/g, '' ) ) }
+              onChange={ ( evento ) =>
+              {
+                AlterarChave ( 'numero', evento.target.value.replace ( /\D/g, '' ) );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'numero', validarDigitos ( evento.target.value, [ 9 ], 'O número' ) ) );
+              } }
               maxLength={ 9 }
               placeholder="9 dígitos"
-              disabled={ editando || chaveValidada }
-              readOnly={ editando || chaveValidada }
+              disabled={ editando }
+              readOnly={ editando }
               required
               autoFocus
             />
-          </FormCampo>
- 
-          <FormCampo label="Série" obrigatorio colunas={ 1 } htmlFor="serie" erro={ errosCampo.serie }>
-            <input
-              id="serie"
-              value={ form.serie }
-              onChange={ ( evento ) => AlterarChave ( 'serie', evento.target.value.replace ( /\D/g, '' ) ) }
-              maxLength={ 2 }
-              placeholder="2 dígitos"
-              disabled={ editando || chaveValidada }
-              readOnly={ editando || chaveValidada }
-              required
-            />
-          </FormCampo>
+          </FormCampo> 
 
           <FormCampo label="Parcela" obrigatorio colunas={ 1 } htmlFor="parcela" erro={ errosCampo.parcela }>
             <input
@@ -351,14 +346,14 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
               min="1"
               value={ form.parcela }
               onChange={ ( evento ) => setForm ( { ...form, parcela: Number ( evento.target.value ) } ) }
-              disabled={ editando || chaveValidada }
-              readOnly={ editando || chaveValidada }
+              disabled={ editando }
+              readOnly={ editando }
               required
             />
           </FormCampo> 
-        </FormSecao> 
-
-        <FormSecao>
+          <FormCampo colunas={ 0.5 }>
+            <div></div>
+          </FormCampo>
           <CampoConsulta
             campo={ campoFornecedor }
             Consulta={ FornecedorConsulta }
@@ -367,24 +362,45 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
             rotuloNome="Nome do fornecedor"
             obrigatorio
             erroApi={ errosCampo.codFornecedor }
-            colunas={ [ 2, 1, 5 ] }
-            desabilitado={ editando || chaveValidada }
+            colunas={ [ 2, 1, 3.5 ] }
+            desabilitado={ editando }
           />
+        </FormSecao> 
 
+        <FormSecao>
           {
             !editando && (
-              <FormCampo label="Chave do documento" colunas={ 2 } erro={ erroChave }>
-                <Botao
-                  type="button"
-                  $variante={ chaveValidada ? 'secundario' : undefined }
-                  onClick={ ValidarChave }
-                  disabled={ chaveValidada }
-                >
-                  { chaveValidada ? 'Chave validada ✓' : validandoChave ? 'Validando…' : 'Validar chave' }
-                </Botao>
+              <FormCampo label="Chave do documento" colunas={ 12 } erro={ erroChave }>
+                <span role="status">
+                  { validandoChave ? 'Validando…' : chaveValidada ? 'Chave válida ✓' : 'Preencha a chave para validar' }
+                </span>
               </FormCampo>
             )
           }
+        </FormSecao>
+
+        <FormSecao>
+          <FormCampo label="Data e hora da baixa (UTC)" obrigatorio colunas={ 3 } htmlFor="dtBaixa" erro={ errosCampo.dtBaixa }>
+            <input
+              id="dtBaixa"
+              type="datetime-local"
+              value={ form.dtBaixa }
+              onChange={ ( evento ) => setForm ( { ...form, dtBaixa: evento.target.value } ) }
+              required
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
+            />
+          </FormCampo>
+
+          <FormCampo label="Data e hora de vencimento (UTC)" obrigatorio colunas={ 3 } htmlFor="dtVencimento" erro={ errosCampo.dtVencimento }>
+            <input
+              id="dtVencimento"
+              type="datetime-local"
+              value={ form.dtVencimento }
+              onChange={ ( evento ) => setForm ( { ...form, dtVencimento: evento.target.value } ) }
+              required
+              disabled={ !editando && !chaveValidada || edicaoBloqueada }
+            />
+          </FormCampo>
         </FormSecao>
 
         <FormSecao>
@@ -409,7 +425,11 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
               step="0.01"
               min="0"
               value={ form.valor }
-              onChange={ ( evento ) => setForm ( { ...form, valor: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, valor: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'valor', validarDecimal ( evento.target.value, 2, 'O valor' ) ) );
+              } }
               placeholder="0.00"
               required
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
@@ -425,7 +445,11 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
               step="0.01"
               min="0"
               value={ form.juro }
-              onChange={ ( evento ) => setForm ( { ...form, juro: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, juro: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'juro', validarDecimal ( evento.target.value, 2, 'O juro' ) ) );
+              } }
               placeholder="0.00"
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
@@ -440,7 +464,11 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
               step="0.01"
               min="0"
               value={ form.desconto }
-              onChange={ ( evento ) => setForm ( { ...form, desconto: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, desconto: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'desconto', validarDecimal ( evento.target.value, 2, 'O desconto' ) ) );
+              } }
               placeholder="0.00"
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
@@ -455,44 +483,16 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
               step="0.01"
               min="0"
               value={ form.multa }
-              onChange={ ( evento ) => setForm ( { ...form, multa: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, multa: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'multa', validarDecimal ( evento.target.value, 2, 'A multa' ) ) );
+              } }
               placeholder="0.00"
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
             />
           </FormCampo>
         </FormSecao>
-
-        <FormSecao>
-          <FormCampo label="Valor total" colunas={ 2 } htmlFor="vlrTotal">
-            <input id="vlrTotal" disabled readOnly value={ vlrTotal } style={ { fontWeight: 700 } } />
-          </FormCampo>
-        </FormSecao>
-
-        <FormSecao>
-          <FormCampo label="Data e hora de emissão (UTC)" obrigatorio colunas={ 3 } htmlFor="dtEmissao" erro={ errosCampo.dtEmissao }>
-            <input
-              id="dtEmissao"
-              type="datetime-local"
-              value={ form.dtEmissao }
-              onChange={ ( evento ) => setForm ( { ...form, dtEmissao: evento.target.value } ) }
-              required
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            />
-          </FormCampo>
-
-          <FormCampo label="Data e hora de vencimento (UTC)" obrigatorio colunas={ 3 } htmlFor="dtVencimento" erro={ errosCampo.dtVencimento }>
-            <input
-              id="dtVencimento"
-              type="datetime-local"
-              value={ form.dtVencimento }
-              onChange={ ( evento ) => setForm ( { ...form, dtVencimento: evento.target.value } ) }
-              min={ form.dtEmissao || undefined }
-              required
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            />
-          </FormCampo>
-        </FormSecao>
-
 
         <FormSecao>
           <FormCampo label="Valor da baixa" colunas={ 2 } htmlFor="valorBaixa" erro={ errosCampo.valorBaixa }>
@@ -502,20 +502,15 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
               step="0.01"
               min="0"
               value={ form.valorBaixa }
-              onChange={ ( evento ) => setForm ( { ...form, valorBaixa: evento.target.value } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, valorBaixa: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'valorBaixa', validarDecimal ( evento.target.value, 2, 'O valor da baixa' ) ) );
+              } }
               placeholder={ vlrTotal }
               disabled={ !editando && !chaveValidada || edicaoBloqueada }
-            />
-          </FormCampo>
-
-          <FormCampo label="Data e hora da baixa (UTC)" obrigatorio colunas={ 3 } htmlFor="dtBaixa" erro={ errosCampo.dtBaixa }>
-            <input
-              id="dtBaixa"
-              type="datetime-local"
-              value={ form.dtBaixa }
-              onChange={ ( evento ) => setForm ( { ...form, dtBaixa: evento.target.value } ) }
-              required
-              disabled={ !editando && !chaveValidada || edicaoBloqueada }
+              readOnly
+              style={ { fontWeight: 700 } }
             />
           </FormCampo>
         </FormSecao>
@@ -531,23 +526,18 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
         </FormSecao>
 
         {
-          ( modo === 'cancelar' || contaCancelada ) && (
+          contaCancelada && (
             <FormSecao>
               <FormCampo
-                label="Justificativa do cancelamento"
-                obrigatorio={ modo === 'cancelar' }
+                label="Justificativa do cancelamento (da compra)"
                 colunas={ 12 }
                 htmlFor="justificativaCancelamento"
-                erro={ errosCampo.justificativaCancelamento }
               >
                 <input
                   id="justificativaCancelamento"
-                  value={ justificativa }
-                  onChange={ ( evento ) => setJustificativa ( evento.target.value ) }
-                  maxLength={ 255 }
-                  disabled={ modo !== 'cancelar' }
-                  required={ modo === 'cancelar' }
-                  autoFocus={ modo === 'cancelar' }
+                  value={ inicial.justificativaCancelamento ?? '' }
+                  disabled
+                  readOnly
                 />
               </FormCampo>
             </FormSecao>
@@ -565,25 +555,8 @@ export default function ContaPagamentoForm ( { modo, inicial, onSalvo, onCancela
               </Botao>
             )
           }
-          {
-            modo === 'cancelar' && (
-              <Botao type="submit" $variante="perigo" disabled={ salvando }>
-                { salvando ? 'Cancelando…' : 'Confirmar cancelamento' }
-              </Botao>
-            )
-          }
         </FormAcoes>
       </FormModal>
-
-      {
-        confirmandoSenha && (
-          <ConfirmarSenhaModal
-            titulo="Confirme sua identidade para cancelar a conta a pagar"
-            onConfirmar={ ConfirmarCancelamento }
-            onCancelar={ () => setConfirmandoSenha ( false ) }
-          />
-        )
-      }
     </>
   );
 }

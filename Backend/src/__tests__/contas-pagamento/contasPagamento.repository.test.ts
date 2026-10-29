@@ -30,7 +30,7 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
                     parcela: 1,
                     codFornecedor,
                     codFormaDePag,
-                    dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '150.00',
+                    dtVencimento: new Date ( '2026-01-10' ), valor: '150.00',
                     juro: '0.00',
                     desconto: '0.00',
                     multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ),
@@ -70,7 +70,7 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
                     parcela: 1,
                     codFornecedor,
                     codFormaDePag,
-                    dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00',
+                    dtVencimento: new Date ( '2026-01-10' ), valor: '100.00',
                     juro: '0.00',
                     desconto: '0.00',
                     multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ),
@@ -101,7 +101,7 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
 
             await repo.Create
             (
-                { ...id, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) } as never,
+                { ...id, codFormaDePag, dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) } as never,
                 1,
                 transaction
             );
@@ -126,20 +126,48 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
         });
     });
 
-    it ( 'Cancelar define a justificativaCancelamento dentro da transação', async () =>
+    it ( 'Cancelar desativa só a conta da chave primária completa, dentro da transação', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
             const codFornecedor = await criarFornecedorDeTeste ( transaction );
             const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
             const id: ContaAPagarId = { numero: '000000004', modelo: '01', serie: '01', codFornecedor, parcela: 1 };
+            const campos = { codFornecedor, codFormaDePag, dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) };
 
-            await repo.Create ( { ...id, codFornecedor, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) } as never, 1, transaction );
+            await repo.Create ( { ...id, ...campos } as never, 1, transaction );
+            await repo.Create ( { ...id, ...campos, parcela: 2 } as never, 1, transaction );
 
             const cancelada = await repo.Cancelar ( id, 'Compra desfeita pelo fornecedor', 1, transaction );
 
             expect ( cancelada!.justificativaCancelamento ).toBe ( 'Compra desfeita pelo fornecedor' );
-            expect ( cancelada!.isActive ).toBe ( true );
+            expect ( cancelada!.isActive ).toBe ( false );
+            // A outra parcela do mesmo documento não é afetada.
+            expect ( ( await repo.FindById ( { ...id, parcela: 2 }, transaction ) )!.isActive ).toBe ( true );
+            // Já cancelada: não regrava.
+            expect ( await repo.Cancelar ( id, 'De novo', 1, transaction ) ).toBeNull();
+        });
+    });
+
+    it ( 'ListAtivasPorDocumento devolve só as parcelas não canceladas do documento', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codFornecedor = await criarFornecedorDeTeste ( transaction );
+            const codFormaDePag = await criarFormaDePagamentoDeTeste ( transaction );
+            const documento = { numero: '000000004', modelo: '01', serie: '01', codFornecedor };
+            const campos    = { codFornecedor, codFormaDePag, dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) };
+
+            await repo.Create ( { ...documento, ...campos, parcela: 1 } as never, 1, transaction );
+            await repo.Create ( { ...documento, ...campos, parcela: 2 } as never, 1, transaction );
+            await repo.Create ( { ...documento, ...campos, parcela: 3 } as never, 1, transaction );
+            // Outro documento do mesmo fornecedor não entra na lista.
+            await repo.Create ( { ...documento, ...campos, numero: '000000005', parcela: 1 } as never, 1, transaction );
+            await repo.Cancelar ( { ...documento, parcela: 3 }, 'Cancelada antes', 1, transaction );
+
+            const ativas = await repo.ListAtivasPorDocumento ( documento, transaction );
+
+            expect ( ativas.map ( ( conta ) => conta.parcela ) ).toEqual ( [ 1, 2 ] );
         });
     });
 
@@ -153,8 +181,8 @@ describe ( 'ContasPagamentoRepository (rollback)', () =>
             const primeira  = { numero: '000000006', modelo: '01', serie: '01', codFornecedor, parcela: 1 };
             const segunda   = { numero: '000000007', modelo: '01', serie: '01', codFornecedor, parcela: 1 };
 
-            await repo.Create ( { ...primeira, codFornecedor, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) } as never, 1, transaction );
-            await repo.Create ( { ...segunda,  codFornecedor, codFormaDePag, dtEmissao: new Date ( '2026-01-01' ), dtVencimento: new Date ( '2026-01-10' ), valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) } as never, 1, transaction );
+            await repo.Create ( { ...primeira, codFornecedor, codFormaDePag, dtVencimento: new Date ( '2026-01-10' ), valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) } as never, 1, transaction );
+            await repo.Create ( { ...segunda,  codFornecedor, codFormaDePag, dtVencimento: new Date ( '2026-01-10' ), valor: '200.00', juro: '0.00', desconto: '0.00', multa: '0.00', valorBaixa: '100.00', dtBaixa: new Date ( '2026-01-15T00:00:00Z' ) } as never, 1, transaction );
 
             const pagina = await repo.List ( 1, primeira, transaction );
 

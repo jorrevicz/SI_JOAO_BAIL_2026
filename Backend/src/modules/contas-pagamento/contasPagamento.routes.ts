@@ -4,7 +4,6 @@ import
 {
     calcularTotalContaSchema,
     createContasAPagarSchema,
-    cancelarContaPagarSchema,
 } from './contasPagamento.schema';
 import { ContasPagamentoController } from './contasPagamento.controller';
 
@@ -18,6 +17,8 @@ ContasPagamentoRouter.get    ( '/validar',                controller.ValidarChav
 ContasPagamentoRouter.post   ( '/calcular',               Validate ( calcularTotalContaSchema ), controller.CalcularTotalController );
 ContasPagamentoRouter.get    ( ID_PATH,                   controller.GetByIdContasController   );
 ContasPagamentoRouter.post   ( '/',                       Validate ( createContasAPagarSchema ),      controller.CreateContaController    );
-ContasPagamentoRouter.patch  ( `${ ID_PATH }/cancelar`,   Validate ( cancelarContaPagarSchema ),       controller.CancelarContaController  );
+
+// Sem exclusão nem cancelamento por aqui: a conta a pagar só é desativada pelo cancelamento
+// da compra (`PATCH /api/compras/.../cancelar`), que chama `CancelarContasDaCompra`.
 
 export default ContasPagamentoRouter;

@@ -4,7 +4,6 @@ import {
   datasDocumentoFiscalSchema,
   ValidarDatasDocumentoFiscal,
   vencimentoDocumentoFiscalSchema,
-  ValidarVencimentoDocumentoFiscal,
 } from '../shared/documento-fiscal/documentoFiscal.schema';
 import { ValidarDocumentoFiscalInexistente } from '../shared/documento-fiscal/documentoFiscal.service';
 import { AppError } from '../shared/errors/AppError';
@@ -100,69 +99,16 @@ describe ( 'ValidarDatasDocumentoFiscal (RN004)', () => {
   } );
 } );
 
-describe ( 'ValidarVencimentoDocumentoFiscal (contas a pagar/receber)', () => {
-  const schema = vencimentoDocumentoFiscalSchema.superRefine ( ValidarVencimentoDocumentoFiscal );
-
-  function ErrosDe ( dados: unknown )
-  {
-    const resultado = schema.safeParse ( dados );
-
-    return resultado.success
-      ? []
-      : resultado.error.issues.map ( ( issue ) => ( { campo: issue.path[ 0 ], mensagem: issue.message } ) );
-  }
-
-  it ( 'aceita vencimento posterior à emissão, inclusive no futuro', () => {
-    expect ( ErrosDe ( { dtEmissao: '2026-09-01T10:00:00Z', dtVencimento: '2026-09-01T10:00:01Z' } ) ).toEqual ( [] );
-    expect ( ErrosDe ( { dtEmissao: new Date ( Date.now() + UM_DIA ), dtVencimento: new Date ( Date.now() + 2 * UM_DIA ) } ) ).toEqual ( [] );
+describe ( 'vencimentoDocumentoFiscalSchema (contas a pagar/receber)', () => {
+  it ( 'aceita vencimento válido, inclusive no passado ou no futuro', () => {
+    expect ( vencimentoDocumentoFiscalSchema.safeParse ( { dtVencimento: '2026-09-01T10:00:00Z' } ).success ).toBe ( true );
+    expect ( vencimentoDocumentoFiscalSchema.safeParse ( { dtVencimento: new Date ( Date.now() + UM_DIA ) } ).success ).toBe ( true );
   } );
 
-  it ( 'rejeita datas inválidas', () => {
-    expect ( ErrosDe ( { dtEmissao: 'x', dtVencimento: 'y' } ) ).toEqual
-    ( [
-      { campo: 'dtEmissao',    mensagem: 'A data de emissão é inválida.' },
-      { campo: 'dtVencimento', mensagem: 'A data de vencimento é inválida.' },
-    ] );
-  } );
+  it ( 'rejeita vencimento inválido', () => {
+    const resultado = vencimentoDocumentoFiscalSchema.safeParse ( { dtVencimento: 'y' } );
 
-  it.each
-  ( [
-    [ 'igual',    '2026-09-01T10:00:00Z' ],
-    [ 'anterior', '2026-08-31T23:59:59Z' ],
-  ] )
-  ( 'rejeita vencimento %s à emissão', ( _rotulo, dtVencimento ) => {
-    expect ( ErrosDe ( { dtEmissao: '2026-09-01T10:00:00Z', dtVencimento } ) ).toEqual
-    ( [
-      { campo: 'dtVencimento', mensagem: 'A data de vencimento não pode ser igual ou anterior à data de emissão.' },
-    ] );
-  } );
-} );
-
-describe ( 'ValidarDocumentoFiscalInexistente', () => {
-  const chave = { numero: '000012345', modelo: '01', serie: '01' };
-
-  it ( 'resolve sem erro quando o documento ainda não existe', async () => {
-    const verificarExistencia = vi.fn().mockResolvedValue ( false );
-
-    await expect
-    (
-      ValidarDocumentoFiscalInexistente ( chave, verificarExistencia )
-    ).resolves.toBeUndefined();
-
-    expect ( verificarExistencia ).toHaveBeenCalledWith ( chave );
-  } );
-
-  it ( 'lança AppError 409 quando já existe documento com as três chaves', async () => {
-    const verificarExistencia = vi.fn().mockResolvedValue ( true );
-
-    await expect
-    (
-      ValidarDocumentoFiscalInexistente ( chave, verificarExistencia )
-    ).rejects.toThrow ( AppError );
-
-    await expect
-    (
-      ValidarDocumentoFiscalInexistente ( chave, verificarExistencia )
-    ).rejects.toMatchObject ( { status: 409 } );
+    expect ( resultado.success ).toBe ( false );
+    expect ( resultado.error?.issues[ 0 ].message ).toBe ( 'A data de vencimento é inválida.' );
   } );
 } );

@@ -18,7 +18,6 @@ export interface ContaAReceber
   parcela:                    number;
   codCliente:                  number;
   codFormaDePag:               number;
-  dtEmissao:                   string | null;
   dtVencimento:                string | null;
   valor:                       string;
   juro:                        string;
@@ -27,7 +26,6 @@ export interface ContaAReceber
   valorBaixa:                  string;
   vlrTotal:                    string;
   dtBaixa:                     string;
-  dtPagamento:                 string;
   justificativaCancelamento:   string | null;
   dtCriacao:                   string;
   dtEdicao:                    string;
@@ -43,7 +41,6 @@ export interface CreateContaAReceberInput
   parcela:       number;
   codCliente:    number;
   codFormaDePag: number;
-  dtEmissao:     string;
   dtVencimento:  string;
   valor:         string;
   juro:          string;
@@ -52,7 +49,6 @@ export interface CreateContaAReceberInput
   // A conta nasce já baixada: não há edição nem baixa posterior, só cancelamento.
   valorBaixa:    string;
   dtBaixa:       string;
-  dtPagamento:   string;
   isActive:      boolean;
 }
 

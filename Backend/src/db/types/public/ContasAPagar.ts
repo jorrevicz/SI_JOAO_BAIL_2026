@@ -42,8 +42,6 @@ export default interface ContasAPagar {
 
   codFormaDePag: FormaDePagamentoCodFormaDePag;
 
-  dtEmissao: Date;
-
   juro: string;
 
   desconto: string;
@@ -86,8 +84,6 @@ export interface ContasAPagarInitializer {
 
   codFormaDePag: FormaDePagamentoCodFormaDePag;
 
-  dtEmissao: Date;
-
   juro: string;
 
   desconto: string;
@@ -126,8 +122,6 @@ export interface ContasAPagarMutator {
   isActive?: boolean;
 
   codFormaDePag?: FormaDePagamentoCodFormaDePag;
-
-  dtEmissao?: Date;
 
   juro?: string;
 

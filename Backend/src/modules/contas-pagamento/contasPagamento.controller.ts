@@ -134,28 +134,4 @@ export class ContasPagamentoController
             next ( err );
         }
     }
-
-    CancelarContaController = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) =>
-    {
-        try
-        {
-            res.status ( 200 ).json
-            (
-                await this.service.CancelarConta
-                (
-                    ExtrairId ( req ),
-                    req.body.justificativaCancelamento,
-                    req.codUser!
-                )
-            );
-        }
-        catch ( err )
-        {
-            next ( err );
-        }
-    }
 }

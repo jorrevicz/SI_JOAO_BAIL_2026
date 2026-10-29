@@ -28,8 +28,7 @@ export class ContasReceberRepository
             return client < ContasAReceber[] >`
                 SELECT *
                 FROM   "ContasAReceber"
-                WHERE  "isActive" = true
-                AND    ( "numero", "modelo", "serie", "codCliente", "parcela" ) >
+                WHERE  ( "numero", "modelo", "serie", "codCliente", "parcela" ) >
                        ( ${ afterCursor.numero }, ${ afterCursor.modelo }, ${ afterCursor.serie }, ${ afterCursor.codCliente }, ${ afterCursor.parcela } )
                 ORDER BY "numero", "modelo", "serie", "codCliente", "parcela"
                 LIMIT  ${ limit }
@@ -39,7 +38,6 @@ export class ContasReceberRepository
         return client < ContasAReceber[] >`
             SELECT *
             FROM   "ContasAReceber"
-            WHERE  "isActive" = true
             ORDER BY "numero", "modelo", "serie", "codCliente", "parcela"
             LIMIT  ${ limit }
         `;
@@ -60,7 +58,6 @@ export class ContasReceberRepository
             AND    "serie"   = ${ id.serie }
             AND    "codCliente" = ${ id.codCliente }
             AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
         `;
 
         return row ?? null;
@@ -81,7 +78,6 @@ export class ContasReceberRepository
             AND    "serie"  = ${ chave.serie }
             AND    "codCliente" = ${ chave.codCliente }
             AND    "parcela" = ${ chave.parcela }
-            AND    "isActive" = true
             LIMIT  1
         `;
 
@@ -105,7 +101,6 @@ export class ContasReceberRepository
                 "parcela",
                 "codCliente",
                 "codFormaDePag",
-                "dtEmissao",
                 "dtVencimento",
                 "valor",
                 "juro",
@@ -113,7 +108,6 @@ export class ContasReceberRepository
                 "multa",
                 "valorBaixa",
                 "dtBaixa",
-                "dtPagamento",
                 "codUser"
             )
             VALUES
@@ -124,7 +118,6 @@ export class ContasReceberRepository
                 ${ conta.parcela },
                 ${ conta.codCliente },
                 ${ conta.codFormaDePag },
-                ${ conta.dtEmissao },
                 ${ conta.dtVencimento },
                 ${ conta.valor ?? null },
                 ${ conta.juro ?? null },
@@ -132,7 +125,6 @@ export class ContasReceberRepository
                 ${ conta.multa ?? null },
                 ${ conta.valorBaixa },
                 ${ conta.dtBaixa },
-                ${ conta.dtPagamento },
                 ${ codUser }
             )
             RETURNING *
@@ -153,6 +145,7 @@ export class ContasReceberRepository
         const [ row ] = await client < ContasAReceber[] >`
             UPDATE "ContasAReceber"
             SET    "justificativaCancelamento" = ${ justificativaCancelamento },
+                   "isActive"                  = false,
                    "codUser"                   = ${ codUser },
                    "dtEdicao"                  = CURRENT_TIMESTAMP
             WHERE  "numero"  = ${ id.numero }
@@ -160,7 +153,7 @@ export class ContasReceberRepository
             AND    "serie"   = ${ id.serie }
             AND    "codCliente" = ${ id.codCliente }
             AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
+            AND    "justificativaCancelamento" IS NULL
             RETURNING *
         `;
 

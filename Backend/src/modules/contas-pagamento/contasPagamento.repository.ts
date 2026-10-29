@@ -28,8 +28,7 @@ export class ContasPagamentoRepository
             return client < ContasAPagar[] >`
                 SELECT *
                 FROM   "ContasAPagar"
-                WHERE  "isActive" = true
-                AND    ( "numero", "modelo", "serie", "codFornecedor", "parcela" ) >
+                WHERE  ( "numero", "modelo", "serie", "codFornecedor", "parcela" ) >
                        ( ${ afterCursor.numero }, ${ afterCursor.modelo }, ${ afterCursor.serie }, ${ afterCursor.codFornecedor }, ${ afterCursor.parcela } )
                 ORDER BY "numero", "modelo", "serie", "codFornecedor", "parcela"
                 LIMIT  ${ limit }
@@ -39,7 +38,6 @@ export class ContasPagamentoRepository
         return client < ContasAPagar[] >`
             SELECT *
             FROM   "ContasAPagar"
-            WHERE  "isActive" = true
             ORDER BY "numero", "modelo", "serie", "codFornecedor", "parcela"
             LIMIT  ${ limit }
         `;
@@ -60,7 +58,6 @@ export class ContasPagamentoRepository
             AND    "serie"   = ${ id.serie }
             AND    "codFornecedor" = ${ id.codFornecedor }
             AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
         `;
 
         return row ?? null;
@@ -81,7 +78,6 @@ export class ContasPagamentoRepository
             AND    "serie"  = ${ chave.serie }
             AND    "codFornecedor" = ${ chave.codFornecedor }
             AND    "parcela" = ${ chave.parcela }
-            AND    "isActive" = true
             LIMIT  1
         `;
 
@@ -105,7 +101,6 @@ export class ContasPagamentoRepository
                 "parcela",
                 "codFornecedor",
                 "codFormaDePag",
-                "dtEmissao",
                 "dtVencimento",
                 "valor",
                 "juro",
@@ -123,7 +118,6 @@ export class ContasPagamentoRepository
                 ${ conta.parcela },
                 ${ conta.codFornecedor },
                 ${ conta.codFormaDePag },
-                ${ conta.dtEmissao },
                 ${ conta.dtVencimento },
                 ${ conta.valor ?? null },
                 ${ conta.juro ?? null },
@@ -139,6 +133,36 @@ export class ContasPagamentoRepository
         return row;
     }
 
+    // Contas a pagar ainda não canceladas de um documento (número, modelo, série e
+    // fornecedor) — todas as parcelas. Só leitura: serve para o cancelamento da compra
+    // descobrir quais contas excluir, cada uma depois pela chave primária completa.
+    // `FOR UPDATE` trava as linhas até o fim da transação do cancelamento.
+    async ListAtivasPorDocumento
+    (
+        documento: Omit < ContaAPagarId, 'parcela' >,
+        transaction?: postgres.TransactionSql
+    ): Promise < ContasAPagar[] >
+    {
+        const client = transaction ?? sql;
+
+        return client < ContasAPagar[] >`
+            SELECT *
+            FROM   "ContasAPagar"
+            WHERE  "numero"  = ${ documento.numero }
+            AND    "modelo"  = ${ documento.modelo }
+            AND    "serie"   = ${ documento.serie }
+            AND    "codFornecedor" = ${ documento.codFornecedor }
+            AND    "justificativaCancelamento" IS NULL
+            ORDER BY "parcela"
+            FOR UPDATE
+        `;
+    }
+
+    // Exclusão (soft delete) de uma conta a pagar: grava a justificativa e desativa o
+    // registro, que continua visível nas consultas. O `WHERE` exige a chave primária
+    // completa (número, modelo, série, fornecedor e parcela) — nunca uma parte dela.
+    // Não há cancelamento avulso pela tela de contas: só o cancelamento da compra chama
+    // este método (via `CancelarContasDaCompra`). Devolve null se a conta já estava cancelada.
     async Cancelar
     (
         id: ContaAPagarId,
@@ -151,6 +175,7 @@ export class ContasPagamentoRepository
         const [ row ] = await client < ContasAPagar[] >`
             UPDATE "ContasAPagar"
             SET    "justificativaCancelamento" = ${ justificativaCancelamento },
+                   "isActive"                  = false,
                    "codUser"                   = ${ codUser },
                    "dtEdicao"                  = CURRENT_TIMESTAMP
             WHERE  "numero"  = ${ id.numero }
@@ -158,7 +183,7 @@ export class ContasPagamentoRepository
             AND    "serie"   = ${ id.serie }
             AND    "codFornecedor" = ${ id.codFornecedor }
             AND    "parcela" = ${ id.parcela }
-            AND    "isActive" = true
+            AND    "justificativaCancelamento" IS NULL
             RETURNING *
         `;
 

@@ -7,10 +7,8 @@ import { FormasPagamentoRepository } from '../../modules/formas-pagamento/formas
 
 const BASE = '/api/contas-receber';
 
-// Datas válidas padrão usadas nos payloads (vencimento após a emissão).
-const DT_EMISSAO_ENVIO    = '2026-01-01';
+// Datas válidas padrão usadas nos payloads .
 const DT_VENCIMENTO_ENVIO = '2026-01-10';
-const DT_EMISSAO_ISO      = '2026-01-01T00:00:00.000Z';
 const DT_VENCIMENTO_ISO   = '2026-01-10T00:00:00.000Z';
 
 function EsperarConta
@@ -25,9 +23,7 @@ function EsperarConta
         parcela:                    1,
         codCliente:                 expect.any ( Number ),
         codFormaDePag:              expect.any ( Number ),
-        dtEmissao:                  null,
         dtVencimento:               null,
-        dtPagamento:                '2026-01-11T00:00:00.000Z',
         valor:                      null,
         juro:                       '0.00',
         desconto:                   '0.00',
@@ -146,9 +142,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000210', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '10.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         const res = await request ( app )
@@ -159,64 +155,15 @@ describe ( 'ContasReceber routes', () =>
         expect ( res.body ).toEqual ( { mensagem: 'Já existe um documento cadastrado com este número, modelo e série.' } );
     });
 
-    it ( 'POST /api/contas-receber com vencimento anterior à emissão retorna 400', async () =>
-    {
-        const res = await request ( app )
-            .post ( BASE )
-            .send ({
-                numero: '000000214', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag, dtEmissao: '2026-01-10', dtVencimento: '2026-01-01',
-                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
-            });
-
-        expect ( res.status ).toBe ( 400 );
-        expect ( res.body ).toEqual
-        ({
-            mensagem: 'A data de vencimento não pode ser igual ou anterior à data de emissão.',
-            erros: { dtVencimento: 'A data de vencimento não pode ser igual ou anterior à data de emissão.' },
-        });
-    });
-
-    it ( 'POST /api/contas-receber com vencimento igual à emissão (mesmo instante) retorna 400', async () =>
-    {
-        const res = await request ( app )
-            .post ( BASE )
-            .send ({
-                numero: '000000216', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag, dtEmissao: '2026-01-05T10:00', dtVencimento: '2026-01-05T10:00',
-                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
-            });
-
-        expect ( res.status ).toBe ( 400 );
-        expect ( res.body.erros ).toHaveProperty ( 'dtVencimento' );
-    });
-
-    it ( 'POST /api/contas-receber com vencimento mais tarde no mesmo dia da emissão retorna 201', async () =>
-    {
-        const res = await request ( app )
-            .post ( BASE )
-            .send ({
-                numero: '000000215', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag, dtEmissao: '2026-01-05T08:00', dtVencimento: '2026-01-05T23:59',
-                valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
-            });
-
-        expect ( res.status ).toBe ( 201 );
-        expect ( new Date ( res.body.dtVencimento ).getTime() ).toBeGreaterThan ( new Date ( res.body.dtEmissao ).getTime() );
-    });
-
     it ( 'POST /api/contas-receber com número zero-preenchido retorna 400', async () =>
     {
         const res = await request ( app )
             .post ( BASE )
             .send ({
                 numero: '000000000', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -229,9 +176,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000211', modelo: '00', serie: '00', parcela: 1,
-                codCliente, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -245,9 +192,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000212', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '0.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -260,9 +207,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000201', modelo: '01', serie: '01', parcela: 1,
-                codCliente: 999999, codFormaDePag: codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente: 999999, codFormaDePag: codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -275,9 +222,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000202', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag: 999999, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag: 999999, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '100.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 400 );
@@ -290,9 +237,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000203', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag: codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag: codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 201 );
@@ -301,7 +248,7 @@ describe ( 'ContasReceber routes', () =>
             EsperarConta
             ({
                 numero: '000000203', codCliente, codFormaDePag,
-                dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
+                dtVencimento: DT_VENCIMENTO_ISO,
                 valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
             })
         );
@@ -313,9 +260,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000203', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag: codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag: codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 409 );
@@ -328,9 +275,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000203', modelo: '01', serie: '01', parcela: 2,
-                codCliente, codFormaDePag: codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag: codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '150.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         expect ( res.status ).toBe ( 201 );
@@ -343,9 +290,9 @@ describe ( 'ContasReceber routes', () =>
             .post ( BASE )
             .send ({
                 numero: '000000206', modelo: '01', serie: '01', parcela: 1,
-                codCliente, codFormaDePag: codFormaDePag, dtEmissao: DT_EMISSAO_ENVIO, dtVencimento: DT_VENCIMENTO_ENVIO,
+                codCliente, codFormaDePag: codFormaDePag, dtVencimento: DT_VENCIMENTO_ENVIO,
                 valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00',
-                valorBaixa: '10.00', dtBaixa: '2026-01-11', dtPagamento: '2026-01-11',
+                valorBaixa: '10.00', dtBaixa: '2026-01-11',
             });
 
         const res = await request ( app )
@@ -358,8 +305,8 @@ describe ( 'ContasReceber routes', () =>
             EsperarConta
             ({
                 numero: '000000206', codCliente, codFormaDePag,
-                dtEmissao: DT_EMISSAO_ISO, dtVencimento: DT_VENCIMENTO_ISO,
-                valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00', justificativaCancelamento: 'Venda desfeita pelo cliente',
+                dtVencimento: DT_VENCIMENTO_ISO,
+                valor: '80.00', juro: '0.00', desconto: '0.00', multa: '0.00', justificativaCancelamento: 'Venda desfeita pelo cliente', isActive: false,
             })
         );
     });

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import sql from '../lib/db';
 import { CalcularCompra, CalcularEntradaEstoque } from '../modules/compras/compras.calculo';
+import { DigitoVerificadorChaveAcesso } from '../modules/notas-fiscais/notasFiscais.schema';
 
 // ============================================================
 // T-021 — Seed geográfico
@@ -710,7 +711,6 @@ async function seedContasAPagar(): Promise < void >
       parcela:       1,
       codFornecedor: forn1.codForn,
       codFormaDePag: boleto.codFormaDePag,
-      dtEmissao:     '2026-09-01',
       dtVencimento:  '2026-10-01',
       valor:         '3200.00',
       juro:          '0.00',
@@ -726,7 +726,6 @@ async function seedContasAPagar(): Promise < void >
       parcela:       1,
       codFornecedor: forn2.codForn,
       codFormaDePag: pix.codFormaDePag,
-      dtEmissao:     '2026-09-05',
       dtVencimento:  '2026-09-05T23:59:00Z',
       valor:         '1950.00',
       juro:          '0.00',
@@ -743,7 +742,6 @@ async function seedContasAPagar(): Promise < void >
       parcela:       1,
       codFornecedor: forn1.codForn,
       codFormaDePag: pix.codFormaDePag,
-      dtEmissao:     '2026-09-10',
       dtVencimento:  '2026-09-10T23:59:00Z',
       valor:         '500.00',
       juro:          '0.00',
@@ -769,11 +767,11 @@ async function seedContasAPagar(): Promise < void >
       await sql`
         INSERT INTO "ContasAPagar"
           ( "numero", "modelo", "serie", "parcela", "codFornecedor", "codFormaDePag",
-           "dtEmissao", "dtVencimento", "valor", "juro", "desconto", "multa",
+           "dtVencimento", "valor", "juro", "desconto", "multa",
            "valorBaixa", "dtBaixa" )
         VALUES
           ( ${ conta.numero }, ${ conta.modelo }, ${ conta.serie }, ${ conta.parcela },
-           ${ conta.codFornecedor }, ${ conta.codFormaDePag }, ${ conta.dtEmissao },
+           ${ conta.codFornecedor }, ${ conta.codFormaDePag },
            ${ conta.dtVencimento }, ${ conta.valor }, ${ conta.juro }, ${ conta.desconto }, ${ conta.multa },
            ${ conta.valorBaixa }, ${ conta.dtBaixa } )
       `;
@@ -902,6 +900,38 @@ async function seedCompras(): Promise < void >
       ON CONFLICT ( "numero", "modelo", "serie", "codForn", "numParcela" ) DO NOTHING
     `;
   }
+
+  // Lote C-5 — NF-e de entrada da compra de exemplo. A chave de acesso traz o CNPJ do
+  // fornecedor, o modelo, a série e o número da compra (DV módulo 11); impostos e totais
+  // são calculados pelo Backend a partir das alíquotas abaixo.
+  const chaveSemDigito = `352609${ '12345678000190' }${ compra.modelo }${ compra.serie.padStart ( 3, '0' ) }${ compra.numero }100000101`;
+
+  // A NF-e tem as mesmas chaves da compra (chave primária composta).
+  const notaCriada = await sql`
+    INSERT INTO "NotasFiscaisEletronicas"
+      ( "modelo", "numero", "serie", "codFornecedor", "chaveAcessoNfe", "dhEmiNfe", "fretePorConta" )
+    VALUES
+      ( ${ compra.modelo }, ${ compra.numero }, ${ compra.serie }, ${ fornecedor.codForn },
+       ${ chaveSemDigito + DigitoVerificadorChaveAcesso ( chaveSemDigito ) },
+       ${ compra.dtEmissao }, 'Emitente' )
+    ON CONFLICT ( "modelo", "numero", "serie", "codFornecedor" ) DO NOTHING
+    RETURNING "numero"
+  `;
+
+  if ( notaCriada.length > 0 )
+  {
+    for ( const item of itens )
+    {
+      await sql`
+        INSERT INTO "ProdutoNfe"
+          ( "modelo", "numero", "serie", "codFornecedor", "codProduto", "prodCfopNfe", "prodCsosnNfe",
+           "prodQtdNfe", "prodVlrUnNfe", "prodVlrDescNfe", "prodAliqIcmsNfe", "prodAliqIpiNfe" )
+        VALUES
+          ( ${ compra.modelo }, ${ compra.numero }, ${ compra.serie }, ${ fornecedor.codForn }, ${ item.codProduto },
+           '2102', '102', ${ item.quantidade }, ${ item.valorUnitario }, ${ item.desconto }, '12.00', '0.00' )
+      `;
+    }
+  }
 }
 
 // ============================================================
@@ -937,7 +967,6 @@ async function seedContasAReceber(): Promise < void >
       parcela:       1,
       codCliente:    ana.codCliente,
       codFormaDePag: boleto.codFormaDePag,
-      dtEmissao:     '2026-09-10',
       dtVencimento:  '2026-10-10T23:59:00Z',
       valor:         '380.00',
       juro:          '0.00',
@@ -945,7 +974,6 @@ async function seedContasAReceber(): Promise < void >
       multa:         '0.00',
       valorBaixa:    '380.00',
       dtBaixa:       '2026-10-10T12:00:00Z',
-      dtPagamento:   '2026-10-10T12:00:00Z',
     },
     // A conta a receber nasce já baixada (sem estado "em aberto").
     {
@@ -955,7 +983,6 @@ async function seedContasAReceber(): Promise < void >
       parcela:       1,
       codCliente:    carlos.codCliente,
       codFormaDePag: pix.codFormaDePag,
-      dtEmissao:     '2026-09-12',
       dtVencimento:  '2026-09-12T23:59:00Z',
       valor:         '210.00',
       juro:          '0.00',
@@ -963,7 +990,6 @@ async function seedContasAReceber(): Promise < void >
       multa:         '0.00',
       valorBaixa:    '210.00',
       dtBaixa:       '2026-09-12T15:30:00Z',
-      dtPagamento:   '2026-09-12T15:30:00Z',
     },
   ];
 
@@ -982,13 +1008,13 @@ async function seedContasAReceber(): Promise < void >
       await sql`
         INSERT INTO "ContasAReceber"
           ( "numero", "modelo", "serie", "parcela", "codCliente", "codFormaDePag",
-           "dtEmissao", "dtVencimento", "valor", "juro", "desconto", "multa",
-           "valorBaixa", "dtBaixa", "dtPagamento" )
+           "dtVencimento", "valor", "juro", "desconto", "multa",
+           "valorBaixa", "dtBaixa" )
         VALUES
           ( ${ conta.numero }, ${ conta.modelo }, ${ conta.serie }, ${ conta.parcela },
-           ${ conta.codCliente }, ${ conta.codFormaDePag }, ${ conta.dtEmissao },
+           ${ conta.codCliente }, ${ conta.codFormaDePag },
            ${ conta.dtVencimento }, ${ conta.valor }, ${ conta.juro }, ${ conta.desconto }, ${ conta.multa },
-           ${ conta.valorBaixa }, ${ conta.dtBaixa }, ${ conta.dtPagamento } )
+           ${ conta.valorBaixa }, ${ conta.dtBaixa } )
       `;
     }
   }
@@ -1115,13 +1141,14 @@ async function seedProcedimentos(): Promise < Record < string, number > >
 }
 
 /**
- * Duas OS em estágios diferentes do fluxo (RNF06 — Aparelho/Equipamento nascem
- * atomicamente com a OS, mesmo padrão de `AbrirOS()`). `numOdS` é inteiro gerado pelo
+ * Duas OS em estágios diferentes do fluxo (RNF06 — o Aparelho nasce atomicamente com
+ * a OS, mesmo padrão de `AbrirOS()`; a ficha de Equipamento só nasce no diagnóstico,
+ * como em `RegistrarDiagnostico()`). `numOdS` é inteiro gerado pelo
  * banco (UUID) — o seed usa valores fixos só para permitir a checagem de
  * idempotência (`existeOS1`/`existeOS2`), não para representar o formato real de
  * uma OS aberta pela aplicação (que nasce sem valor informado, via DEFAULT):
  * - OS_1: recém-aberta — checklist de procedimentos definida (RN009), mas ainda
- *   sem diagnóstico registrado (situação permanece 'Aberta').
+ *   sem diagnóstico registrado (situação permanece 'Aberta') e sem Equipamento.
  * - OS_2: fluxo completo — diagnóstico com checklist checada e orçamento de peça
  *   aprovado, execução com serviço prestado e peça efetivamente substituída
  *   (situação 'Em execução').
@@ -1159,24 +1186,14 @@ async function seedOrdensServico ( codProcedimentoMap: Record < string, number >
       VALUES ( 'NOTEBOOK', 'SN12345ABC', 'INSPIRON 15 3520', 'BIVOLT', '12 MESES' )
       RETURNING "codAparelho"
     `;
-    const [ equipamento1 ] = await sql`
-      INSERT INTO "Equipamentos"
-        ( "equipamento", "grupoUser", "soEq", "socketEq", "memoriaRam", "tipoOffice",
-         "placaMae", "bios", "capacidadeRam", "possuiSSD", "possuiHD", "capacidadeArmz", "usoArmz" )
-      VALUES
-        ( 'NOTEBOOK DELL INSPIRON 15', 'CASA', 'WIN11', 'BGA', '16GB', 'M365',
-         'DELL 0XYZ123', 'DELL BIOS 2.14', '16GB', true, false, '512GB', '60%' )
-      RETURNING "codEquipamento"
-    `;
-
     const [ ordemServico1 ] = await sql`
       INSERT INTO "OrdemDeServicos"
         ( "codCliente", "atendente", "codAparelho", "acessorio", "defeito",
-         "obsBalcao", "tipoOdS", "codEquipamento", "solicitante", "dtAtendimento" )
+         "obsBalcao", "tipoOdS", "solicitante", "dtAtendimento" )
       VALUES
         ( ${ ana.codCliente }, 'JULIANA PEREIRA DIAS', ${ aparelho1.codAparelho }, 'CARREGADOR',
          'NÃO LIGA', 'CLIENTE RELATA QUE PAROU DE FUNCIONAR APÓS QUEDA DE ENERGIA', 'MANUTENÇÃO',
-         ${ equipamento1.codEquipamento }, 'ANA PAULA LIMA', now() )
+         'ANA PAULA LIMA', now() )
       RETURNING "numOdS"
     `;
 
