@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { camposDadosPessoais, validarDadosPessoais, limparCamposDoOutroTipo } from '../../shared/validation/dadosPessoais.schema';
+import { camposDadosPessoais, limparCamposDoOutroTipo } from '../../shared/validation/dadosPessoais.schema';
 
 const camposTransportadora =
 {
@@ -30,16 +30,23 @@ const camposTransportadora =
             .trim()
             .max ( 35,  'O endereço deve ter no máximo 35 caracteres.' )
             .optional(),
+        // Número residencial do endereço — opcional como o próprio endereço.
+        numeroTransp: z
+            .number ( { message: 'O número deve ser numérico.' } )
+            .int ( 'O número deve ser inteiro.' )
+            .positive ( 'O número deve ser maior que zero.' )
+            .max ( 999999, 'O número deve ter no máximo 6 dígitos.' )
+            .optional(),
         cpfCnpjTransp: z
             .string ( { message: 'O CPF/CNPJ é obrigatório.' } )
             .trim()
             .regex ( /^([0-9]{11}|[0-9]{14})$/, 'O CPF/CNPJ deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ).')
             .refine ( ( valor ) => ! ( valor.length === 11 || valor.length === 14 ) || !/^0+$/.test ( valor ), 'O CPF/CNPJ não pode ser preenchido apenas com zeros.' ),
         inscEstTransp: z
-            .string ( { message: 'A inscrição estadual é obrigatória.' } )
+            .string()
             .trim()
-            .min ( 1, 'A inscrição estadual é obrigatória.' )
-            .max ( 15,  'A inscrição estadual deve ter no máximo 15 caracteres.' ),
+            .max ( 15,  'A inscrição estadual deve ter no máximo 15 caracteres.' )
+            .optional(),
         bairroTransp: z
             .string()
             .trim()
@@ -61,12 +68,10 @@ const camposTransportadora =
 
 export const createTransportadoraSchema = z
     .object ( camposTransportadora )
-    .superRefine ( validarDadosPessoais )
     .transform ( limparCamposDoOutroTipo );
 
 export const updateTransportadoraSchema = z
     .object ( { ...camposTransportadora, isActive: z.boolean() } )
-    .superRefine ( validarDadosPessoais )
     .transform ( limparCamposDoOutroTipo );
 
 export type CreateTransportadoraInput = z.infer < typeof createTransportadoraSchema >;

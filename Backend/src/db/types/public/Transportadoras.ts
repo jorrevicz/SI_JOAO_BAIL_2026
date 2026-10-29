@@ -26,7 +26,7 @@ export default interface Transportadoras {
 
   cpfCnpjTransp: string;
 
-  inscEstTransp: string;
+  inscEstTransp: string | null;
 
   dtCriacao: Date;
 
@@ -55,6 +55,8 @@ export default interface Transportadoras {
   dtFundacao: Date | null;
 
   genero: Genero | null;
+
+  numeroTransp: number | null;
 }
 
 /** Represents the initializer for the table public.Transportadoras */
@@ -75,7 +77,7 @@ export interface TransportadorasInitializer {
 
   cpfCnpjTransp: string;
 
-  inscEstTransp: string;
+  inscEstTransp?: string | null;
 
   /** Default value: CURRENT_TIMESTAMP */
   dtCriacao?: Date;
@@ -107,6 +109,8 @@ export interface TransportadorasInitializer {
   dtFundacao?: Date | null;
 
   genero?: Genero | null;
+
+  numeroTransp?: number | null;
 }
 
 /** Represents the mutator for the table public.Transportadoras */
@@ -127,7 +131,7 @@ export interface TransportadorasMutator {
 
   cpfCnpjTransp?: string;
 
-  inscEstTransp?: string;
+  inscEstTransp?: string | null;
 
   dtCriacao?: Date;
 
@@ -156,4 +160,6 @@ export interface TransportadorasMutator {
   dtFundacao?: Date | null;
 
   genero?: Genero | null;
+
+  numeroTransp?: number | null;
 }

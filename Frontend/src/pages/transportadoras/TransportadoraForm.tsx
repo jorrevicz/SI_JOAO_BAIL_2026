@@ -11,12 +11,13 @@ import { cidadesService } from '../../services/cidades';
 import { VeiculoConsulta } from '../veiculos/VeiculoConsulta';
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
+import { comErroDoCampo, validarCep, validarCnpj, validarCpf, validarEmail, validarTelefone } from '../../utils/validators';
 
 
 interface Props
 {
   inicial:    Partial < Transportadora >;
-  onSalvo:    () => void;
+  onSalvo:    ( salvo: Transportadora ) => void;
   onCancelar: () => void;
 }
 
@@ -29,6 +30,7 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
     nomeFantasia:   inicial.nomeFantasia   ?? undefined,
     tipoPessoa:     ( inicial.tipoPessoa as 'FISICA' | 'JURIDICA' ) ?? '',
     enderecoTransp: inicial.enderecoTransp ?? undefined,
+    numeroTransp:   inicial.numeroTransp   ?? undefined,
     cpfCnpjTransp:  inicial.cpfCnpjTransp  ?? '',
     inscEstTransp:  inicial.inscEstTransp  ?? '',
     bairroTransp:   inicial.bairroTransp   ?? undefined,
@@ -99,8 +101,9 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
       genero:         pessoaFisica   ? form.genero       || undefined : undefined,
       tipoPessoa:     form.tipoPessoa,
       enderecoTransp: form.enderecoTransp || undefined,
+      numeroTransp:   form.numeroTransp   || undefined,
       cpfCnpjTransp:  form.cpfCnpjTransp,
-      inscEstTransp:  form.inscEstTransp,
+      inscEstTransp:  form.inscEstTransp  || undefined,
       bairroTransp:   form.bairroTransp   || undefined,
       cepTransp:      form.cepTransp,
       foneTransp:     form.foneTransp,
@@ -113,13 +116,12 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
     {
       if ( editando )
       {
-        await transportadorasService.atualizar ( inicial.codTransp!, dados );
+        onSalvo ( await transportadorasService.atualizar ( inicial.codTransp!, dados ) );
       }
       else
       {
-        await transportadorasService.criar ( dados );
+        onSalvo ( await transportadorasService.criar ( dados ) );
       }
-      onSalvo();
     }
     catch ( err )
     {
@@ -194,23 +196,21 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
                   />
                 </FormCampo>
 
-                <FormCampo label="Data de nascimento" obrigatorio colunas={ 1.8 } htmlFor="dtNascimento" erro={ errosCampo.dtNascimento }>
+                <FormCampo label="Data de nascimento" colunas={ 1.8 } htmlFor="dtNascimento" erro={ errosCampo.dtNascimento }>
                   <input
                     id="dtNascimento"
                     type="date"
                     value={ form.dtNascimento ?? '' }
                     max={ hojeParaDataInput() }
                     onChange={ ( evento ) => setForm ( { ...form, dtNascimento: evento.target.value || undefined } ) }
-                    required
                   />
                 </FormCampo>
 
-                <FormCampo label="Gênero" obrigatorio colunas={ 1.8 } htmlFor="genero" erro={ errosCampo.genero }>
+                <FormCampo label="Gênero" colunas={ 1.8 } htmlFor="genero" erro={ errosCampo.genero }>
                   <select
                     id="genero"
                     value={ form.genero ?? '' }
                     onChange={ ( evento ) => setForm ( { ...form, genero: ( evento.target.value as Genero ) || undefined } ) }
-                    required
                   >
                     <option value="">— Selecione —</option>
                     <option value="MASCULINO">Masculino</option>
@@ -230,28 +230,19 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
                   />
                 </FormCampo>
 
-                <FormCampo label="CPF" obrigatorio colunas={ 1.8 } htmlFor="cpfCnpjTransp" erro={ errosCampo.cpfCnpjTransp }>
+                <FormCampo label="CPF" colunas={ 1.8 } htmlFor="cpfCnpjTransp" erro={ errosCampo.cpfCnpjTransp }>
                   <input
                     id="cpfCnpjTransp"
                     type='text'
                     inputMode='numeric'
                     value={ form.cpfCnpjTransp }
                     onChange={ ( evento ) =>
-                      setForm ( { ...form, cpfCnpjTransp: evento.target.value.replace ( /\D/g, '' ) } )
-                    }
+                    {
+                      setForm ( { ...form, cpfCnpjTransp: evento.target.value.replace ( /\D/g, '' ) } );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cpfCnpjTransp', validarCpf ( evento.target.value ) ) );
+                    } }
                     maxLength={ 14 }
                     placeholder="Somente dígitos"
-                    required
-                  />
-                </FormCampo>
-
-                <FormCampo label="Inscrição estadual" obrigatorio colunas={ 5 } htmlFor="inscEstTransp" erro={ errosCampo.inscEstTransp }>
-                  <input
-                    id="inscEstTransp"
-                    type='text'
-                    value={ form.inscEstTransp }
-                    onChange={ ( evento ) => setForm ( { ...form, inscEstTransp: evento.target.value } ) }
-                    maxLength={ 15 }
                     required
                   />
                 </FormCampo>
@@ -273,42 +264,41 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
                   />
                 </FormCampo>
 
-                <FormCampo label="Data de fundação" obrigatorio colunas={ 2 } htmlFor="dtFundacao" erro={ errosCampo.dtFundacao }>
+                <FormCampo label="Data de fundação" colunas={ 2 } htmlFor="dtFundacao" erro={ errosCampo.dtFundacao }>
                   <input
                     id="dtFundacao"
                     type="date"
                     value={ form.dtFundacao ?? '' }
                     max={ hojeParaDataInput() }
                     onChange={ ( evento ) => setForm ( { ...form, dtFundacao: evento.target.value || undefined } ) }
-                    required
                   />
                 </FormCampo>
               </FormSecao>
 
               <FormSecao>
-                <FormCampo label="CNPJ" obrigatorio colunas={ 1.8 } htmlFor="cpfCnpjTransp" erro={ errosCampo.cpfCnpjTransp }>
+                <FormCampo label="CNPJ" colunas={ 1.8 } htmlFor="cpfCnpjTransp" erro={ errosCampo.cpfCnpjTransp }>
                   <input
                     id="cpfCnpjTransp"
                     type='text'
                     inputMode='numeric'
                     value={ form.cpfCnpjTransp }
                     onChange={ ( evento ) =>
-                      setForm ( { ...form, cpfCnpjTransp: evento.target.value.replace ( /\D/g, '' ) } )
-                    }
+                    {
+                      setForm ( { ...form, cpfCnpjTransp: evento.target.value.replace ( /\D/g, '' ) } );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cpfCnpjTransp', validarCnpj ( evento.target.value ) ) );
+                    } }
                     maxLength={ 14 }
                     placeholder="Somente dígitos"
-                    required
                   />
                 </FormCampo>
 
-                <FormCampo label="Inscrição estadual" obrigatorio colunas={ 5 } htmlFor="inscEstTransp" erro={ errosCampo.inscEstTransp }>
+                <FormCampo label="Inscrição estadual" colunas={ 5 } htmlFor="inscEstTransp" erro={ errosCampo.inscEstTransp }>
                   <input
                     id="inscEstTransp"
                     type='text'
                     value={ form.inscEstTransp }
                     onChange={ ( evento ) => setForm ( { ...form, inscEstTransp: evento.target.value } ) }
                     maxLength={ 15 }
-                    required
                   />
                 </FormCampo>
               </FormSecao>
@@ -324,8 +314,10 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
               inputMode='numeric'
               value={ form.foneTransp }
               onChange={ ( evento ) =>
-                setForm ( { ...form, foneTransp: evento.target.value.replace ( /\D/g, '' ) } )
-              }
+              {
+                setForm ( { ...form, foneTransp: evento.target.value.replace ( /\D/g, '' ) } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'foneTransp', validarTelefone ( evento.target.value ) ) );
+              } }
               maxLength={ 15 }
               placeholder="5511988887777"
               required
@@ -339,8 +331,10 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
               inputMode='numeric'
               value={ form.foneFixo ?? '' }
               onChange={ ( evento ) =>
-                setForm ( { ...form, foneFixo: evento.target.value.replace ( /\D/g, '' ) || undefined } )
-              }
+              {
+                setForm ( { ...form, foneFixo: evento.target.value.replace ( /\D/g, '' ) || undefined } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'foneFixo', validarTelefone ( evento.target.value ) ) );
+              } }
               maxLength={ 15 }
               placeholder="551133334444"
             />
@@ -351,7 +345,11 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
               id="email"
               type='email'
               value={ form.email }
-              onChange={ ( evento ) => setForm ( { ...form, email: evento.target.value.trim() } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, email: evento.target.value.trim() } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'email', validarEmail ( evento.target.value.trim() ) ) );
+              } }
               maxLength={ 254 }
               required
             />
@@ -366,20 +364,34 @@ export default function TransportadoraForm ( { inicial, onSalvo, onCancelar }: P
               inputMode='numeric'
               value={ form.cepTransp }
               onChange={ ( evento ) =>
-                setForm ( { ...form, cepTransp: evento.target.value.replace ( /\D/g, '' ) } )
-              }
+              {
+                setForm ( { ...form, cepTransp: evento.target.value.replace ( /\D/g, '' ) } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cepTransp', validarCep ( evento.target.value ) ) );
+              } }
               maxLength={ 8 }
               placeholder="Somente dígitos"
               required
             />
           </FormCampo>
 
-          <FormCampo label="Endereço" colunas={ 6 } htmlFor="enderecoTransp" erro={ errosCampo.enderecoTransp }>
+          <FormCampo label="Endereço" colunas={ 5 } htmlFor="enderecoTransp" erro={ errosCampo.enderecoTransp }>
             <input
               id="enderecoTransp"
               value={ form.enderecoTransp ?? '' }
               onChange={ ( evento ) => setForm ( { ...form, enderecoTransp: evento.target.value.toUpperCase() || undefined } ) }
               maxLength={ 35 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Número" colunas={ 1 } htmlFor="numeroTransp" erro={ errosCampo.numeroTransp }>
+            <input
+              id="numeroTransp"
+              inputMode="numeric"
+              value={ form.numeroTransp ?? '' }
+              onChange={ ( evento ) =>
+                setForm ( { ...form, numeroTransp: Number ( evento.target.value.replace ( /\D/g, '' ) ) || undefined } )
+              }
+              maxLength={ 6 }
             />
           </FormCampo>
 

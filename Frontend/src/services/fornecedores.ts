@@ -10,6 +10,7 @@ export interface Fornecedor
   nomeFantasia:   string | null;
   tipoPessoa:     string | null;
   enderecoForn:   string | null;
+  numeroForn:     number | null;
   bairroForn:     string | null;
   cepForn:        string | null;
   foneForn:       string | null;
@@ -36,6 +37,7 @@ export interface CreateFornecedorInput
   nomeFantasia?:   string;
   tipoPessoa:      'FISICA' | 'JURIDICA' | '';
   enderecoForn?:   string;
+  numeroForn?:     number;
   bairroForn?:     string;
   cepForn:         string;
   foneForn:        string;

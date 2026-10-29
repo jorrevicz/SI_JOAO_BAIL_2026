@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
-// Campos de dados pessoais comuns a Clientes e Fornecedores. O que vale para cada
-// pessoa depende do tipoPessoa (ver validarDadosPessoais):
+// Campos de dados pessoais comuns a Clientes, Fornecedores e Transportadoras. O que vale
+// para cada pessoa depende do tipoPessoa (ver limparCamposDoOutroTipo):
 //  - FISICA:   apelido, rg, dtNascimento, genero
 //  - JURIDICA: nomeFantasia, dtFundacao
-// foneFixo e email valem para os dois tipos.
+// Todos esses campos são anuláveis — nenhum é obrigatório para o seu tipo de pessoa; quando
+// informados, só o formato é validado. foneFixo e email valem para os dois tipos.
 
 const dataIso = ( mensagem: string ) => z
     .string ( { message: mensagem } )
@@ -67,33 +68,6 @@ interface DadosPessoais
     dtNascimento?: string | null;
     dtFundacao?:   string | null;
     genero?:       string | null;
-}
-
-// RN: pessoa física exige data de nascimento e gênero; pessoa jurídica exige data de
-// fundação. Cruza campos com o tipoPessoa, por isso vive num superRefine (mesmo padrão
-// de validarDatas em contas-pagamento.schema.ts).
-export function validarDadosPessoais
-(
-    dados: DadosPessoais,
-    ctx:   z.RefinementCtx
-): void
-{
-    if ( dados.tipoPessoa === 'FISICA' )
-    {
-        if ( !dados.dtNascimento )
-        {
-            ctx.addIssue ( { code: 'custom', path: [ 'dtNascimento' ], message: 'A data de nascimento é obrigatória.' } );
-        }
-
-        if ( !dados.genero )
-        {
-            ctx.addIssue ( { code: 'custom', path: [ 'genero' ], message: 'O gênero é obrigatório.' } );
-        }
-    }
-    else if ( !dados.dtFundacao )
-    {
-        ctx.addIssue ( { code: 'custom', path: [ 'dtFundacao' ], message: 'A data de fundação é obrigatória.' } );
-    }
 }
 
 // Zera os campos que só fazem sentido no outro tipo de pessoa, para o banco não

@@ -8,6 +8,7 @@ import { CidadeConsulta } from '../cidades/CidadeConsulta';
 import { cidadesService } from '../../services/cidades';
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
+import { comErroDoCampo, validarCep, validarCnpj, validarCpf, validarEmail, validarTelefone } from '../../utils/validators';
 
 interface Props
 {
@@ -25,6 +26,7 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
     tipoPessoa:   inicial.tipoPessoa   ?? '',
     codCondDePag: inicial.codCondDePag ?? undefined,
     enderecoCl:   inicial.enderecoCl   ?? undefined,
+    numeroCl:     inicial.numeroCl     ?? undefined,
     bairroCl:     inicial.bairroCl     ?? undefined,
     cepCl:        inicial.cepCl        ?? '',
     foneCl:       inicial.foneCl       ?? '',
@@ -78,6 +80,7 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
       tipoPessoa:   form.tipoPessoa,
       codCondDePag: form.codCondDePag || undefined,
       enderecoCl:   form.enderecoCl   || undefined,
+      numeroCl:     form.numeroCl     || undefined,
       bairroCl:     form.bairroCl     || undefined,
       cepCl:        form.cepCl,
       foneCl:       form.foneCl,
@@ -172,23 +175,21 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
                   />
                 </FormCampo> 
 
-                <FormCampo label="Data de nascimento" obrigatorio colunas={ 2 } htmlFor="dtNascimento" erro={ errosCampo.dtNascimento }>
+                <FormCampo label="Data de nascimento" colunas={ 2 } htmlFor="dtNascimento" erro={ errosCampo.dtNascimento }>
                   <input
                     id="dtNascimento"
                     type="date"
                     value={ form.dtNascimento ?? '' }
                     max={ hojeParaDataInput() }
                     onChange={ ( evento ) => setForm ( { ...form, dtNascimento: evento.target.value || undefined } ) }
-                    required
                   />
                 </FormCampo>
 
-                <FormCampo label="Gênero" obrigatorio colunas={ 1.8 } htmlFor="genero" erro={ errosCampo.genero }>
+                <FormCampo label="Gênero" colunas={ 1.8 } htmlFor="genero" erro={ errosCampo.genero }>
                   <select
                     id="genero"
                     value={ form.genero ?? '' }
                     onChange={ ( evento ) => setForm ( { ...form, genero: ( evento.target.value as Genero ) || undefined } ) }
-                    required
                   >
                     <option value="">— Selecione —</option>
                     <option value="MASCULINO">Masculino</option>
@@ -208,29 +209,19 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
                   />
                 </FormCampo>
 
-                <FormCampo label="CPF" obrigatorio colunas={ 1.8 } htmlFor="cpfCnpjCl" erro={ errosCampo.cpfCnpjCl }>
+                <FormCampo label="CPF" colunas={ 1.8 } htmlFor="cpfCnpjCl" erro={ errosCampo.cpfCnpjCl }>
                   <input
                     id="cpfCnpjCl"
                     type='text'
                     inputMode='numeric'
                     value={ form.cpfCnpjCl }
                     onChange={ ( evento ) =>
-                      setForm ( { ...form, cpfCnpjCl: evento.target.value.replace ( /\D/g, '' ) } )
-                    }
+                    {
+                      setForm ( { ...form, cpfCnpjCl: evento.target.value.replace ( /\D/g, '' ) } );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cpfCnpjCl', validarCpf ( evento.target.value ) ) );
+                    } }
                     maxLength={ 14 }
                     placeholder="Somente dígitos"
-                    required
-                  />
-                </FormCampo>
-
-                <FormCampo label="Inscrição estadual" obrigatorio colunas={ 5 } htmlFor="inscEstCl" erro={ errosCampo.inscEstCl }>
-                  <input
-                    id="inscEstCl"
-                    type='text'
-                    value={ form.inscEstCl }
-                    onChange={ ( evento ) => setForm ( { ...form, inscEstCl: evento.target.value } ) }
-                    maxLength={ 15 }
-                    required
                   />
                 </FormCampo>
               </FormSecao>
@@ -251,42 +242,41 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
                   />
                 </FormCampo>
 
-                <FormCampo label="Data de fundação" obrigatorio colunas={ 2 } htmlFor="dtFundacao" erro={ errosCampo.dtFundacao }>
+                <FormCampo label="Data de fundação" colunas={ 2 } htmlFor="dtFundacao" erro={ errosCampo.dtFundacao }>
                   <input
                     id="dtFundacao"
                     type="date"
                     value={ form.dtFundacao ?? '' }
                     max={ hojeParaDataInput() }
                     onChange={ ( evento ) => setForm ( { ...form, dtFundacao: evento.target.value || undefined } ) }
-                    required
                   />
                 </FormCampo>
               </FormSecao>
 
               <FormSecao>
-                <FormCampo label="CNPJ" obrigatorio colunas={ 1.8 } htmlFor="cpfCnpjCl" erro={ errosCampo.cpfCnpjCl }>
+                <FormCampo label="CNPJ" colunas={ 1.8 } htmlFor="cpfCnpjCl" erro={ errosCampo.cpfCnpjCl }>
                   <input
                     id="cpfCnpjCl"
                     type='text'
                     inputMode='numeric'
                     value={ form.cpfCnpjCl }
                     onChange={ ( evento ) =>
-                      setForm ( { ...form, cpfCnpjCl: evento.target.value.replace ( /\D/g, '' ) } )
-                    }
+                    {
+                      setForm ( { ...form, cpfCnpjCl: evento.target.value.replace ( /\D/g, '' ) } );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cpfCnpjCl', validarCnpj ( evento.target.value ) ) );
+                    } }
                     maxLength={ 14 }
                     placeholder="Somente dígitos"
-                    required
                   />
                 </FormCampo>
 
-                <FormCampo label="Inscrição estadual" obrigatorio colunas={ 5 } htmlFor="inscEstCl" erro={ errosCampo.inscEstCl }>
+                <FormCampo label="Inscrição estadual" colunas={ 5 } htmlFor="inscEstCl" erro={ errosCampo.inscEstCl }>
                   <input
                     id="inscEstCl"
                     type='text'
                     value={ form.inscEstCl }
                     onChange={ ( evento ) => setForm ( { ...form, inscEstCl: evento.target.value } ) }
                     maxLength={ 15 }
-                    required
                   />
                 </FormCampo>
               </FormSecao>
@@ -302,8 +292,10 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
               inputMode='numeric'
               value={ form.foneCl }
               onChange={ ( evento ) =>
-                setForm ( { ...form, foneCl: evento.target.value.replace ( /\D/g, '' ) } )
-              }
+              {
+                setForm ( { ...form, foneCl: evento.target.value.replace ( /\D/g, '' ) } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'foneCl', validarTelefone ( evento.target.value ) ) );
+              } }
               maxLength={ 15 }
               placeholder="5511988887777"
               required
@@ -317,8 +309,10 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
               inputMode='numeric'
               value={ form.foneFixo ?? '' }
               onChange={ ( evento ) =>
-                setForm ( { ...form, foneFixo: evento.target.value.replace ( /\D/g, '' ) || undefined } )
-              }
+              {
+                setForm ( { ...form, foneFixo: evento.target.value.replace ( /\D/g, '' ) || undefined } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'foneFixo', validarTelefone ( evento.target.value ) ) );
+              } }
               maxLength={ 15 }
               placeholder="551133334444"
             />
@@ -329,7 +323,11 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
               id="email"
               type='email'
               value={ form.email }
-              onChange={ ( evento ) => setForm ( { ...form, email: evento.target.value.trim() } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, email: evento.target.value.trim() } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'email', validarEmail ( evento.target.value.trim() ) ) );
+              } }
               maxLength={ 254 }
               required
             />
@@ -344,20 +342,34 @@ export default function ClienteForm ( { inicial, onSalvo, onCancelar }: Props )
               inputMode='numeric'
               value={ form.cepCl }
               onChange={ ( evento ) =>
-                setForm ( { ...form, cepCl: evento.target.value.replace ( /\D/g, '' ) } )
-              }
+              {
+                setForm ( { ...form, cepCl: evento.target.value.replace ( /\D/g, '' ) } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cepCl', validarCep ( evento.target.value ) ) );
+              } }
               maxLength={ 8 }
               placeholder="Somente dígitos"
               required
             />
           </FormCampo>
 
-          <FormCampo label="Endereço" colunas={ 6 } htmlFor="enderecoCl" erro={ errosCampo.enderecoCl }>
+          <FormCampo label="Endereço" colunas={ 5 } htmlFor="enderecoCl" erro={ errosCampo.enderecoCl }>
             <input
               id="enderecoCl"
               value={ form.enderecoCl ?? '' }
               onChange={ ( evento ) => setForm ( { ...form, enderecoCl: evento.target.value.toLocaleUpperCase() || undefined } ) }
               maxLength={ 150 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Número" colunas={ 1 } htmlFor="numeroCl" erro={ errosCampo.numeroCl }>
+            <input
+              id="numeroCl"
+              inputMode="numeric"
+              value={ form.numeroCl ?? '' }
+              onChange={ ( evento ) =>
+                setForm ( { ...form, numeroCl: Number ( evento.target.value.replace ( /\D/g, '' ) ) || undefined } )
+              }
+              maxLength={ 6 }
             />
           </FormCampo>
 

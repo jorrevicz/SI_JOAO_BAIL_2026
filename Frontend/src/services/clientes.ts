@@ -10,6 +10,7 @@ export interface Cliente
   cliente:      string;
   tipoPessoa:   string | null;
   enderecoCl:   string | null;
+  numeroCl:     number | null;
   bairroCl:     string | null;
   cepCl:        string | null;
   foneCl:       string | null;
@@ -36,6 +37,7 @@ export interface CreateClienteInput
   tipoPessoa:    string;
   codCondDePag?: number;
   enderecoCl?:   string;
+  numeroCl?:     number;
   bairroCl?:     string;
   cepCl:         string;
   foneCl:        string;

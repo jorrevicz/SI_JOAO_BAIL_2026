@@ -6,7 +6,6 @@ import
     createColumnHelper,
     type PaginationState,
     getCoreRowModel,
-    getSortedRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
     flexRender,

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { camposDadosPessoais, validarDadosPessoais, limparCamposDoOutroTipo } from '../../shared/validation/dadosPessoais.schema';
+import { camposDadosPessoais, limparCamposDoOutroTipo } from '../../shared/validation/dadosPessoais.schema';
 
 const camposCliente =
 {
@@ -26,6 +26,13 @@ const camposCliente =
         .string()
         .trim()
         .max ( 150, 'O endereço deve ter no máximo 150 caracteres.' )
+        .optional(),
+    // Número residencial do endereço — opcional como o próprio endereço.
+    numeroCl: z
+        .number ( { message: 'O número deve ser numérico.' } )
+        .int ( 'O número deve ser inteiro.' )
+        .positive ( 'O número deve ser maior que zero.' )
+        .max ( 999999, 'O número deve ter no máximo 6 dígitos.' )
         .optional(),
     bairroCl: z
         .string()
@@ -58,12 +65,10 @@ const camposCliente =
 
 export const createClienteSchema = z
     .object ( camposCliente )
-    .superRefine ( validarDadosPessoais )
     .transform ( limparCamposDoOutroTipo );
 
 export const updateClienteSchema = z
     .object ( { ...camposCliente, isActive: z.boolean() } )
-    .superRefine ( validarDadosPessoais )
     .transform ( limparCamposDoOutroTipo );
 
 export type CreateClienteInput = z.infer < typeof createClienteSchema >;

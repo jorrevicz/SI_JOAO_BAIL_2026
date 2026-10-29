@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
@@ -137,8 +136,9 @@ export default function ClientesPage ()
           { info.getValue() }
         </InfoBlock>
       ), } ),
-    columnHelper.accessor ( 
-      'bairroCl', 
+    columnHelper.accessor ( 'numeroCl', { header: 'Número', cell: ( info ) => info.getValue() ?? '-' } ),
+    columnHelper.accessor (
+      'bairroCl',
       { 
         header: 'Bairro', 
         cell: ( info ) => (

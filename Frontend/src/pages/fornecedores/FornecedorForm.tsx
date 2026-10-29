@@ -11,6 +11,7 @@ import { CondicaoPagamentoConsulta } from '../condicoesPagamento-Parcela/Condica
 import { condicoesPagamentoService } from '../../services/condicoesPagamento';
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
+import { comErroDoCampo, validarCep, validarCnpj, validarCpf, validarEmail, validarTelefone } from '../../utils/validators';
 
 interface Props
 {
@@ -35,6 +36,7 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
     email:          inicial.email          ?? '',
     tipoPessoa:     ( inicial.tipoPessoa as 'FISICA' | 'JURIDICA' ) ?? '',
     enderecoForn:   inicial.enderecoForn   ?? '',
+    numeroForn:     inicial.numeroForn     ?? undefined,
     bairroForn:     inicial.bairroForn     ?? '',
     cepForn:        inicial.cepForn        ?? '',
     foneForn:       inicial.foneForn       ?? '',
@@ -100,6 +102,7 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
       email:          form.email,
       tipoPessoa:     form.tipoPessoa,
       enderecoForn:   form.enderecoForn   || undefined,
+      numeroForn:     form.numeroForn     || undefined,
       bairroForn:     form.bairroForn     || undefined,
       cepForn:        form.cepForn,
       foneForn:       form.foneForn,
@@ -185,23 +188,21 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
                   />
                 </FormCampo>
 
-                <FormCampo label="Data de nascimento" obrigatorio colunas={ 1.8 } htmlFor="dtNascimento" erro={ errosCampo.dtNascimento }>
+                <FormCampo label="Data de nascimento" colunas={ 1.8 } htmlFor="dtNascimento" erro={ errosCampo.dtNascimento }>
                   <input
                     id="dtNascimento"
                     type="date"
                     value={ form.dtNascimento ?? '' }
                     max={ hojeParaDataInput() }
                     onChange={ ( evento ) => setForm ( { ...form, dtNascimento: evento.target.value || undefined } ) }
-                    required
                   />
                 </FormCampo>
 
-                <FormCampo label="Gênero" obrigatorio colunas={ 1.8 } htmlFor="genero" erro={ errosCampo.genero }>
+                <FormCampo label="Gênero" colunas={ 1.8 } htmlFor="genero" erro={ errosCampo.genero }>
                   <select
                     id="genero"
                     value={ form.genero ?? '' }
                     onChange={ ( evento ) => setForm ( { ...form, genero: ( evento.target.value as Genero ) || undefined } ) }
-                    required
                   >
                     <option value="">— Selecione —</option>
                     <option value="MASCULINO">Masculino</option>
@@ -221,29 +222,19 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
                   />
                 </FormCampo>
 
-                <FormCampo label="CPF" obrigatorio colunas={ 1.8 } htmlFor="cpfCnpjForn" erro={ errosCampo.cpfCnpjForn }>
+                <FormCampo label="CPF" colunas={ 1.8 } htmlFor="cpfCnpjForn" erro={ errosCampo.cpfCnpjForn }>
                   <input
                     id="cpfCnpjForn"
                     type='text'
                     inputMode='numeric'
                     value={ form.cpfCnpjForn }
                     onChange={ ( evento ) =>
-                      setForm ( { ...form, cpfCnpjForn: evento.target.value.replace ( /\D/g, '' ) } )
-                    }
+                    {
+                      setForm ( { ...form, cpfCnpjForn: evento.target.value.replace ( /\D/g, '' ) } );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cpfCnpjForn', validarCpf ( evento.target.value ) ) );
+                    } }
                     maxLength={ 14 }
                     placeholder="Somente dígitos"
-                    required
-                  />
-                </FormCampo>
-
-                <FormCampo label="Inscrição estadual / Sub. trib." obrigatorio colunas={ 5 } htmlFor="inscEstSubTrib" erro={ errosCampo.inscEstSubTrib }>
-                  <input
-                    id="inscEstSubTrib"
-                    type='number'
-                    value={ form.inscEstSubTrib }
-                    onChange={ ( evento ) => setForm ( { ...form, inscEstSubTrib: evento.target.value } ) }
-                    maxLength={ 15 }
-                    required
                   />
                 </FormCampo>
               </FormSecao>
@@ -264,50 +255,47 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
                   />
                 </FormCampo>
 
-                <FormCampo label="Data de fundação" obrigatorio colunas={ 2 } htmlFor="dtFundacao" erro={ errosCampo.dtFundacao }>
+                <FormCampo label="Data de fundação" colunas={ 2 } htmlFor="dtFundacao" erro={ errosCampo.dtFundacao }>
                   <input
                     id="dtFundacao"
                     type="date"
                     value={ form.dtFundacao ?? '' }
                     max={ hojeParaDataInput() }
                     onChange={ ( evento ) => setForm ( { ...form, dtFundacao: evento.target.value || undefined } ) }
-                    required
                   />
                 </FormCampo>
               </FormSecao>
 
               <FormSecao>
-                <FormCampo label="CNPJ" obrigatorio colunas={ 1.8 } htmlFor="cpfCnpjForn" erro={ errosCampo.cpfCnpjForn }>
+                <FormCampo label="CNPJ" colunas={ 1.8 } htmlFor="cpfCnpjForn" erro={ errosCampo.cpfCnpjForn }>
                   <input
                     id="cpfCnpjForn"
                     type='text'
                     inputMode='numeric'
                     value={ form.cpfCnpjForn }
                     onChange={ ( evento ) =>
-                      setForm ( { ...form, cpfCnpjForn: evento.target.value.replace ( /\D/g, '' ) } )
-                    }
+                    {
+                      setForm ( { ...form, cpfCnpjForn: evento.target.value.replace ( /\D/g, '' ) } );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cpfCnpjForn', validarCnpj ( evento.target.value ) ) );
+                    } }
                     maxLength={ 14 }
                     placeholder="Somente dígitos"
-                    required
                   />
                 </FormCampo>
 
-                <FormCampo label="Inscrição estadual / Sub. trib." obrigatorio colunas={ 5 } htmlFor="inscEstSubTrib" erro={ errosCampo.inscEstSubTrib }>
+                <FormCampo label="Inscrição estadual / Sub. trib." colunas={ 5 } htmlFor="inscEstSubTrib" erro={ errosCampo.inscEstSubTrib }>
                   <input
                     id="inscEstSubTrib"
-                    type='number'
+                    type='text'
                     value={ form.inscEstSubTrib }
                     onChange={ ( evento ) => setForm ( { ...form, inscEstSubTrib: evento.target.value } ) }
                     maxLength={ 15 }
-                    required
                   />
                 </FormCampo>
               </FormSecao>
             </>
           )
-        }
-
-        
+        }     
 
         <FormSecao>
           <FormCampo label="Telefone (celular)" obrigatorio colunas={ 1.8 } htmlFor="foneForn" erro={ errosCampo.foneForn }>
@@ -317,8 +305,10 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
               inputMode='numeric'
               value={ form.foneForn }
               onChange={ ( evento ) =>
-                setForm ( { ...form, foneForn: evento.target.value.replace ( /\D/g, '' ) } )
-              }
+              {
+                setForm ( { ...form, foneForn: evento.target.value.replace ( /\D/g, '' ) } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'foneForn', validarTelefone ( evento.target.value ) ) );
+              } }
               maxLength={ 15 }
               placeholder="5511988887777"
               required
@@ -332,8 +322,10 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
               inputMode='numeric'
               value={ form.foneFixo ?? '' }
               onChange={ ( evento ) =>
-                setForm ( { ...form, foneFixo: evento.target.value.replace ( /\D/g, '' ) || undefined } )
-              }
+              {
+                setForm ( { ...form, foneFixo: evento.target.value.replace ( /\D/g, '' ) || undefined } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'foneFixo', validarTelefone ( evento.target.value ) ) );
+              } }
               maxLength={ 15 }
               placeholder="551133334444"
             />
@@ -344,7 +336,11 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
               id="email"
               type='email'
               value={ form.email }
-              onChange={ ( evento ) => setForm ( { ...form, email: evento.target.value.trim() } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, email: evento.target.value.trim() } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'email', validarEmail ( evento.target.value.trim() ) ) );
+              } }
               maxLength={ 254 }
               required
             />
@@ -359,20 +355,34 @@ export default function FornecedorForm ( { inicial, onSalvo, onCancelar }: Props
               inputMode='numeric'
               value={ form.cepForn }
               onChange={ ( evento ) =>
-                setForm ( { ...form, cepForn: evento.target.value.replace ( /\D/g, '' ) } )
-              }
+              {
+                setForm ( { ...form, cepForn: evento.target.value.replace ( /\D/g, '' ) } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'cepForn', validarCep ( evento.target.value ) ) );
+              } }
               maxLength={ 8 }
               placeholder="Somente dígitos"
               required
             />
           </FormCampo>
 
-          <FormCampo label="Endereço" colunas={ 6 } htmlFor="enderecoForn" erro={ errosCampo.enderecoForn }>
+          <FormCampo label="Endereço" colunas={ 5 } htmlFor="enderecoForn" erro={ errosCampo.enderecoForn }>
             <input
               id="enderecoForn"
               value={ form.enderecoForn ?? '' }
               onChange={ ( evento ) => setForm ( { ...form, enderecoForn: evento.target.value.toUpperCase() || undefined } ) }
               maxLength={ 150 }
+            />
+          </FormCampo>
+
+          <FormCampo label="Número" colunas={ 1 } htmlFor="numeroForn" erro={ errosCampo.numeroForn }>
+            <input
+              id="numeroForn"
+              inputMode="numeric"
+              value={ form.numeroForn ?? '' }
+              onChange={ ( evento ) =>
+                setForm ( { ...form, numeroForn: Number ( evento.target.value.replace ( /\D/g, '' ) ) || undefined } )
+              }
+              maxLength={ 6 }
             />
           </FormCampo>
 

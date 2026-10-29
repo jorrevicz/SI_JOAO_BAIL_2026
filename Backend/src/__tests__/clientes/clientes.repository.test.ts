@@ -37,6 +37,26 @@ describe ( 'ClientesRepository (rollback)', () =>
         });
     });
 
+    it ( 'Create e Update persistem o número residencial (numeroCl)', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codCidade = await criarCidadeDeTeste ( transaction );
+            const dados =
+            {
+                codCidade, cliente: 'Maria Oliveira', tipoPessoa: 'FISICA' as const,
+                enderecoCl: 'RUA DAS FLORES', numeroCl: 125,
+                cepCl: '20511120', cpfCnpjCl: '12345678901', inscEstCl: '123456', foneCl: '5521988887777', email: 'teste@kaneko.com.br',
+            };
+
+            const novo = await repo.Create ( dados, 1, transaction );
+            expect ( novo.numeroCl ).toBe ( 125 );
+
+            const editado = await repo.Update ( novo.codCliente, { ...dados, numeroCl: 300, isActive: true } as never, 1, transaction );
+            expect ( editado?.numeroCl ).toBe ( 300 );
+        });
+    });
+
     it ( 'Create persiste os dados pessoais (RG, nascimento, gênero, fone fixo e e-mail)', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>

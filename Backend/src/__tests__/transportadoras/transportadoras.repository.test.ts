@@ -40,6 +40,53 @@ describe ( 'TransportadorasRepository (rollback)', () =>
         });
     });
 
+    it ( 'Create aceita transportadora sem inscrição estadual (opcional)', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codCidade = await criarCidadeDeTeste ( transaction );
+
+            const nova = await repo.Create
+            (
+                {
+                    codCidade,
+                    transportadora: 'Sem IE Transportes',
+                    tipoPessoa:     'JURIDICA',
+                    cpfCnpjTransp:  '11111111000101',
+                    cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
+                },
+                1,
+                transaction
+            );
+
+            expect ( nova.inscEstTransp ).toBeNull();
+        });
+    });
+
+    it ( 'Create e Update persistem o número residencial (numeroTransp)', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codCidade = await criarCidadeDeTeste ( transaction );
+            const dados =
+            {
+                codCidade,
+                transportadora: 'Expressa Logística Ltda',
+                tipoPessoa:     'JURIDICA' as const,
+                enderecoTransp: 'RUA DO PORTO',
+                numeroTransp:   88,
+                cpfCnpjTransp:  '11111111000101',
+                inscEstTransp:  '111111111111', cepTransp: '01310100', foneTransp: '5511988887777', email: 'teste@kaneko.com.br', dtFundacao: '2000-01-01',
+            };
+
+            const nova = await repo.Create ( dados as never, 1, transaction );
+            expect ( nova.numeroTransp ).toBe ( 88 );
+
+            const editada = await repo.Update ( nova.codTransp, { ...dados, numeroTransp: 90, isActive: true } as never, 1, transaction );
+            expect ( editada?.numeroTransp ).toBe ( 90 );
+        });
+    });
+
     it ( 'Update altera os dados da transportadora dentro da transação', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
@@ -125,6 +124,7 @@ export default function FornecedoresPage ()
           { info.getValue() }
         </InfoBlock>
       ), } ),
+    columnHelper.accessor ( 'numeroForn', { header: 'Número', cell: ( info ) => info.getValue() ?? '-' } ),
     columnHelper.accessor ( 'bairroForn', { header: 'Bairro', 
       cell: ( info ) => (
         <InfoBlock>

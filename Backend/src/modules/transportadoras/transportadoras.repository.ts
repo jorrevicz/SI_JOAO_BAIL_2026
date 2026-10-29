@@ -58,6 +58,7 @@ export class TransportadorasRepository
                 "nomeFantasia",
                 "tipoPessoa",
                 "enderecoTransp",
+                "numeroTransp",
                 "cpfCnpjTransp",
                 "inscEstTransp",
                 "bairroTransp",
@@ -80,6 +81,7 @@ export class TransportadorasRepository
                 ${ trasp.nomeFantasia    ?? null },
                 ${ trasp.tipoPessoa      ?? null },
                 ${ trasp.enderecoTransp  ?? null },
+                ${ trasp.numeroTransp    ?? null },
                 ${ trasp.cpfCnpjTransp   ?? null },
                 ${ trasp.inscEstTransp   ?? null },
                 ${ trasp.bairroTransp    ?? null },
@@ -118,6 +120,7 @@ export class TransportadorasRepository
                 "nomeFantasia"   = ${ trasp.nomeFantasia    ?? null },
                 "tipoPessoa"     = ${ trasp.tipoPessoa      ?? null },
                 "enderecoTransp" = ${ trasp.enderecoTransp  ?? null },
+                "numeroTransp"   = ${ trasp.numeroTransp    ?? null },
                 "cpfCnpjTransp"  = ${ trasp.cpfCnpjTransp   ?? null },
                 "inscEstTransp"  = ${ trasp.inscEstTransp   ?? null },
                 "bairroTransp"   = ${ trasp.bairroTransp    ?? null },
@@ -171,11 +174,10 @@ export class TransportadorasRepository
     ): Promise < boolean >
     {
         const client = transaction ?? sql;
+        // A NF-e não referencia a transportadora diretamente: o transporte vem da compra.
         const [ { temDependentes } ] = await client`
             SELECT
-                EXISTS ( SELECT 1 FROM "Compras"                 WHERE "codTransp"         = ${ id } AND "isActive" = true )
-                OR
-                EXISTS ( SELECT 1 FROM "NotasFiscaisEletronicas" WHERE "codTransportadora"  = ${ id } AND "isActive" = true )
+                EXISTS ( SELECT 1 FROM "Compras" WHERE "codTransp" = ${ id } AND "isActive" = true )
                 AS "temDependentes"
         `;
 

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
@@ -95,14 +94,15 @@ export default function TransportadorasPage ()
             { info.getValue() ?? '-' }
           </InfoBlock>
         )
-      } 
+      }
     ),
+    columnHelper.accessor ( 'numeroTransp', { header: 'Número', cell: ( info ) => info.getValue() ?? '-' } ),
     columnHelper.accessor ( 'codVeiculo', { header: 'Código Veículo' } ), 
     columnHelper.accessor (
       'cpfCnpjTransp',
       { header: 'CPF / CNPJ', cell: ( info ) => info.getValue() ?? '—' }
     ),
-    columnHelper.accessor ( 'inscEstTransp', { header: 'Inscrição Estadual' } ),
+    columnHelper.accessor ( 'inscEstTransp', { header: 'Inscrição Estadual', cell: ( info ) => info.getValue() ?? '—' } ),
     columnHelper.accessor ( 'cepTransp', { header: 'CEP', cell: ( info ) => info.getValue() ?? '—' } ),
     columnHelper.accessor ( 'bairroTransp', { header: 'Bairro', cell: ( info ) => info.getValue() ?? '—' } ),
     columnHelper.accessor ( 'foneTransp', { header: 'Telefone', cell: ( info ) => info.getValue() ?? '—' } ),

@@ -55,6 +55,8 @@ export default interface Clientes {
   cpfCnpjCl: string | null;
 
   inscEstCl: string | null;
+
+  numeroCl: number | null;
 }
 
 /** Represents the initializer for the table public.Clientes */
@@ -107,6 +109,8 @@ export interface ClientesInitializer {
   cpfCnpjCl?: string | null;
 
   inscEstCl?: string | null;
+
+  numeroCl?: number | null;
 }
 
 /** Represents the mutator for the table public.Clientes */
@@ -156,4 +160,6 @@ export interface ClientesMutator {
   cpfCnpjCl?: string | null;
 
   inscEstCl?: string | null;
+
+  numeroCl?: number | null;
 }

@@ -58,6 +58,7 @@ export class FornecedoresRepository
                 "nomeFantasia",
                 "tipoPessoa",
                 "enderecoForn",
+                "numeroForn",
                 "bairroForn",
                 "cepForn",
                 "foneForn",
@@ -80,6 +81,7 @@ export class FornecedoresRepository
                 ${ forn.nomeFantasia    ?? null },
                 ${ forn.tipoPessoa      ?? null },
                 ${ forn.enderecoForn    ?? null },
+                ${ forn.numeroForn      ?? null },
                 ${ forn.bairroForn      ?? null },
                 ${ forn.cepForn         ?? null },
                 ${ forn.foneForn        ?? null },
@@ -118,6 +120,7 @@ export class FornecedoresRepository
                 "nomeFantasia"   = ${ forn.nomeFantasia    ?? null },
                 "tipoPessoa"     = ${ forn.tipoPessoa      ?? null },
                 "enderecoForn"   = ${ forn.enderecoForn    ?? null },
+                "numeroForn"     = ${ forn.numeroForn      ?? null },
                 "bairroForn"     = ${ forn.bairroForn      ?? null },
                 "cepForn"        = ${ forn.cepForn         ?? null },
                 "foneForn"       = ${ forn.foneForn        ?? null },
@@ -181,7 +184,7 @@ export class FornecedoresRepository
                 OR
                 EXISTS ( SELECT 1 FROM "NotasFiscaisEletronicas" WHERE "codFornecedor" = ${ id } AND "isActive" = true )
                 OR
-                EXISTS ( SELECT 1 FROM "VeiculoNfe"              WHERE "codForn"       = ${ id } )
+                EXISTS ( SELECT 1 FROM "VeiculoNfe"              WHERE "codFornecedor" = ${ id } )
                 AS "temDependentes"
         `;
 

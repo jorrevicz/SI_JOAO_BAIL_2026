@@ -38,6 +38,20 @@ describe ( 'Fornecedores routes', () =>
         expect ( res.status ).toBe ( 400 );
     });
 
+    it.each ( [ 0, -5, 12.5, '125', 1000000 ] )
+    ( 'POST /api/fornecedores com número residencial inválido (%s) retorna 400', async ( numeroForn ) =>
+    {
+        const res = await request ( app )
+            .post ( '/api/fornecedores' )
+            .send ({
+                codCidade: 1, codCondDePag: 1, fornecedor: 'Fornecedor Teste', tipoPessoa: 'JURIDICA', numeroForn,
+                cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
+                cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
+            });
+        expect ( res.status ).toBe ( 400 );
+        expect ( res.body.erros ).toHaveProperty ( 'numeroForn' );
+    });
+
     it ( 'POST /api/fornecedores com CEP zero-preenchido retorna 400', async () =>
     {
         const res = await request ( app )
@@ -86,19 +100,24 @@ describe ( 'Fornecedores routes', () =>
             cpfCnpjForn: '12345678000190', inscEstSubTrib: '111111111111',
         };
 
-        it ( 'pessoa jurídica sem data de fundação retorna 400', async () =>
+        // Os campos do tipo de pessoa são anuláveis: ausentes, não geram erro. O CEP zerado
+        // força um 400 só para o teste não gravar nada e poder inspecionar os erros.
+        it ( 'pessoa jurídica sem nome fantasia e data de fundação não acusa esses campos', async () =>
         {
-            const res = await request ( app ).post ( '/api/fornecedores' ).send ( { ...base, tipoPessoa: 'JURIDICA' } );
+            const res = await request ( app )
+                .post ( '/api/fornecedores' )
+                .send ( { ...base, tipoPessoa: 'JURIDICA', cepForn: '00000000', nomeFantasia: null, dtFundacao: null } );
             expect ( res.status ).toBe ( 400 );
-            expect ( res.body.erros ).toHaveProperty ( 'dtFundacao' );
+            expect ( Object.keys ( res.body.erros ) ).toEqual ( [ 'cepForn' ] );
         });
 
-        it ( 'pessoa física sem data de nascimento e gênero retorna 400', async () =>
+        it ( 'pessoa física sem apelido, RG, data de nascimento e gênero não acusa esses campos', async () =>
         {
-            const res = await request ( app ).post ( '/api/fornecedores' ).send ( { ...base, tipoPessoa: 'FISICA' } );
+            const res = await request ( app )
+                .post ( '/api/fornecedores' )
+                .send ( { ...base, tipoPessoa: 'FISICA', cepForn: '00000000', apelido: null, rg: null, dtNascimento: null, genero: null } );
             expect ( res.status ).toBe ( 400 );
-            expect ( res.body.erros ).toHaveProperty ( 'dtNascimento' );
-            expect ( res.body.erros ).toHaveProperty ( 'genero' );
+            expect ( Object.keys ( res.body.erros ) ).toEqual ( [ 'cepForn' ] );
         });
 
         it ( 'e-mail ausente retorna 400', async () =>

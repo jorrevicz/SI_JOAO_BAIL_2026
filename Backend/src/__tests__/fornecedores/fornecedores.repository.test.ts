@@ -39,6 +39,28 @@ describe ( 'FornecedoresRepository (rollback)', () =>
         });
     });
 
+    it ( 'Create e Update persistem o número residencial (numeroForn)', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const codCidade    = await criarCidadeDeTeste ( transaction );
+            const codCondDePag = await criarCondicaoDePagamentoDeTeste ( transaction );
+            const dados =
+            {
+                codCidade, codCondDePag, fornecedor: 'Distribuidora Teste Ltda',
+                tipoPessoa: 'JURIDICA' as const, enderecoForn: 'AV PAULISTA', numeroForn: 1578,
+                cepForn: '01310100', foneForn: '551133331111', email: 'teste@kaneko.com.br',
+                cpfCnpjForn: '11111111000101', inscEstSubTrib: '111111111111',
+            };
+
+            const novo = await repo.Create ( dados as never, 1, transaction );
+            expect ( novo.numeroForn ).toBe ( 1578 );
+
+            const editado = await repo.Update ( novo.codForn, { ...dados, numeroForn: 42, isActive: true } as never, 1, transaction );
+            expect ( editado?.numeroForn ).toBe ( 42 );
+        });
+    });
+
     it ( 'Create persiste campos opcionais dentro da transação', async () =>
     {
         await withTestTransaction ( async ( transaction ) =>

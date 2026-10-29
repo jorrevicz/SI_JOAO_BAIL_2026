@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { camposDadosPessoais, validarDadosPessoais, limparCamposDoOutroTipo } from '../../shared/validation/dadosPessoais.schema';
+import { camposDadosPessoais, limparCamposDoOutroTipo } from '../../shared/validation/dadosPessoais.schema';
 
 const camposFornecedor =
 {
@@ -32,6 +32,13 @@ const camposFornecedor =
         .trim()
         .max ( 150, 'O endereço deve ter no máximo 150 caracteres.' )
         .optional(),
+    // Número residencial do endereço — opcional como o próprio endereço.
+    numeroForn: z
+        .number ( { message: 'O número deve ser numérico.' } )
+        .int ( 'O número deve ser inteiro.' )
+        .positive ( 'O número deve ser maior que zero.' )
+        .max ( 999999, 'O número deve ter no máximo 6 dígitos.' )
+        .optional(),
     bairroForn: z
         .string()
         .trim()
@@ -63,12 +70,10 @@ const camposFornecedor =
 
 export const createFornecedorSchema = z
     .object ( camposFornecedor )
-    .superRefine ( validarDadosPessoais )
     .transform ( limparCamposDoOutroTipo );
 
 export const updateFornecedorSchema = z
     .object ( { ...camposFornecedor, isActive: z.boolean() } )
-    .superRefine ( validarDadosPessoais )
     .transform ( limparCamposDoOutroTipo );
 
 export type CreateFornecedorInput = z.infer < typeof createFornecedorSchema >;

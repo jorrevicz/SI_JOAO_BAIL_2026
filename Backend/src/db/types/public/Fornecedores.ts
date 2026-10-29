@@ -55,6 +55,8 @@ export default interface Fornecedores {
   email: string | null;
 
   rg: string | null;
+
+  numeroForn: number | null;
 }
 
 /** Represents the initializer for the table public.Fornecedores */
@@ -107,6 +109,8 @@ export interface FornecedoresInitializer {
   email?: string | null;
 
   rg?: string | null;
+
+  numeroForn?: number | null;
 }
 
 /** Represents the mutator for the table public.Fornecedores */
@@ -156,4 +160,6 @@ export interface FornecedoresMutator {
   email?: string | null;
 
   rg?: string | null;
+
+  numeroForn?: number | null;
 }

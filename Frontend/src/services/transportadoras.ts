@@ -10,6 +10,7 @@ export interface Transportadora
   nomeFantasia:   string | null;
   tipoPessoa:     string | null;
   enderecoTransp: string | null;
+  numeroTransp:   number | null;
   cpfCnpjTransp:  string | null;
   inscEstTransp:  string | null;
   bairroTransp:   string | null;
@@ -36,8 +37,9 @@ export interface CreateTransportadoraInput
   nomeFantasia?:   string;
   tipoPessoa:      'FISICA' | 'JURIDICA' | '';
   enderecoTransp?: string;
+  numeroTransp?:   number;
   cpfCnpjTransp:   string;
-  inscEstTransp:   string;
+  inscEstTransp?:  string;
   bairroTransp?:   string;
   cepTransp:       string;
   foneTransp:      string;
