@@ -32,14 +32,6 @@ export function CampoConsulta < T > (
 
   return (
     <>
-      <FormCampo label={ rotulo } obrigatorio={ obrigatorio } colunas={ colunas[ 0 ] }>
-        <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
-          <Botao type="button" $variante="secundario" disabled={ desabilitado } onClick={ () => setConsultando ( true ) }>
-            Consultar
-          </Botao>
-        </div>
-      </FormCampo>
-
       <FormCampo label={ rotuloCodigo } colunas={ colunas[ 1 ] } erro={ campo.erro || erroApi }>
         <input
           inputMode="numeric"
@@ -66,6 +58,14 @@ export function CampoConsulta < T > (
           />
         )
       }
+
+      <FormCampo label={ rotulo } obrigatorio={ obrigatorio } colunas={ colunas[ 0 ] }>
+        <div style={ { display: 'flex', gap: '0.5rem', alignItems: 'center' } }>
+          <Botao type="button" $variante="secundario" disabled={ desabilitado } onClick={ () => setConsultando ( true ) }>
+            Consultar
+          </Botao>
+        </div>
+      </FormCampo>
     </>
   );
 }

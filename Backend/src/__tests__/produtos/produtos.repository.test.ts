@@ -221,7 +221,7 @@ describe ( 'ProdutosRepository (rollback)', () =>
             const atualizado = await repoProdutos.AtualizarEstoqueCusto
             (
                 novo.codProd,
-                { estoque: 20, custoMedioProd: '110.00', custoProd: '120.00' },
+                { estoque: 20, custoMedioProd: '110.123456', custoProd: '120.654321' },
                 1,
                 transaction
             );
@@ -229,8 +229,8 @@ describe ( 'ProdutosRepository (rollback)', () =>
             expect ( atualizado ).toMatchObject
             ({
                 estoque:        20,
-                custoMedioProd: '110.00',
-                custoProd:      '120.00',
+                custoMedioProd: '110.123456',
+                custoProd:      '120.654321',
                 produto:        'Movimento Teste',
             });
         });

@@ -3,11 +3,10 @@ import { formasPagamentoService, type FormaPagamento } from '../../services/form
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { FormaPagamentoConsulta } from '../formasPagamento/FormaPagamentoConsulta';
-import { formatarDataHora, doInputUtcParaIso } from '../../utils/formatters';
 import type { ParcelaLocal } from './parcelas';
 import { emCentavos, somaParcelasEmCentavos } from './parcelas';
 import { ParcelaCompraEdicaoModal } from './ParcelaCompraEdicaoModal';
-import { TabelaWrapper, Tabela, Botao, GrupoBotoes, ErroCampo, FormSecao, FormCampo } from './style';
+import { TabelaWrapper, Tabela, Botao, ErroCampo, FormSecao, FormCampo } from './style';
 
 interface Props
 {
@@ -185,7 +184,7 @@ export function CompraParcelas ( { parcelas, onAlterar, somenteLeitura, totalCom
                   <th>Forma de pagamento</th>
                   <th>Valor (R$)</th>
                   <th>Vencimento</th>
-                  { !somenteLeitura && <th>Ações</th> }
+                  {/* { !somenteLeitura && <th>Ações</th> } */}
                 </tr>
               </thead>
               <tbody>
@@ -196,7 +195,8 @@ export function CompraParcelas ( { parcelas, onAlterar, somenteLeitura, totalCom
                       <td>{ parcela.codFormaDePag }</td>
                       <td>{ nomeDaForma ( parcela.codFormaDePag ) }</td>
                       <td style={ { textAlign: 'right' } }>{ Number ( parcela.valor || 0 ).toFixed ( 2 ) }</td>
-                      <td>{ parcela.dtVencimento ? formatarDataHora ( doInputUtcParaIso ( parcela.dtVencimento ) ) : '—' }</td>
+                      <td>{ parcela.dtVencimento}</td>
+                      {/* ? formatarDataHora ( doInputUtcParaIso ( parcela.dtVencimento ) ) : '—' }</td>
                       {
                         !somenteLeitura && (
                           <td>
@@ -212,9 +212,8 @@ export function CompraParcelas ( { parcelas, onAlterar, somenteLeitura, totalCom
                                 Remover
                               </Botao>
                             </GrupoBotoes>
-                          </td>
                         )
-                      }
+                      }*/}
                     </tr>
                   ) )
                 }

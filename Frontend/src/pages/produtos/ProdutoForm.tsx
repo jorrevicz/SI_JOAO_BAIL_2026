@@ -23,7 +23,7 @@ interface Props
 {
   inicial:          Partial < Produto >;
   codCategoriaFixa?: number;
-  onSalvo:          () => void;
+  onSalvo:          ( salvo: Produto ) => void;
   onCancelar:       () => void;
 }
 
@@ -120,7 +120,7 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           precoVenda:   form.precoVenda,
           isActive:     form.isActive     ?? true,
         };
-        await produtosService.atualizar ( inicial.codProd!, dados );
+        onSalvo ( await produtosService.atualizar ( inicial.codProd!, dados ) );
       }
       else
       {
@@ -136,9 +136,8 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           pesoLiq:      form.pesoLiq,
           isActive:     form.isActive     ?? true,
         };
-        await produtosService.criar ( dados );
+        onSalvo ( await produtosService.criar ( dados ) );
       }
-      onSalvo();
     }
     catch ( err )
     {
@@ -210,7 +209,7 @@ export default function ProdutoForm ( { inicial, codCategoriaFixa, onSalvo, onCa
           <input
             id="custoProd"
             type="number"
-            step="0.01"
+            step="0.000001"
             min="0"
             value={ form.custoProd }
             onChange={ ( evento ) =>

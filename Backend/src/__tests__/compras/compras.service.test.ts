@@ -26,17 +26,17 @@ const CABECALHO: CabecalhoCompraInput =
         { codProduto: 7, quantidade: 5,  valorUnitario: '380.00', desconto: '0.00',   unidade: 'UN' },
         { codProduto: 8, quantidade: 10, valorUnitario: '210.00', desconto: '100.00', unidade: 'CX' },
     ],
-    // RN023 — a soma das parcelas fecha no vlrTotal calculado (3900.00)
+    // RN023 — a soma das parcelas fecha no vlrTotal calculado (3000.00 + 100.00 de despesas)
     parcelas:
     [
-        { numParcela: 1, codFormaDePag: 2, valor: '1900.00', dtVencimento: new Date ( '2026-10-20T10:00:00Z' ) },
-        { numParcela: 2, codFormaDePag: 2, valor: '2000.00', dtVencimento: new Date ( '2026-11-20T10:00:00Z' ) },
+        { numParcela: 1, codFormaDePag: 2, valor: '1550.00', dtVencimento: new Date ( '2026-10-20T10:00:00Z' ) },
+        { numParcela: 2, codFormaDePag: 2, valor: '1550.00', dtVencimento: new Date ( '2026-11-20T10:00:00Z' ) },
     ],
 };
 
 const NOVA_COMPRA: CreateCompraInput = { ...ID_TESTE, ...CABECALHO };
 
-const COMPRA_LANCADA   = { ...ID_TESTE, justificativaCancelamento: null };
+const COMPRA_LANCADA   = { ...ID_TESTE, frete: '100.00', seguro: '0.00', despesas: '0.00', justificativaCancelamento: null };
 const COMPRA_CANCELADA = { ...ID_TESTE, justificativaCancelamento: 'Nota devolvida' };
 
 type MockRepo = Record < string, ReturnType < typeof vi.fn > >;
@@ -62,6 +62,7 @@ describe ( 'ComprasService', () =>
     let produtosRepo:      MockRepo;
     let parcelasCondicaoRepo: MockRepo;
     let formasPagamentoRepo:  MockRepo;
+    let contasPagamentoService: MockRepo;
     let service:           ComprasService;
 
     beforeEach ( () =>
@@ -77,6 +78,7 @@ describe ( 'ComprasService', () =>
         produtosRepo        = MakeMock ( [ 'FindById', 'FindByIdForUpdate', 'AtualizarEstoqueCusto' ] );
         parcelasCondicaoRepo = MakeMock ( [ 'List' ] );
         formasPagamentoRepo  = MakeMock ( [ 'FindById' ] );
+        contasPagamentoService = MakeMock ( [ 'CancelarContasDaCompra' ] );
 
         // Por padrão todas as referências existem; cada teste derruba só a que interessa.
         fornecedoresRepo.FindById.mockResolvedValue    ( { codForn: 3 } );
@@ -96,6 +98,7 @@ describe ( 'ComprasService', () =>
             produtosRepo        as never,
             parcelasCondicaoRepo as never,
             formasPagamentoRepo  as never,
+            contasPagamentoService as never,
         );
     });
 
@@ -129,7 +132,7 @@ describe ( 'ComprasService', () =>
 
         it ( 'devolve o cabeçalho da compra com a lista de itens', async () =>
         {
-            repo.FindById.mockResolvedValue ( { ...ID_TESTE, fornecedor: 'FORNECEDOR' } );
+            repo.FindById.mockResolvedValue ( { ...ID_TESTE, fornecedor: 'FORNECEDOR', frete: '0.00', seguro: '0.00', despesas: '0.00' } );
             repo.ListItens.mockResolvedValue
             ([
                 { codProduto: 7, produto: 'MOUSE', quantidade: 2, valorUnitario: '100.00', desconto: '0.00' },
@@ -144,13 +147,16 @@ describe ( 'ComprasService', () =>
             ({
                 ...ID_TESTE,
                 fornecedor: 'FORNECEDOR',
+                frete:      '0.00',
+                seguro:     '0.00',
+                despesas:   '0.00',
                 // calculados na leitura, nunca persistidos
                 vlrTotal:   '200.00',
                 itens:
                 [
                     {
                         codProduto: 7, produto: 'MOUSE', quantidade: 2, valorUnitario: '100.00', desconto: '0.00',
-                        percentualRateio: '100.00', valorRateio: '100.00', custoMedioProduto: '150.00',
+                        percentualRateio: '100.00', valorRateio: '0.00', custoMedioProduto: '100.000000',
                     },
                 ],
                 parcelas:   [ { numParcela: 1, valor: '10.00' } ],
@@ -200,7 +206,7 @@ describe ( 'ComprasService', () =>
             ({
                 totalProdutos:  '200.00',
                 totalDescontos: '0.00',
-                vlrTotal:       '200.00',
+                vlrTotal:       '210.00',
                 totalQuantidade:    2,
                 totalValorUnitario: '100.00',
                 itens:
@@ -212,13 +218,13 @@ describe ( 'ComprasService', () =>
                         desconto:             '0.00',
                         valorLiquido:         '200.00',
                         percentualRateio:     '100.00',
-                        valorRateio:          '100.00',
-                        custoMedioProduto:    '150.00',
+                        valorRateio:          '10.00',
+                        custoMedioProduto:    '105.000000',
                         produto:              'MOUSE',
                         undProduto:           'UN',
                         estoqueAtual:         8,
                         estoqueResultante:    10,
-                        custoMedioResultante: '110.00',
+                        custoMedioResultante: '101.000000',
                         precoVenda:           '150.00',
                     },
                 ],
@@ -328,7 +334,7 @@ describe ( 'ComprasService', () =>
 
         it ( 'devolve a compra recém-criada com os itens', async () =>
         {
-            repo.ListItens.mockResolvedValue ( [ { codProduto: 7 } ] );
+            repo.ListItens.mockResolvedValue ( [ { codProduto: 7, quantidade: 5, valorUnitario: '380.00', desconto: '0.00' } ] );
 
             await expect ( service.CreateCompra ( NOVA_COMPRA, 1 ) ).resolves.toMatchObject
             (
@@ -372,7 +378,7 @@ describe ( 'ComprasService', () =>
             expect ( repo.CreateParcela ).toHaveBeenCalledTimes ( 2 );
             expect ( repo.CreateParcela ).toHaveBeenNthCalledWith
             (
-                1, ID_TESTE, expect.objectContaining ( { numParcela: 1, valor: '1900.00', codFormaDePag: 2 } ), 1, {}
+                1, ID_TESTE, expect.objectContaining ( { numParcela: 1, valor: '1550.00', codFormaDePag: 2 } ), 1, {}
             );
         });
 
@@ -432,16 +438,17 @@ describe ( 'ComprasService', () =>
 
             expect ( produtosRepo.FindByIdForUpdate ).toHaveBeenNthCalledWith ( 1, 7, {} );
 
-            // custo unitário final calculado na hora: 389,74 e 205,13 (rateio pelo líquido)
-            // MOUSE: (25 × 380,00 + 5 × 389,74) / 30 = 381,62 (média parte do custo inicial)
+            // custo unitário final calculado na hora, com 6 casas: 392,666000 e 113,667000
+            // ( valor do produto + rateio das despesas ) ÷ quantidade
+            // MOUSE: (25 × 380,00 + 5 × 392,666) / 30 = 382,144333 (média parte do custo inicial)
             expect ( produtosRepo.AtualizarEstoqueCusto ).toHaveBeenNthCalledWith
             (
-                1, 7, { estoque: 30, custoMedioProd: '381.62', custoProd: '389.74' }, 1, {}
+                1, 7, { estoque: 30, custoMedioProd: '382.111000', custoProd: '392.666000' }, 1, {}
             );
-            // SSD: (30 × 200,00 + 10 × 205,13) / 40 = 201,28
+            // SSD: (30 × 200,00 + 10 × 113,667) / 40 = 178,416750
             expect ( produtosRepo.AtualizarEstoqueCusto ).toHaveBeenNthCalledWith
             (
-                2, 8, { estoque: 40, custoMedioProd: '201.28', custoProd: '205.13' }, 1, {}
+                2, 8, { estoque: 40, custoMedioProd: '178.416750', custoProd: '113.667000' }, 1, {}
             );
         });
 
@@ -469,23 +476,32 @@ describe ( 'ComprasService', () =>
             repo.ListItens.mockResolvedValue ( ITENS );
             produtosRepo.FindByIdForUpdate.mockResolvedValue
             (
-                { codProd: 7, estoque: 30, custoMedioProd: '381.62', custoProd: '389.74' }
+                { codProd: 7, estoque: 30, custoMedioProd: '381.624000', custoProd: '389.744000' }
             );
 
             await service.CancelarCompra ( ID_TESTE, 'Nota devolvida', 1 );
 
             expect ( repo.Cancelar ).toHaveBeenCalledWith ( ID_TESTE, 'Nota devolvida', 1, {} );
+            // As contas a pagar do documento caem na mesma transação, depois de a compra ser desativada.
+            expect ( contasPagamentoService.CancelarContasDaCompra ).toHaveBeenCalledWith ( ID_TESTE, 'Nota devolvida', 1, {} );
+            expect ( repo.Cancelar.mock.invocationCallOrder[ 0 ] )
+                .toBeLessThan ( contasPagamentoService.CancelarContasDaCompra.mock.invocationCallOrder[ 0 ] );
             // item sozinho na compra: custo unitário (1.900,00 + rateio 100,00) / 5 = 400,00
-            // (30 × 381,62 − 5 × 400,00) / 25 = 377,94
+            // (30 × 381,624 − 5 × 400,00) / 25 = 377,948800
             expect ( produtosRepo.AtualizarEstoqueCusto ).toHaveBeenCalledWith
             (
-                7, { estoque: 25, custoMedioProd: '377.94', custoProd: '389.74' }, 1, {}
+                7, { estoque: 25, custoMedioProd: '377.948800', custoProd: '389.744000' }, 1, {}
             );
         });
 
         it.each
         ([
             [ 'já cancelada', COMPRA_CANCELADA, 'Esta compra já foi cancelada.' ],
+            [
+                'com nota fiscal gerada',
+                { ...COMPRA_LANCADA, situacaoNotaFiscal: 'Gerada' },
+                'Esta compra possui nota fiscal gerada; cancele a nota fiscal antes de cancelar a compra.',
+            ],
         ])
         ( 'lança 409 quando a compra está %s', async ( _rotulo, compra, mensagem ) =>
         {
@@ -496,6 +512,7 @@ describe ( 'ComprasService', () =>
                 { status: 409, message: mensagem }
             );
             expect ( repo.Cancelar ).not.toHaveBeenCalled();
+            expect ( contasPagamentoService.CancelarContasDaCompra ).not.toHaveBeenCalled();
         });
 
         it ( 'lança 409 quando o estoque atual não comporta o estorno', async () =>

@@ -118,11 +118,11 @@ export default function ProdutosPage ()
     ),
     columnHelper.accessor (
       'custoProd',
-      { header: 'Custo (R$)', cell: ( info ) => parseFloat ( info.getValue() ).toFixed ( 2 ) }
+      { header: 'Custo (R$)', cell: ( info ) => formatarCusto ( info.getValue() ) }
     ),
     columnHelper.accessor (
       'custoMedioProd',
-      { header: 'Custo médio (R$)', cell: ( info ) => parseFloat ( info.getValue() ).toFixed ( 2 ) }
+      { header: 'Custo médio (R$)', cell: ( info ) => formatarCusto ( info.getValue() ) }
     ),
     columnHelper.accessor (
       'precoVenda',

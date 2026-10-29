@@ -23,6 +23,8 @@ export interface Compra extends CompraId
   seguro:                    string;
   despesas:                  string;
   vlrTotal:                  string;
+  // NF-e da compra (mesmas chaves da compra; null se não houver) — RN002/RN003.
+  situacaoNotaFiscal:        'Gerada' | 'Cancelada' | null;
   justificativaCancelamento: string | null;
   dtCriacao:                 string;
   dtEdicao:                  string;

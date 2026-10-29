@@ -1,5 +1,15 @@
 const doisDigitos = ( numero: number ) => String ( numero ).padStart ( 2, '0' );
 
+// Custos unitários (custoProd, custoMedioProd, custo do item da compra) vêm do Backend com
+// 6 casas decimais. Exibe até 6, sem zeros à direita desnecessários, mas sempre com pelo
+// menos 2 casas (ex.: 3200.00, 83.333333, 12.5 → 12.50).
+export const formatarCusto = ( valor: string | number ) =>
+{
+  const [ inteiro, fracao = '' ] = Number ( valor ).toFixed ( 6 ).split ( '.' );
+
+  return `${ inteiro }.${ fracao.replace ( /0+$/, '' ).padEnd ( 2, '0' ) }`;
+};
+
 // Padrão brasileiro dd/mm/aa (RNF14), sempre a partir dos componentes UTC do valor (nunca
 // do fuso do navegador) — consistente com o Backend, que grava/retorna tudo em UTC
 // (colunas TIMESTAMPTZ, respostas ISO 8601 com sufixo "Z").
@@ -24,19 +34,10 @@ export const formatarDataHora = ( iso: string ) =>
 // se fosse horário local, então "mentimos" os componentes (UTC no lugar de local) para
 // que os dígitos mostrados ao usuário sejam sempre o horário UTC, igual ao que o
 // Backend grava e retorna. Ver doInputUtcParaIso, que desfaz essa conversão no envio.
+
 export const paraDataHoraInputUtc = ( data: Date ) =>
   `${ data.getUTCFullYear() }-${ doisDigitos ( data.getUTCMonth() + 1 ) }-${ doisDigitos ( data.getUTCDate() ) }`
   + `T${ doisDigitos ( data.getUTCHours() ) }:${ doisDigitos ( data.getUTCMinutes() ) }`;
-
-// Mesma data, com o horário ajustado para o início do dia em UTC (00:00) — usado como
-// emissão/chegada padrão, para o formulário nunca nascer com a hora atual.
-export const inicioDoDiaUtc = ( data: Date ) =>
-{
-  const resultado = new Date ( data );
-  resultado.setUTCHours ( 0, 0, 0, 0 );
-
-  return resultado;
-};
 
 // Mesma data, com o horário ajustado para o fim do dia em UTC (23:59) — usado como
 // vencimento padrão ao abrir o formulário de criação de uma conta.

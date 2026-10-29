@@ -17,26 +17,29 @@ describe ( 'CalcularCompra', () =>
             ],
         });
 
-        expect ( resultado.totalProdutos ).toBe ( '3900.00' );
+        // ( 380 − 0 ) × 5 + ( 210 − 100 ) × 10 = 1900 + 1100
+        expect ( resultado.totalProdutos ).toBe ( '3000.00' );
         expect ( resultado.totalDescontos ).toBe ( '100.00' );
         expect ( resultado.totalQuantidade ).toBe ( 15 );
         expect ( resultado.totalValorUnitario ).toBe ( '590.00' );
-        // frete, seguro e despesas não entram no vlrTotal: ele é o total dos produtos
-        expect ( resultado.vlrTotal ).toBe ( '3900.00' );
+        // frete, seguro e despesas não entram no totalProdutos, só no vlrTotal (3000 + 60 + 20 + 20)
+        expect ( resultado.vlrTotal ).toBe ( '3100.00' );
         expect ( resultado.itens ).toEqual
         ([
             {
                 codProduto: 1, quantidade: 5, valorUnitario: '380.00', desconto: '0.00', valorLiquido: '1900.00',
-                percentualRateio: '48.72', valorRateio: '48.72', custoMedioProduto: '389.74',
+                // rateio = 1900 ÷ 3000 × 100,00 de despesas = 63,33; custo = ( 1900 + 63,33 ) ÷ 5
+                percentualRateio: '63.33', valorRateio: '63.33', custoMedioProduto: '392.666000',
             },
             {
-                codProduto: 2, quantidade: 10, valorUnitario: '210.00', desconto: '100.00', valorLiquido: '2000.00',
-                percentualRateio: '51.28', valorRateio: '51.28', custoMedioProduto: '205.13',
+                codProduto: 2, quantidade: 10, valorUnitario: '210.00', desconto: '100.00', valorLiquido: '1100.00',
+                // o centavo que sobra vai para o maior resto: 1100 ÷ 3000 × 100,00 = 36,67
+                percentualRateio: '36.67', valorRateio: '36.67', custoMedioProduto: '113.667000',
             },
         ]);
     });
 
-    it ( 'distribui os centavos residuais para que os percentuais somem 100% e o rateio some o total rateado', () =>
+    it ( 'o percentual é só a fatia do produto arredondada; o valor do rateio soma exatamente as despesas', () =>
     {
         const resultado = CalcularCompra
         ({
@@ -51,35 +54,53 @@ describe ( 'CalcularCompra', () =>
             ],
         });
 
-        const somaPercentuais = resultado.itens.reduce ( ( soma, item ) => soma + Number ( item.percentualRateio ), 0 );
         const somaRateio      = resultado.itens.reduce ( ( soma, item ) => soma + Number ( item.valorRateio ), 0 );
 
-        // método dos maiores restos: o centavo que sobra vai para o primeiro item
-        expect ( resultado.itens.map ( ( item ) => item.percentualRateio ) ).toEqual ( [ '33.34', '33.33', '33.33' ] );
-        expect ( somaPercentuais.toFixed ( 2 ) ).toBe ( '100.00' );
-        expect ( somaRateio.toFixed ( 2 ) ).toBe ( '100.00' );
-        expect ( resultado.vlrTotal ).toBe ( '3.00' );
+        // percentual = 1 ÷ 3 × 100 arredondado em 2 casas, sem redistribuir o resíduo (soma 99,99)
+        expect ( resultado.itens.map ( ( item ) => item.percentualRateio ) ).toEqual ( [ '33.33', '33.33', '33.33' ] );
+        // o rateio soma exatamente as despesas (frete 0,10)
+        expect ( somaRateio.toFixed ( 2 ) ).toBe ( '0.10' );
+        expect ( resultado.itens.map ( ( item ) => item.valorRateio ) ).toEqual ( [ '0.04', '0.03', '0.03' ] );
+        expect ( resultado.vlrTotal ).toBe ( '3.10' );
     });
 
-    it ( 'o custo do item é o líquido mais o rateio, dividido pela quantidade', () =>
+    it ( 'o custo do item é o valor do produto mais o rateio, dividido pela quantidade', () =>
     {
         const resultado = CalcularCompra
         ({
-            frete:    '0.00',
+            frete:    '3.00',
             seguro:   '0.00',
             despesas: '0.00',
             itens:    [ { codProduto: 1, quantidade: 3, valorUnitario: '10.00', desconto: '1.00' } ],
         });
 
-        // líquido 29,00 + rateio 100,00 = 129,00 / 3 = 43,00
+        // ( 10,00 − 1,00 ) × 3 = 27,00 + rateio 3,00 = 30,00 ÷ 3 = 10,00
         expect ( resultado.itens[ 0 ] ).toMatchObject
         ({
-            valorLiquido:      '29.00',
+            valorLiquido:      '27.00',
             percentualRateio:  '100.00',
-            valorRateio:       '100.00',
-            custoMedioProduto: '43.00',
+            valorRateio:       '3.00',
+            custoMedioProduto: '10.000000',
         });
-        expect ( resultado.vlrTotal ).toBe ( '29.00' );
+        expect ( resultado.totalProdutos ).toBe ( '27.00' );
+        expect ( resultado.vlrTotal ).toBe ( '30.00' );
+    });
+});
+
+describe ( 'CalcularCompra — precisão do custo unitário', () =>
+{
+    it ( 'devolve o custo unitário do item com 6 casas decimais, arredondando só no final', () =>
+    {
+        const resultado = CalcularCompra
+        ({
+            frete:    '1.00',
+            seguro:   '0.00',
+            despesas: '0.00',
+            itens:    [ { codProduto: 1, quantidade: 3, valorUnitario: '10.00', desconto: '0.00' } ],
+        });
+
+        // ( 30,00 + 1,00 ) ÷ 3 = 10,333333…
+        expect ( resultado.itens[ 0 ].custoMedioProduto ).toBe ( '10.333333' );
     });
 });
 
@@ -91,7 +112,7 @@ describe ( 'CalcularEntradaEstoque (lançamento — RN013)', () =>
         expect
         (
             CalcularEntradaEstoque ( { estoque: 10, custoMedioProd: '0.00', custoProd: '100.00' }, 10, '120.00' )
-        ).toEqual ( { estoque: 20, custoMedioProd: '110.00', custoProd: '120.00' } );
+        ).toEqual ( { estoque: 20, custoMedioProd: '110.000000', custoProd: '120.000000' } );
     });
 
     it ( 'usa o custo médio atual como base quando já houve compra lançada', () =>
@@ -100,16 +121,25 @@ describe ( 'CalcularEntradaEstoque (lançamento — RN013)', () =>
         expect
         (
             CalcularEntradaEstoque ( { estoque: 20, custoMedioProd: '110.00', custoProd: '120.00' }, 20, '140.00' )
-        ).toEqual ( { estoque: 40, custoMedioProd: '125.00', custoProd: '140.00' } );
+        ).toEqual ( { estoque: 40, custoMedioProd: '125.000000', custoProd: '140.000000' } );
     });
 
-    it ( 'arredonda a média para centavos', () =>
+    it ( 'arredonda a média para 6 casas decimais, só no resultado final', () =>
     {
-        // (1 × 10 + 2 × 10,01) / 3 = 10,0066… → 10,01
+        // (1 × 10 + 2 × 10,01) / 3 = 10,006666… → 10,006667
         expect
         (
             CalcularEntradaEstoque ( { estoque: 1, custoMedioProd: '10.00', custoProd: '10.00' }, 2, '10.01' ).custoMedioProd
-        ).toBe ( '10.01' );
+        ).toBe ( '10.006667' );
+    });
+
+    it ( 'mantém as 6 casas do custo unitário da compra e da base na média ponderada', () =>
+    {
+        // (3 × 1,234567 + 7 × 2,345679) / 10 = 2,0123454 → 2,012345
+        expect
+        (
+            CalcularEntradaEstoque ( { estoque: 3, custoMedioProd: '1.234567', custoProd: '1.000000' }, 7, '2.345679' )
+        ).toEqual ( { estoque: 10, custoMedioProd: '2.012345', custoProd: '2.345679' } );
     });
 });
 
@@ -120,16 +150,16 @@ describe ( 'CalcularEstornoEstoque (cancelamento — RN014)', () =>
         // (20 × 110 − 10 × 120) / 10 = 100
         expect
         (
-            CalcularEstornoEstoque ( { estoque: 20, custoMedioProd: '110.00', custoProd: '120.00' }, 10, '120.00' )
-        ).toEqual ( { estoque: 10, custoMedioProd: '100.00', custoProd: '120.00' } );
+            CalcularEstornoEstoque ( { estoque: 20, custoMedioProd: '110.000000', custoProd: '120.000000' }, 10, '120.000000' )
+        ).toEqual ( { estoque: 10, custoMedioProd: '100.000000', custoProd: '120.000000' } );
     });
 
     it ( 'zera o custo médio quando o estoque é zerado', () =>
     {
         expect
         (
-            CalcularEstornoEstoque ( { estoque: 10, custoMedioProd: '100.00', custoProd: '120.00' }, 10, '100.00' )
-        ).toEqual ( { estoque: 0, custoMedioProd: '0.00', custoProd: '120.00' } );
+            CalcularEstornoEstoque ( { estoque: 10, custoMedioProd: '100.000000', custoProd: '120.000000' }, 10, '100.000000' )
+        ).toEqual ( { estoque: 0, custoMedioProd: '0.000000', custoProd: '120.000000' } );
     });
 
     it ( 'devolve null quando o estoque atual é menor que a quantidade a estornar', () =>
@@ -145,7 +175,7 @@ describe ( 'CalcularEstornoEstoque (cancelamento — RN014)', () =>
         expect
         (
             CalcularEstornoEstoque ( { estoque: 2, custoMedioProd: '10.00', custoProd: '10.00' }, 1, '50.00' )?.custoMedioProd
-        ).toBe ( '0.00' );
+        ).toBe ( '0.000000' );
     });
 });
 

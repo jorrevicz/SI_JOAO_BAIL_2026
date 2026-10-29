@@ -19,7 +19,11 @@ import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { FornecedorConsulta } from '../fornecedores/FornecedorConsulta';
 import { TransportadoraConsulta } from '../transportadoras/TransportadoraConsulta';
 import { CondicaoPagamentoConsulta } from '../condicoesPagamento-Parcela/CondicaoPagamentoConsulta';
-import { paraDataHoraInputUtc, inicioDoDiaUtc, doInputUtcParaIso, fimDoDiaUtc } from '../../utils/formatters';
+import { paraDataHoraInputUtc, doInputUtcParaIso, formatarCusto } from '../../utils/formatters';
+import
+{
+  comErroDoCampo, validarDataChegadaCompra, validarDataEmissaoCompra, validarDecimal, validarDigitos,
+} from '../../utils/validators';
 import { CompraItemForm, type ItemLocal } from './CompraItemForm';
 import { CompraParcelas } from './CompraParcelas';
 import { somaParcelasEmCentavos, type ParcelaLocal } from './parcelas';
@@ -78,6 +82,7 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
   } );
   const [ chaveValidada, setChaveValidada ]   = useState ( modo !== 'novo' );
   const [ validandoChave, setValidandoChave ] = useState ( false );
+  const [ erroChave, setErroChave ]           = useState ( '' );
 
   const campoFornecedor = useCampoConsulta (
     {
@@ -106,8 +111,8 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
     }
   );
 
-  const [ dtEmissao, setDtEmissao ] = useState ( compra ? compra.dtEmissao.slice ( 0, 16 ) : paraDataHoraInputUtc ( inicioDoDiaUtc ( new Date() ) ) );
-  const [ dtChegada, setDtChegada ] = useState ( compra ? compra.dtChegada.slice ( 0, 16 ) : paraDataHoraInputUtc ( fimDoDiaUtc ( new Date() ) ) );
+  const [ dtEmissao, setDtEmissao ] = useState ( compra ? compra.dtEmissao.slice ( 0, 16 ) : paraDataHoraInputUtc ( new Date() ) );
+  const [ dtChegada, setDtChegada ] = useState ( compra ? compra.dtChegada.slice ( 0, 16 ) : paraDataHoraInputUtc ( new Date() ) );
   const [ frete, setFrete ]       = useState ( compra?.frete    ?? '' );
   const [ seguro, setSeguro ]     = useState ( compra?.seguro   ?? '' );
   const [ despesas, setDespesas ] = useState ( compra?.despesas ?? '' );
@@ -223,40 +228,99 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
     };
   }, [ itens, frete, seguro, despesas ] );
 
+  // Tamanho exato de cada parte da chave — mesma regra do Backend (`documentoFiscalSchema`).
+  const REGRAS_CHAVE: Record < keyof typeof chave, { tamanho: number; rotulo: string } > = {
+    modelo: { tamanho: 2, rotulo: 'O modelo' },
+    serie:  { tamanho: 2, rotulo: 'A série' },
+    numero: { tamanho: 9, rotulo: 'O número' },
+  };
+
   const AlterarChave = ( campo: keyof typeof chave, valor: string ) =>
   {
-    setChave ( { ...chave, [ campo ]: valor.replace ( /\D/g, '' ) } );
+    const apenasDigitos = valor.replace ( /\D/g, '' );
+    const regra         = REGRAS_CHAVE[ campo ];
+
+    setChave ( { ...chave, [ campo ]: apenasDigitos } );
+    setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, campo, validarDigitos ( apenasDigitos, [ regra.tamanho ], regra.rotulo ) ) );
     setChaveValidada ( false );
+    setErroChave ( '' );
   };
 
   // RN007 — número/modelo/série/fornecedor validados (formato e inexistência) antes de
-  // liberar o resto. O fornecedor faz parte da chave, então precisa existir antes.
-  const ValidarChave = async () =>
-  {
-    setValidandoChave ( true );
-    setErro ( '' );
-    setErrosCampo ( {} );
+  // liberar o resto. A validação dispara sozinha assim que todos os campos da chave estão
+  // preenchidos; o fornecedor faz parte da chave, então precisa existir antes.
+  const chaveCompleta = chave.numero.length === 9 && chave.modelo.length === 2 && chave.serie.length === 2 && campoFornecedor.codigo > 0;
 
-    if ( !( await campoFornecedor.validar() ) )
+  useEffect ( () =>
+  {
+    if ( modo !== 'novo' )
     {
-      setValidandoChave ( false );
       return;
     }
 
-    try
+    // Mudou a chave: a validação anterior deixa de valer.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setChaveValidada ( false );
+    setErroChave ( '' );
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    if ( !chaveCompleta )
     {
-      await comprasService.validarChave ( idCompra );
-      setChaveValidada ( true );
+      return;
     }
-    catch ( err )
+
+    let ativo = true;
+
+    const temporizador = setTimeout ( async () =>
     {
-      TratarErro ( err );
-    }
-    finally
+      setValidandoChave ( true );
+      setErrosCampo ( {} );
+
+      try
+      {
+        if ( !( await campoFornecedor.validar() ) )
+        {
+          return;
+        }
+
+        await comprasService.validarChave ( idCompra );
+
+        if ( ativo )
+        {
+          setChaveValidada ( true );
+        }
+      }
+      catch ( err )
+      {
+        if ( ativo )
+        {
+          if ( err instanceof ApiError && err.erros )
+          {
+            setErrosCampo ( err.erros );
+          }
+          else
+          {
+            setErroChave ( ( err as Error ).message );
+          }
+        }
+      }
+      finally
+      {
+        if ( ativo )
+        {
+          setValidandoChave ( false );
+        }
+      }
+    }, 400 );
+
+    return () =>
     {
+      ativo = false;
+      clearTimeout ( temporizador );
       setValidandoChave ( false );
-    }
-  };
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ chave.numero, chave.modelo, chave.serie, campoFornecedor.codigo ] );
 
   // RN022 — o Backend calcula as parcelas (valor e vencimento) a partir da condição escolhida;
   // o Frontend só as exibe. Regerar substitui as linhas, inclusive os ajustes manuais.
@@ -430,10 +494,22 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
               onChange={ ( evento ) => AlterarChave ( 'modelo', evento.target.value ) }
               maxLength={ 2 }
               placeholder="2 dígitos"
-              disabled={ chaveValidada }
+              disabled={ itens.length > 0 }
               required
             />
           </FormCampo>
+
+          <FormCampo label="Série" obrigatorio colunas={ 1 } htmlFor="serie" erro={ erros.serie }>
+            <input
+              id="serie"
+              value={ chave.serie }
+              onChange={ ( evento ) => AlterarChave ( 'serie', evento.target.value ) }
+              maxLength={ 2 }
+              placeholder="2 dígitos"
+              disabled={ itens.length > 0 }
+              required
+            />
+          </FormCampo> 
 
           <FormCampo label="Número" obrigatorio colunas={ 2 } htmlFor="numero" erro={ erros.numero }>
             <input
@@ -442,66 +518,81 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
               onChange={ ( evento ) => AlterarChave ( 'numero', evento.target.value ) }
               maxLength={ 9 }
               placeholder="9 dígitos"
-              disabled={ chaveValidada }
+              disabled={ itens.length > 0 }
               required
               autoFocus={ modo === 'novo' }
             />
-          </FormCampo>
- 
-          <FormCampo label="Série" obrigatorio colunas={ 1 } htmlFor="serie" erro={ erros.serie }>
-            <input
-              id="serie"
-              value={ chave.serie }
-              onChange={ ( evento ) => AlterarChave ( 'serie', evento.target.value ) }
-              maxLength={ 2 }
-              placeholder="2 dígitos"
-              disabled={ chaveValidada }
-              required
-            />
           </FormCampo> 
-        </FormSecao> 
-
-        {/* Fornecedor (parte da chave do documento) e transportadora */}
-        <FormSecao>
+          <FormCampo colunas={ 0.5 }>
+            <div></div>
+          </FormCampo>
           <CampoConsulta
-            campo={ campoFornecedor }
-            Consulta={ FornecedorConsulta }
+            campo={ campoFornecedor } 
             rotulo="Fornecedor"
             rotuloCodigo="Código do fornecedor"
             rotuloNome="Nome do fornecedor"
+            Consulta={ FornecedorConsulta }
             obrigatorio
             erroApi={ erros.codForn }
-            colunas={ [ 2, 1, 6 ] }
-            desabilitado={ modo !== 'novo' || chaveValidada }
+            colunas={ [ 1.5, 1, 4.5 ] }
+            desabilitado={ modo !== 'novo' || itens.length > 0 }
           />
 
+        </FormSecao> 
+
+        {/* Fornecedor (parte da chave do documento) e transportadora */}
+        <FormSecao> 
           {
             modo === 'novo' && (
-              <FormCampo label="Chave do documento" colunas={ 2 }>
-                <Botao
-                  type="button"
-                  $variante={ chaveValidada ? 'secundario' : undefined }
-                  onClick={ () => { void ValidarChave(); } }
-                  disabled={ chaveValidada || validandoChave }
-                >
-                  { chaveValidada ? 'Chave validada ✓' : validandoChave ? 'Validando…' : 'Validar chave' }
-                </Botao>
+              <FormCampo label="Chave do documento" colunas={ 12 } erro={ erroChave }>
+                <span role="status">
+                  { validandoChave ? 'Validando…' : chaveValidada ? 'Chave válida ✓' : 'Preencha a chave para validar' }
+                </span>
               </FormCampo>
             )
           }
         </FormSecao>
- 
-        <FormSecao>
-          <CampoConsulta
-            campo={ campoTransportadora }
-            Consulta={ TransportadoraConsulta }
-            rotulo="Transportadora"
-            rotuloCodigo="Código da transportadora"
-            rotuloNome="Nome da transportadora"
-            erroApi={ erros.codTransp }
-            colunas={ [ 2, 1.5, 6 ] }
-            desabilitado={ !documentoLiberado }
-          />
+
+        <FormSecao> 
+          <FormCampo label="Emissão (UTC)" obrigatorio colunas={ 2.3 } htmlFor="dtEmissao" erro={ erros.dtEmissao }>
+            <input
+              id="dtEmissao"
+              type="datetime-local"
+              value={ dtEmissao }
+              onChange={ ( evento ) =>
+              {
+                const valor = evento.target.value;
+
+                setDtEmissao ( valor );
+                // Mudar a emissão também pode tornar a chegada inválida (ou válida de novo).
+                setErrosCampo ( ( anterior ) => comErroDoCampo (
+                  comErroDoCampo ( anterior, 'dtEmissao', validarDataEmissaoCompra ( valor ) ),
+                  'dtChegada',
+                  validarDataChegadaCompra ( dtChegada, valor )
+                ) );
+              } }
+              disabled={ !datasLiberadas || itens.length > 0 }
+              required
+            />
+          </FormCampo>
+
+          <FormCampo label="Chegada (UTC)" obrigatorio colunas={ 2.3 } htmlFor="dtChegada" erro={ erros.dtChegada }>
+            <input
+              id="dtChegada"
+              type="datetime-local"
+              value={ dtChegada }
+              onChange={ ( evento ) =>
+              {
+                const valor = evento.target.value;
+
+                setDtChegada ( valor );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'dtChegada', validarDataChegadaCompra ( valor, dtEmissao ) ) );
+              } }
+              min={ dtEmissao || undefined }
+              disabled={ !datasLiberadas || itens.length > 0 }
+              required
+            />
+          </FormCampo>
         </FormSecao> 
  
         {/* Produtos — rateio em % e R$ (RN011), totais por coluna e total dos produtos (RN012) */}
@@ -530,7 +621,7 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
                         <th>Qtd.</th>
                         <th>Valor unit. (R$)</th>
                         <th>Desconto (R$)</th>
-                        <th>Valor líquido (R$)</th>
+                        <th>Total (R$)</th>
                         <th>Porcentagem <br/>de Rateio</th>
                         <th>Valor <br/>de Rateio (R$)</th>
                         <th>Custo unit. (R$)</th>
@@ -552,9 +643,9 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
                               <td style={ { textAlign: 'right' } }>{ paraDecimal ( item.valorUnitario ) }</td>
                               <td style={ { textAlign: 'right' } }>{ paraDecimal ( item.desconto ) }</td>
                               <td style={ { textAlign: 'right' } }>{ calculado?.valorLiquido ?? '—' }</td>
-                              <td style={ { textAlign: 'right' } }>{ `${Math.round(Number (calculado?.percentualRateio ?? "0"))}%` }</td>
+                              <td style={ { textAlign: 'right' } }>{ `${Math.round(Number (calculado?.valorRateio ?? "0"))}%` }</td>
                               <td style={ { textAlign: 'right' } }>{ calculado?.valorRateio ?? '—' }</td>
-                              <td style={ { textAlign: 'right' } }>{ calculado?.custoMedioProduto ?? '—' }</td>
+                              <td style={ { textAlign: 'right' } }>{ calculado ? formatarCusto ( calculado.custoMedioProduto ) : '—' }</td>
                               {
                                 produtosLiberados && (
                                   <td>
@@ -583,13 +674,7 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
                             <th style={ { textAlign: 'right' } }>{ calculo.totalQuantidade }</th>
                             <th style={ { textAlign: 'right' } }>{ calculo.totalValorUnitario }</th>
                             <th style={ { textAlign: 'right' } }>{ calculo.totalDescontos }</th>
-                            <th style={ { textAlign: 'right' } }>{ calculo.totalProdutos }</th>
-                            {/* <th style={ { textAlign: 'right' } }>{ calculo.totalPercentualRateio }</th>
-                            <th style={ { textAlign: 'right' } }>{ calculo.totalRateio }</th> */}
-                            {/*<th style={ { textAlign: 'right' } }>{ calculo.totalCustoUnitario }</th>*/}
-                            <th/>
-                            <th/>
-                            <th/>
+                            <th style={ { textAlign: 'right' } }>{ calculo.totalProdutos }</th> 
                             { produtosLiberados && <th /> }
                           </tr>
                         </tfoot>
@@ -598,98 +683,100 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
                   </Tabela>
                 </TabelaWrapper>
 
-                <div style={ { marginTop: '0.5rem', textAlign: 'left', fontWeight: 600 } }>
+                <div style={ { marginTop: '0.5rem', textAlign: 'right', fontWeight: 600 } }>
                   Total dos produtos: R$ { calculo?.totalProdutos ?? '0.00' }
                 </div>
                 { erros.itens && <ErroCampo>{ erros.itens }</ErroCampo> }
               </>
             )
           } 
-        </div> 
+        </div>  
 
         {/* RN009/RN017 — as três despesas juntas, antes dos produtos (base do rateio) */}
-
-        {/* RN010 — o total da compra vem depois dos subtotais que o compõem */}
-        {/* <FormSecao>
-          <FormCampo label="Subtotal dos produtos (R$)" colunas={ 3 }>
-            <input disabled readOnly value={ calculo?.totalProdutos ?? '0.00' } />
-          </FormCampo>
-        </FormSecao> */}
-
-        {/* <FormSecao>
-          <FormCampo label="Frete (R$)" colunas={ 2 }>
-            <input disabled readOnly value={ paraDecimal ( frete ) } />
-          </FormCampo>
-        </FormSecao>
-
-        <FormSecao>
-          <FormCampo label="Seguro (R$)" colunas={ 2 }>
-            <input disabled readOnly value={ paraDecimal ( seguro ) } />
-          </FormCampo>
-        </FormSecao>
-
-        <FormSecao>
-          <FormCampo label="Outras despesas (R$)" colunas={ 2 }>
-            <input disabled readOnly value={ paraDecimal ( despesas ) } />
-          </FormCampo>
-        </FormSecao> */} 
-
         {
           itens.length != 0 && (
             <>
               <FormSecao>
-                <FormCampo label="Frete (R$)" colunas={ 2 } htmlFor="frete" erro={ erros.frete }>
+                <FormCampo label="Frete" colunas={ 1.3 } htmlFor="frete" erro={ erros.frete }>
                   <input
                     id="frete"
                     type="number"
                     min="0"
                     step="0.01"
                     value={ frete }
-                    onChange={ ( evento ) => setFrete ( evento.target.value ) }
+                    onChange={ ( evento ) =>
+                    {
+                      const valor = evento.target.value;
+
+                      setFrete ( valor );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'frete', validarDecimal ( valor, 2, 'O frete' ) ) );
+                    } }
                     disabled={ !produtosLiberados }
                     placeholder="0.00"
                   />
                 </FormCampo>
-              </FormSecao>
 
-              <FormSecao>
-                <FormCampo label="Seguro (R$)" colunas={ 2 } htmlFor="seguro" erro={ erros.seguro }>
+                <FormCampo label="Seguro" colunas={ 1.3 } htmlFor="seguro" erro={ erros.seguro }>
                   <input
                     id="seguro"
                     type="number"
                     min="0"
                     step="0.01"
                     value={ seguro }
-                    onChange={ ( evento ) => setSeguro ( evento.target.value ) }
+                    onChange={ ( evento ) =>
+                    {
+                      const valor = evento.target.value;
+
+                      setSeguro ( valor );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'seguro', validarDecimal ( valor, 2, 'O seguro' ) ) );
+                    } }
                     disabled={ !produtosLiberados }
                     placeholder="0.00"
                   />
                 </FormCampo>
-              </FormSecao>
 
-              <FormSecao>
-                <FormCampo label="Outras despesas (R$)" colunas={ 2 } htmlFor="despesas" erro={ erros.despesas }>
+                <FormCampo label="Outras despesas" colunas={ 1.3 } htmlFor="despesas" erro={ erros.despesas }>
                   <input
                     id="despesas"
                     type="number"
                     min="0"
                     step="0.01"
                     value={ despesas }
-                    onChange={ ( evento ) => setDespesas ( evento.target.value ) }
+                    onChange={ ( evento ) =>
+                    {
+                      const valor = evento.target.value;
+
+                      setDespesas ( valor );
+                      setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'despesas', validarDecimal ( valor, 2, 'As outras despesas' ) ) );
+                    } }
                     disabled={ !produtosLiberados }
                     placeholder="0.00"
                   />
                 </FormCampo>
-              </FormSecao>
-
-              <FormSecao>
-                <FormCampo label="Total da compra (R$)" colunas={ 3 }>
+                <FormCampo colunas={ 6 }>
+                  <div></div>
+                </FormCampo>
+                <FormCampo label="Total da compra" colunas={ 1.3 }>
                   <input disabled readOnly value={ calculo?.vlrTotal ?? '0.00' } style={ { fontWeight: 700 } } />
                 </FormCampo>
               </FormSecao> 
             </>
           )
         }
+
+        <FormSecao>
+          <CampoConsulta
+            campo={ campoTransportadora }
+            Consulta={ TransportadoraConsulta }
+            rotulo="Transportadora"
+            rotuloCodigo="Código da transportadora"
+            rotuloNome="Nome da transportadora"
+            erroApi={ erros.codTransp }
+            colunas={ [ 2, 1.5, 6 ] }
+            desabilitado={ !documentoLiberado }
+          />
+        </FormSecao> 
+
 
         {/* RN006 — condição herdada do fornecedor, alterável só para esta compra */}
         <FormSecao>
@@ -745,32 +832,7 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
             )
           } 
         </div> 
-
-        <FormSecao> 
-          <FormCampo label="Emissão (UTC)" obrigatorio colunas={ 2.3 } htmlFor="dtEmissao" erro={ erros.dtEmissao }>
-            <input
-              id="dtEmissao"
-              type="datetime-local"
-              value={ dtEmissao }
-              onChange={ ( evento ) => setDtEmissao ( evento.target.value ) }
-              disabled={ !datasLiberadas || !calculo }
-              required
-            />
-          </FormCampo>
-
-          <FormCampo label="Chegada (UTC)" obrigatorio colunas={ 2.3 } htmlFor="dtChegada" erro={ erros.dtChegada }>
-            <input
-              id="dtChegada"
-              type="datetime-local"
-              value={ dtChegada }
-              onChange={ ( evento ) => setDtChegada ( evento.target.value ) }
-              min={ dtEmissao || undefined }
-              disabled={ !datasLiberadas || !calculo }
-              required
-            />
-          </FormCampo>
-        </FormSecao> 
-
+ 
         {/* RN015 — saldo e preço de venda ao final */}
         {
           calculo && (
@@ -794,7 +856,7 @@ export default function CompraForm ( { compra, modo, onConcluido, onFechar }: Pr
                           <td><InfoBlock title={ item.produto }>{ item.produto }</InfoBlock></td>
                           <td>{ item.estoqueAtual }</td>
                           { modo === 'novo' && <td>{ item.estoqueResultante }</td> }
-                          { modo === 'novo' && <td>{ item.custoMedioResultante }</td> }
+                          { modo === 'novo' && <td>{ formatarCusto ( item.custoMedioResultante ) }</td> }
                           <td>{ item.precoVenda }</td>
                         </tr>
                       ))

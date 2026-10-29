@@ -20,6 +20,7 @@ interface Props < T >
   titulo:        string;
   placeholder:   string;
   carregar:      () => Promise < T[] >;
+  service:       string;
   colunas:       ColumnDef < T, any >[]; // eslint-disable-line @typescript-eslint/no-explicit-any
   chaveDe:       ( entidade: T ) => number;
   colunaPadrao:  string;

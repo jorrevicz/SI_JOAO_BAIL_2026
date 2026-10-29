@@ -42,6 +42,15 @@ describe ( 'Compras routes', () =>
                   ( SELECT "numero", "modelo", "serie" FROM "Compras" WHERE "codForn" = ${ compra.codForn } )
         `;
         await sql`DELETE FROM "Compras"             WHERE "codForn"      = ${ compra.codForn }`;
+        // Conta a pagar criada no ciclo completo — removida pela chave primária completa.
+        await sql`
+            DELETE FROM "ContasAPagar"
+            WHERE "numero"        = '080000002'
+            AND   "modelo"        = '55'
+            AND   "serie"         = '01'
+            AND   "codFornecedor" = ${ compra.codForn }
+            AND   "parcela"       = 1
+        `;
         await sql`DELETE FROM "FormaDePagamento"    WHERE "codFormaDePag" = ${ compra.codFormaDePag }`;
         await sql`DELETE FROM "Produtos"            WHERE "codProd"      = ${ compra.codProduto }`;
         await sql`DELETE FROM "Fornecedores"        WHERE "codForn"      = ${ compra.codForn }`;
@@ -65,7 +74,7 @@ describe ( 'Compras routes', () =>
             modelo:     '55',
             serie:      '01',
             fornecedor: 'FORNECEDOR DE TESTE',
-            vlrTotal:   '200.00',
+            vlrTotal:   '210.00',
         });
     });
 
@@ -94,8 +103,8 @@ describe ( 'Compras routes', () =>
             produto:           'PRODUTO COMPRA 080000001',
             quantidade:        2,
             valorUnitario:     '100.00',
-            valorRateio:       '100.00',
-            custoMedioProduto: '150.00',
+            valorRateio:       '10.00',
+            custoMedioProduto: '105.000000',
         });
     });
 
@@ -203,10 +212,10 @@ describe ( 'Compras routes', () =>
             });
 
         expect ( res.status ).toBe ( 200 );
-        expect ( res.body ).toMatchObject ( { totalProdutos: '200.00', vlrTotal: '200.00' } );
+        expect ( res.body ).toMatchObject ( { totalProdutos: '200.00', vlrTotal: '210.00' } );
         expect ( res.body.itens[ 0 ] ).toMatchObject
         ({
-            valorRateio: '100.00', custoMedioProduto: '150.00', estoqueResultante: 2, precoVenda: '10.00',
+            valorRateio: '10.00', custoMedioProduto: '105.000000', estoqueResultante: 2, precoVenda: '10.00',
         });
     });
 
@@ -343,18 +352,18 @@ describe ( 'Compras routes', () =>
     {
         const antes = await EstoqueDoProduto();
 
-        const criada = await request ( app ).post ( BASE ).send ( NovaCompra ( '080000002', { frete: '6.00' } ) );
+        const criada = await request ( app ).post ( BASE ).send ( NovaCompra ( '080000002', { frete: '6.00', parcelas: [ { numParcela: 1, codFormaDePag: compra.codFormaDePag, valor: '156.00', dtVencimento: new Date ( Date.now() + 10 * UM_DIA ).toISOString() } ] } ) );
 
         expect ( criada.status ).toBe ( 201 );
-        expect ( criada.body ).toMatchObject ( { numero: '080000002', vlrTotal: '150.00' } );
+        expect ( criada.body ).toMatchObject ( { numero: '080000002', vlrTotal: '156.00' } );
         expect ( criada.body ).not.toHaveProperty ( 'situacao' );
         expect ( criada.body.dtEntrada ).not.toBeNull();
-        expect ( criada.body.itens[ 0 ] ).toMatchObject ( { quantidade: 3, valorRateio: '100.00', custoMedioProduto: '83.33', unidade: 'CX' } );
+        expect ( criada.body.itens[ 0 ] ).toMatchObject ( { quantidade: 3, valorRateio: '6.00', custoMedioProduto: '52.000000', unidade: 'CX' } );
         expect ( criada.body.parcelas ).toHaveLength ( 1 );
-        expect ( criada.body.parcelas[ 0 ] ).toMatchObject ( { numParcela: 1, valor: '150.00' } );
+        expect ( criada.body.parcelas[ 0 ] ).toMatchObject ( { numParcela: 1, valor: '156.00' } );
 
         // O cadastro já dá entrada no estoque e no custo médio.
-        expect ( await EstoqueDoProduto() ).toEqual ( { estoque: antes.estoque + 3, custoMedioProd: '83.33' } );
+        expect ( await EstoqueDoProduto() ).toEqual ( { estoque: antes.estoque + 3, custoMedioProd: '52.000000' } );
 
         const duplicada = await request ( app ).post ( BASE ).send ( NovaCompra ( '080000002' ) );
         expect ( duplicada.status ).toBe ( 409 );
@@ -366,6 +375,19 @@ describe ( 'Compras routes', () =>
         expect ( ( await request ( app ).patch ( `${ id }/lancar` ) ).status ).toBe ( 404 );
         expect ( ( await request ( app ).delete ( id ) ).status ).toBe ( 404 );
 
+        // Conta a pagar do mesmo documento: só cai junto com a compra.
+        const contaId = `/api/contas-pagamento/080000002/55/01/${ compra.codForn }/1`;
+        const conta   = await request ( app )
+            .post ( '/api/contas-pagamento' )
+            .send ({
+                numero: '080000002', modelo: '55', serie: '01', parcela: 1,
+                codFornecedor: compra.codForn, codFormaDePag: compra.codFormaDePag,
+                dtEmissao: '2026-01-01T10:00:00.000Z', dtVencimento: '2026-01-10T10:00:00.000Z',
+                valor: '156.00', juro: '0.00', desconto: '0.00', multa: '0.00',
+                valorBaixa: '156.00', dtBaixa: '2026-01-11',
+            });
+        expect ( conta.status ).toBe ( 201 );
+
         const semJustificativa = await request ( app ).patch ( `${ id }/cancelar` ).send ( {} );
         expect ( semJustificativa.status ).toBe ( 400 );
         expect ( semJustificativa.body.erros ).toHaveProperty ( 'justificativaCancelamento' );
@@ -376,7 +398,14 @@ describe ( 'Compras routes', () =>
 
         expect ( cancelada.status ).toBe ( 200 );
         expect ( cancelada.body.justificativaCancelamento ).toBe ( 'Mercadoria devolvida ao fornecedor' );
-        expect ( await EstoqueDoProduto() ).toEqual ( { estoque: antes.estoque, custoMedioProd: '0.00' } );
+        expect ( cancelada.body.isActive ).toBe ( false );
+        expect ( await EstoqueDoProduto() ).toEqual ( { estoque: antes.estoque, custoMedioProd: '0.000000' } );
+
+        const contaCancelada = await request ( app ).get ( contaId );
+        expect ( contaCancelada.body ).toMatchObject
+        (
+            { justificativaCancelamento: 'Mercadoria devolvida ao fornecedor', isActive: false }
+        );
 
         const recancelada = await request ( app )
             .patch ( `${ id }/cancelar` )

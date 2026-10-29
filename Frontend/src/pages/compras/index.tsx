@@ -22,6 +22,9 @@ import {
   TabelaWrapper, Tabela, RodapeTabela, Paginacao, PaginacaoInfo, Alerta,
 } from './style';
 import CompraForm, { type ModoCompra } from './CompraForm';
+import { notasFiscaisService } from '../../services/notasFiscais';
+import NotaFiscalForm, { type ModoNotaFiscal } from '../notasFiscais/NotaFiscalForm';
+import type { NotaFiscalDetalhe } from '../../services/notasFiscais';
 
 const columnHelper = createColumnHelper < Compra >();
 
@@ -40,11 +43,20 @@ interface FormularioAberto
   compra: CompraDetalhe | null;
 }
 
+// Gerar: a compra de origem; consultar: a nota ativa da compra (RN003).
+interface FormularioNotaAberto
+{
+  modo:    ModoNotaFiscal;
+  compra?: CompraDetalhe;
+  nota?:   NotaFiscalDetalhe;
+}
+
 export default function ComprasPage ()
 {
   'use no memo';
   const [ dados, setDados ]           = useState < Compra[] > ( [] );
   const [ formulario, setFormulario ] = useState < FormularioAberto | null > ( null );
+  const [ formularioNota, setFormularioNota ] = useState < FormularioNotaAberto | null > ( null );
   const [ erro, setErro ]             = useState ( '' );
   const { sorting, setSorting }       = useTabelaOrdenada ( [ 'fornecedor', 'numero' ] );
   const [ globalFilter, setGlobalFilter ] = useState ( '' );
@@ -75,10 +87,38 @@ export default function ComprasPage ()
     }
   };
 
+  // RN002/RN003 — compra sem nota abre a geração; com nota (gerada ou cancelada), só a
+  // consulta dela. A nota tem as mesmas chaves da compra.
+  const abrirNota = async ( compra: Compra ) =>
+  {
+    setErro ( '' );
+
+    try
+    {
+      if ( compra.situacaoNotaFiscal )
+      {
+        setFormularioNota ( {
+          modo: 'consulta',
+          nota: await notasFiscaisService.obter (
+            { numero: compra.numero, modelo: compra.modelo, serie: compra.serie, codFornecedor: compra.codForn }
+          ),
+        } );
+      }
+      else
+      {
+        setFormularioNota ( { modo: 'gerar', compra: await comprasService.obter ( chaveDe ( compra ) ) } );
+      }
+    }
+    catch ( err )
+    {
+      setErro ( ( err as Error ).message );
+    }
+  };
+
   const columns = [ 
     columnHelper.accessor ( 'modelo', { header: 'Modelo' } ),
-    columnHelper.accessor ( 'numero', { header: 'Número' } ),
     columnHelper.accessor ( 'serie', { header: 'Série' } ),
+    columnHelper.accessor ( 'numero', { header: 'Número' } ), 
     columnHelper.accessor ( 'codForn', { header: 'Cód. Fornecedor' } ),
     columnHelper.accessor ( 'fornecedor', { header: 'Fornecedor', cell: ( info ) => <InfoBlock title={ info.getValue() }>{ info.getValue() }</InfoBlock> } ),
     columnHelper.accessor (
@@ -99,6 +139,7 @@ export default function ComprasPage ()
     columnHelper.accessor ( 'seguro', { header: 'Seguro (R$)' } ),
     columnHelper.accessor ( 'despesas', { header: 'Despesas (R$)' } ),
     columnHelper.accessor ( 'vlrTotal', { header: 'Total (R$)' } ),
+    columnHelper.accessor ( 'situacaoNotaFiscal', { header: 'NF-e', cell: ( info ) => info.getValue() ?? '—' } ),
     columnHelper.accessor ( ( compra ) => DescricaoSituacao ( compra ), { header: 'Situação', id: 'situacao', cell: ( info ) => <InfoBlock>{ info.getValue() }</InfoBlock> } ),
     columnHelper.accessor (
       'justificativaCancelamento',
@@ -123,17 +164,23 @@ export default function ComprasPage ()
         const cancelada = !!compra.justificativaCancelamento;
         return (
           <GrupoBotoes>
+            {/* RN003 — com nota (gerada ou cancelada) só a consulta; sem nota, gerar (RN002). */}
+            {
+              ( compra.situacaoNotaFiscal || !cancelada ) && (
+                <Botao $variante="secundario" onClick={ () => { void abrirNota ( compra ); } }>
+                  { compra.situacaoNotaFiscal ? <InfoBlock>Cons. NF-e</InfoBlock> : <InfoBlock>Gerar NF-e</InfoBlock> }
+                </Botao>
+              )
+            }
+            <Botao $variante="secundario" onClick={ () => { void abrir ( compra, 'consulta' ); } }>
+              Consultar
+            </Botao> 
+            {/* A compra com NF-e gerada só é cancelada depois de cancelar a nota (o Backend responde 409). */}
             {
               !cancelada && (
-                <>
-                  <Botao $variante="secundario" onClick={ () => { void abrir ( compra, 'consulta' ); } }>
-                    Consultar
-                  </Botao>
-
-                  <Botao $variante="perigo" onClick={ () => { void abrir ( compra, 'cancelar' ); } }>
-                    Cancelar
-                  </Botao>
-                </>
+                <Botao $variante="perigo" onClick={ () => { void abrir ( compra, 'cancelar' ); } }>
+                  Cancelar
+                </Botao>
               )
             }
           </GrupoBotoes>
@@ -236,6 +283,22 @@ export default function ComprasPage ()
               carregar();
             }}
             onFechar={ () => setFormulario ( null ) }
+          />
+        )
+      }
+
+      {
+        formularioNota !== null && (
+          <NotaFiscalForm
+            modo={ formularioNota.modo }
+            compra={ formularioNota.compra }
+            nota={ formularioNota.nota }
+            onConcluido={ () =>
+            {
+              setFormularioNota ( null );
+              carregar();
+            }}
+            onFechar={ () => setFormularioNota ( null ) }
           />
         )
       }

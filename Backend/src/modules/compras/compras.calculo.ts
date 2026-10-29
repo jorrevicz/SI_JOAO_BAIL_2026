@@ -2,6 +2,11 @@
 // prévia). Toda a aritmética é feita em centavos inteiros para não acumular erro de
 // ponto flutuante; os valores entram e saem como strings decimais com 2 casas, o mesmo
 // formato das colunas DECIMAL(10,2) devolvidas pelo postgres.js.
+//
+// Exceção: os custos unitários (custo do item da compra, `custoProd` e `custoMedioProd` do
+// produto) têm 6 casas decimais. Eles são calculados em BigInt, em milionésimos de real
+// (micro-reais), com as divisões feitas sobre o numerador exato — o arredondamento acontece
+// uma única vez, no resultado final, e nunca nas etapas intermediárias.
 
 export interface ItemCompraEntrada
 {
@@ -38,12 +43,43 @@ export interface CompraCalculada
     itens:         ItemCompraCalculado[];
 }
 
-function ParaCentavos ( valor: string ): number
+export function ParaCentavos ( valor: string ): number
 {
     return Math.round ( Number ( valor ) * 100 );
 }
 
-function DeCentavos ( centavos: number ): string
+const CASAS_CUSTO   = 6;
+const ESCALA_CUSTO  = 10n ** BigInt ( CASAS_CUSTO );
+// 1 centavo = 10⁴ micro-reais
+const MICRO_POR_CENTAVO = ESCALA_CUSTO / 100n;
+
+// "12.345678" → 12345678n, exato (sem passar por ponto flutuante); se vierem mais de 6
+// casas, arredonda a partir da 7ª.
+function ParaMicro ( valor: string ): bigint
+{
+    const [ inteiro, fracao = '' ] = valor.trim().split ( '.' );
+    const fracaoCompleta           = fracao.padEnd ( CASAS_CUSTO + 1, '0' );
+
+    const micro = BigInt ( inteiro ) * ESCALA_CUSTO + BigInt ( fracaoCompleta.slice ( 0, CASAS_CUSTO ) );
+
+    return fracaoCompleta[ CASAS_CUSTO ] >= '5' ? micro + 1n : micro;
+}
+
+function DeMicro ( micro: bigint ): string
+{
+    const fracao = String ( micro % ESCALA_CUSTO ).padStart ( CASAS_CUSTO, '0' );
+
+    return `${ micro / ESCALA_CUSTO }.${ fracao }`;
+}
+
+// Divisão inteira com arredondamento para o mais próximo (metade para cima), para
+// numerador não negativo e denominador positivo.
+function DividirArredondando ( numerador: bigint, denominador: bigint ): bigint
+{
+    return ( 2n * numerador + denominador ) / ( 2n * denominador );
+}
+
+export function DeCentavos ( centavos: number ): string
 {
     const inteiro  = Math.trunc ( centavos / 100 );
     const centimos = String ( centavos % 100 ).padStart ( 2, '0' );
@@ -85,50 +121,50 @@ function RepartirProporcional ( total: number, pesos: number[] ): number[]
 }
 
 /**
- * - líquido do item (`valorLiquido`) = quantidade × valorUnitario − desconto (desconto só
- *   por item, RN016);
- * - total dos produtos = Σ líquidos (RN012);
- * - frete + seguro + despesas são rateados proporcionalmente ao líquido de cada item,
- *   em percentual e em valor (RN011);
- * - custo unitário final do item (`custoMedioProduto`) = ( líquido + rateio ) / quantidade;
+ * - valor do produto (`valorLiquido`) = ( valorUnitario − desconto ) × quantidade (desconto
+ *   só por item, RN016);
+ * - total dos produtos = Σ valores dos produtos (RN012);
+ * - rateio de frete + seguro + despesas (RN011): `valorRateio` = (( valor do produto ÷ total
+ *   dos produtos ) × despesas) / quantidade) + valor do produto, com os centavos residuais pelos maiores restos (Σ rateios =
+ *   despesas); `percentualRateio` = só a fatia ( valor do produto ÷ total dos produtos × 100 )
+ *   arredondada em 2 casas, sem redistribuir o resíduo (a soma pode diferir de 100%);
+ * - custo unitário final do item (`custoMedioProduto`) = ( valor do produto + rateio ) ÷
+ *   quantidade, com 6 casas decimais;
  * - vlrTotal = total dos produtos + frete + seguro + despesas.
  *
  * Pressupõe itens já validados pelo schema (ao menos um item, quantidade > 0 e desconto
- * menor que o valor bruto — logo, todo líquido é positivo).
+ * menor que o valor unitário — logo, todo valor de produto é positivo).
  */
 export function CalcularCompra ( compra: CompraEntrada ): CompraCalculada
 {
-    const liquidos = compra.itens.map ( ( item ) =>
-        item.quantidade * ParaCentavos ( item.valorUnitario ) - ParaCentavos ( item.desconto )
+    const valoresProdutos = compra.itens.map ( ( item ) =>
+        ( ParaCentavos ( item.valorUnitario ) - ParaCentavos ( item.desconto ) ) * item.quantidade
     );
 
-    const totalProdutos = liquidos.reduce ( ( soma, liquido ) => soma + liquido, 0 ); 
+    const totalProdutos = valoresProdutos.reduce ( ( soma, valorProduto ) => soma + valorProduto, 0 );
 
-    // Percentual inteiro, sem casas decimais (100 = 100%); a soma fecha em 100.
-    const percentuais = RepartirProporcional ( 10000, liquidos );
+    const despesasRateadas = ParaCentavos ( compra.frete ) + ParaCentavos ( compra.seguro ) + ParaCentavos ( compra.despesas );
 
-    // Valor do rateio
-    // Rᵢ = D × Lᵢ / TP
-    // Também pelo método dos maiores restos: cada item recebe o piso da sua cota em centavos, e os centavos que sobram vão um a um para os itens de maior resto. Por isso Σ Rᵢ = D exatamente.
-    const rateios     = RepartirProporcional ( 10000, liquidos );
+    // Percentual em centésimos de ponto percentual (10000 = 100%), só arredondado.
+    const percentuais = valoresProdutos.map ( ( valorProduto ) => Math.round ( 10000 * valorProduto / totalProdutos ) );
+
+    const rateios = RepartirProporcional ( despesasRateadas, valoresProdutos );
 
     const itens = compra.itens.map ( ( item, indice ) => (
     {
         ...item,
-        valorLiquido:      DeCentavos ( liquidos[ indice ] ),
+        valorLiquido:      DeCentavos ( valoresProdutos[ indice ] ),
         percentualRateio:  DeCentavos ( percentuais[ indice ] ),
         valorRateio:       DeCentavos ( rateios[ indice ] ),
-        custoMedioProduto: DeCentavos ( Math.round ( ( liquidos[ indice ] + rateios[ indice ] ) / item.quantidade ) ),
+        // custo unitário final com 6 casas: ( valor do produto + rateio ) em micro-reais ÷ quantidade
+        custoMedioProduto: DeMicro (
+            DividirArredondando ( BigInt ( valoresProdutos[ indice ] + rateios[ indice ] ) * MICRO_POR_CENTAVO, BigInt ( item.quantidade ) )
+        ),
     } ) );
 
     const totalQuantidade = compra.itens.reduce ( ( soma, item ) => soma + item.quantidade, 0 );
 
     const totalValorUnitario = compra.itens.reduce ( ( soma, item ) => soma + ParaCentavos ( item.valorUnitario ), 0 );
-
-    // Percentual de rateio
-    // %ᵢ = 100 × Lᵢ / TP
-    // O arredondamento usa o método dos maiores restos, então os percentuais somam exatamente 100,00.
-
 
     const totalDescontos = compra.itens.reduce ( ( soma, item ) => soma + ParaCentavos ( item.desconto ), 0 );
 
@@ -136,7 +172,8 @@ export function CalcularCompra ( compra: CompraEntrada ): CompraCalculada
     return {
         totalProdutos:  DeCentavos ( totalProdutos ),
         totalDescontos: DeCentavos ( totalDescontos ),
-        vlrTotal:       DeCentavos ( totalProdutos ),
+        // totalProdutos fica só com os valores dos produtos; as despesas entram apenas aqui
+        vlrTotal:       DeCentavos ( totalProdutos + despesasRateadas ),
         totalQuantidade,
         totalValorUnitario:    DeCentavos ( totalValorUnitario ),
         itens,
@@ -220,15 +257,18 @@ export function CalcularEntradaEstoque
     custoUnitario: string
 ): EstoqueCustoProduto
 {
-    const custoMedioAtual = ParaCentavos ( produto.custoMedioProd );
-    const base            = custoMedioAtual > 0 ? custoMedioAtual : ParaCentavos ( produto.custoProd );
-    const custoEntrada    = ParaCentavos ( custoUnitario );
+    const custoMedioAtual = ParaMicro ( produto.custoMedioProd );
+    const base            = custoMedioAtual > 0n ? custoMedioAtual : ParaMicro ( produto.custoProd );
+    const custoEntrada    = ParaMicro ( custoUnitario );
     const estoque         = produto.estoque + quantidade;
+
+    // Numerador exato em micro-reais; um único arredondamento no final.
+    const somaPonderada = BigInt ( produto.estoque ) * base + BigInt ( quantidade ) * custoEntrada;
 
     return {
         estoque,
-        custoMedioProd: DeCentavos ( Math.round ( ( produto.estoque * base + quantidade * custoEntrada ) / estoque ) ),
-        custoProd:      DeCentavos ( custoEntrada ),
+        custoMedioProd: DeMicro ( DividirArredondando ( somaPonderada, BigInt ( estoque ) ) ),
+        custoProd:      DeMicro ( custoEntrada ),
     };
 }
 
@@ -253,18 +293,18 @@ export function CalcularEstornoEstoque
 
     const estoque = produto.estoque - quantidade;
 
-    let custoMedio = 0;
+    let custoMedio = 0n;
 
     if ( estoque > 0 )
     {
-        const restante = produto.estoque * ParaCentavos ( produto.custoMedioProd ) - quantidade * ParaCentavos ( custoUnitario );
+        const restante = BigInt ( produto.estoque ) * ParaMicro ( produto.custoMedioProd ) - BigInt ( quantidade ) * ParaMicro ( custoUnitario );
 
-        custoMedio = Math.max ( Math.round ( restante / estoque ), 0 );
+        custoMedio = restante > 0n ? DividirArredondando ( restante, BigInt ( estoque ) ) : 0n;
     }
 
     return {
         estoque,
-        custoMedioProd: DeCentavos ( custoMedio ),
+        custoMedioProd: DeMicro ( custoMedio ),
         custoProd:      produto.custoProd,
     };
 }

@@ -4,6 +4,7 @@ import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
 import { ProdutoConsulta } from '../produtos/ProdutoConsulta';
 import { FormSecao, FormCampo, Botao } from './style';
+import { comErroDoCampo, validarDecimal } from '../../utils/validators';
 
 // Item na lista local do formulário: o que o usuário informa (valores como texto do input)
 // mais o nome do produto e a unidade da compra (RN020) para exibição. Rateio, totais e custos vêm do Backend.
@@ -37,6 +38,7 @@ export function CompraItemForm ( { codigosNaLista, onAdicionar }: Props )
   const [ valorUnitario, setValorUnitario ] = useState ( '' );
   const [ desconto, setDesconto ]           = useState ( '' );
   const [ erroProduto, setErroProduto ]     = useState ( '' );
+  const [ errosCampo, setErrosCampo ]       = useState < Record < string, string > > ( {} );
 
   // RN020 — a unidade nasce com a do cadastro do produto escolhido e pode ser trocada só
   // neste item; o que o usuário digita vale para o produto em que foi digitado.
@@ -93,6 +95,7 @@ export function CompraItemForm ( { codigosNaLista, onAdicionar }: Props )
     setQuantidade ( '1' );
     setValorUnitario ( '' );
     setDesconto ( '' );
+    setErrosCampo ( {} );
   };
 
   return (
@@ -108,9 +111,7 @@ export function CompraItemForm ( { codigosNaLista, onAdicionar }: Props )
           erroApi={ erroProduto }
           colunas={ [ 2, 1, 2 ] }
         />
-      {/* </FormSecao>
 
-      <FormSecao>  */}
         <FormCampo label="Unidade" obrigatorio colunas={ 1 } htmlFor="itemUnidade">
           <input
             id="itemUnidade"
@@ -133,26 +134,34 @@ export function CompraItemForm ( { codigosNaLista, onAdicionar }: Props )
           />
         </FormCampo>
 
-        <FormCampo label="Valor unitário" obrigatorio colunas={ 2 } htmlFor="itemValorUnitario">
+        <FormCampo label="Valor unitário" obrigatorio colunas={ 2 } htmlFor="itemValorUnitario" erro={ errosCampo.valorUnitario }>
           <input
             id="itemValorUnitario"
             type="number"
             min="0.01"
             step="0.01"
             value={ valorUnitario }
-            onChange={ ( evento ) => setValorUnitario ( evento.target.value ) }
+            onChange={ ( evento ) =>
+          {
+            setValorUnitario ( evento.target.value );
+            setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'valorUnitario', validarDecimal ( evento.target.value, 2, 'O valor unitário' ) ) );
+          } }
             placeholder="R$ 0.00"
           />
         </FormCampo>
 
-        <FormCampo label="Desconto (R$)" colunas={ 2 } htmlFor="itemDesconto">
+        <FormCampo label="Desconto (R$)" colunas={ 2 } htmlFor="itemDesconto" erro={ errosCampo.desconto }>
           <input
             id="itemDesconto"
             type="number"
             min="0"
             step="0.01"
             value={ desconto }
-            onChange={ ( evento ) => setDesconto ( evento.target.value ) }
+            onChange={ ( evento ) =>
+          {
+            setDesconto ( evento.target.value );
+            setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'desconto', validarDecimal ( evento.target.value, 2, 'O desconto' ) ) );
+          } }
             placeholder="0.00"
           />
         </FormCampo>

@@ -8,6 +8,7 @@ import { CondicoesPagamentoRepository } from '../condicoes-pagamento/condicoesPa
 import { ProdutosRepository } from '../produtos/produtos.repository';
 import { ParcelasRepository } from '../parcelas/parcelas.repository';
 import { FormasPagamentoRepository } from '../formas-pagamento/formasPagamento.repository';
+import { ContasPagamentoService } from '../contas-pagamento/contasPagamento.service';
 import type Produtos from '../../db/types/public/Produtos';
 import { ComprasRepository } from './compras.repository';
 import type { CompraId, CompraDetalhe, CompraItem } from './compras.repository';
@@ -30,6 +31,7 @@ export class ComprasService
         private readonly produtosRepo:        ProdutosRepository           = new ProdutosRepository(),
         private readonly parcelasCondicaoRepo: ParcelasRepository          = new ParcelasRepository(),
         private readonly formasPagamentoRepo: FormasPagamentoRepository    = new FormasPagamentoRepository(),
+        private readonly contasPagamentoService: ContasPagamentoService    = new ContasPagamentoService(),
     ) {}
 
     async ListCompras ( limit = 50, afterCursor?: CompraId, filtros: FiltrosListagemCompra = {} )
@@ -221,9 +223,11 @@ export class ComprasService
     }
 
     /**
-     * RN014 — cancela a compra lançada: grava a justificativa e estorna, na mesma
-     * transação, o estoque e o custo médio de cada item. A reautenticação (RN003) é feita
-     * pelo Frontend até o EP-10.
+     * RN014 — cancela a compra lançada: grava a justificativa, desativa a compra e, na mesma
+     * transação (RNF06), exclui (soft delete) as contas a pagar do mesmo documento e estorna
+     * o estoque e o custo médio de cada item. É o único caminho de exclusão de uma conta a
+     * pagar: a tela de Contas a Pagar não cancela nem exclui contas. A reautenticação (RN003)
+     * é feita pelo Frontend até o EP-10.
      */
     async CancelarCompra ( id: CompraId, justificativaCancelamento: string, codUser: number )
     {
@@ -239,12 +243,22 @@ export class ComprasService
             throw new AppError ( 'Esta compra já foi cancelada.', 409 );
         }
 
+        // A NF-e é o documento fiscal da compra: enquanto estiver ativa, a compra não cai.
+        if ( compra.situacaoNotaFiscal === 'Gerada' )
+        {
+            throw new AppError ( 'Esta compra possui nota fiscal gerada; cancele a nota fiscal antes de cancelar a compra.', 409 );
+        }
+
         await WithTransaction ( async ( transaction ) =>
         {
             if ( !( await this.repo.Cancelar ( id, justificativaCancelamento, codUser, transaction ) ) )
             {
                 throw new AppError ( 'Esta compra já foi cancelada.', 409 );
             }
+
+            // A compra já está desativada nesta transação: só agora as contas a pagar dela
+            // podem ser excluídas (o service de contas confere `isActive = false`).
+            await this.contasPagamentoService.CancelarContasDaCompra ( id, justificativaCancelamento, codUser, transaction );
 
             const itens   = await this.repo.ListItens ( id, transaction );
             const calculo = this.Calcular ( compra, itens );

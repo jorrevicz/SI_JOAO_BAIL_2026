@@ -20,9 +20,14 @@ export interface FiltrosCompra
 
 // Linha da listagem: a compra com o nome do fornecedor, para a tabela não precisar
 // de uma consulta extra por linha.
+// Situação da NF-e da compra (a nota tem as mesmas chaves da compra; null se não houver)
+// — RN002/RN003.
+export type SituacaoNotaFiscal = 'Gerada' | 'Cancelada';
+
 export interface CompraResumo extends Compras
 {
-    fornecedor: string;
+    fornecedor:         string;
+    situacaoNotaFiscal: SituacaoNotaFiscal | null;
 }
 
 // Cabeçalho completo: descrições de todas as FKs (fornecedor, transportadora e
@@ -30,6 +35,7 @@ export interface CompraResumo extends Compras
 export interface CompraDetalhe extends Compras
 {
     fornecedor:        string;
+    situacaoNotaFiscal: SituacaoNotaFiscal | null;
     transportadora:    string | null;
     condicaoPagamento: string | null;
 }
@@ -79,7 +85,13 @@ export class ComprasRepository
 
         return client < CompraResumo[] >`
             SELECT compra.*,
-                   fornecedor."fornecedor"
+                   fornecedor."fornecedor",
+                   ( SELECT CASE WHEN nota."isActive" THEN 'Gerada' ELSE 'Cancelada' END
+                     FROM   "NotasFiscaisEletronicas" nota
+                     WHERE  nota."modelo"        = compra."modelo"
+                     AND    nota."numero"        = compra."numero"
+                     AND    nota."serie"         = compra."serie"
+                     AND    nota."codFornecedor" = compra."codForn" ) AS "situacaoNotaFiscal"
             FROM   "Compras" compra
             INNER JOIN "Fornecedores" fornecedor
                     ON fornecedor."codForn" = compra."codForn"
@@ -114,7 +126,13 @@ export class ComprasRepository
             SELECT compra.*,
                    fornecedor."fornecedor",
                    transportadora."transportadora",
-                   condicao."descricao" AS "condicaoPagamento"
+                   condicao."descricao" AS "condicaoPagamento",
+                   ( SELECT CASE WHEN nota."isActive" THEN 'Gerada' ELSE 'Cancelada' END
+                     FROM   "NotasFiscaisEletronicas" nota
+                     WHERE  nota."modelo"        = compra."modelo"
+                     AND    nota."numero"        = compra."numero"
+                     AND    nota."serie"         = compra."serie"
+                     AND    nota."codFornecedor" = compra."codForn" ) AS "situacaoNotaFiscal"
             FROM   "Compras" compra
             INNER JOIN "Fornecedores" fornecedor
                     ON fornecedor."codForn" = compra."codForn"
@@ -325,7 +343,8 @@ export class ComprasRepository
     }
 
     // Cancelamento derivado da justificativa (a compra não tem rascunho: todo registro é
-    // lançado). Só a compra ainda não cancelada é cancelável; caso contrário devolve null.
+    // lançado). Cancelar também desativa o registro (`isActive = false`), que continua visível
+    // nas consultas. Só a compra ainda não cancelada é cancelável; caso contrário devolve null.
     async Cancelar
     (
         id:                        CompraId,
@@ -338,13 +357,13 @@ export class ComprasRepository
         const [ row ] = await client < Compras[] >`
             UPDATE "Compras"
             SET "justificativaCancelamento" = ${ justificativaCancelamento },
+                "isActive"                  = false,
                 "codUser"                   = ${ codUser },
                 "dtEdicao"                  = CURRENT_TIMESTAMP
             WHERE "numero"   = ${ id.numero }
             AND   "modelo"   = ${ id.modelo }
             AND   "serie"    = ${ id.serie }
             AND   "codForn" = ${ id.codForn }
-            AND   "isActive" = true
             AND   "justificativaCancelamento" IS NULL
             RETURNING *
         `;
