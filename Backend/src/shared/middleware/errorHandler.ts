@@ -9,6 +9,8 @@ const CONSTRAINT_CAMPO: Record < string, ErroCampoUnico > = {
   'Estados_codPais_uf_key':    { campo: 'uf',     mensagem: 'Esta UF já está cadastrada para este país.'           },
   'Users_email_key':           { campo: 'email',  mensagem: 'Este e-mail já está cadastrado.'                      },
   'Compras_pkey':              { campo: 'numero', mensagem: 'Já existe um documento cadastrado com este número, modelo e série.' },
+  'NotasFiscaisEletronicas_chaveAcessoNfe_key': { campo: 'chaveAcessoNfe', mensagem: 'Esta chave de acesso já pertence a outra nota fiscal.' },
+  'NotasFiscaisEletronicas_pkey':               { campo: 'numero',         mensagem: 'Esta compra já possui nota fiscal.'                    },
 };
 
 export function ErrorHandler
@@ -27,12 +29,14 @@ export function ErrorHandler
 
   if ( 'code' in err )
   {
-    const pgErr   = err as { code: string; constraint?: string };
-    const pgCode  = pgErr.code;
+    // postgres.js expõe o nome em `constraint_name`; `constraint` é o do driver `pg`.
+    const pgErr      = err as { code: string; constraint?: string; constraint_name?: string };
+    const pgCode     = pgErr.code;
+    const constraint = pgErr.constraint_name ?? pgErr.constraint;
 
     if ( pgCode === '23505' )
     {
-      const mapeado  = pgErr.constraint ? CONSTRAINT_CAMPO[ pgErr.constraint ] : undefined;
+      const mapeado  = constraint ? CONSTRAINT_CAMPO[ constraint ] : undefined;
       const mensagem = mapeado?.mensagem ?? 'Registro duplicado: este valor já existe.';
       const erros    = mapeado ? { [ mapeado.campo ]: mapeado.mensagem } : undefined;
 

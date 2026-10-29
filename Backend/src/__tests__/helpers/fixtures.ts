@@ -1,4 +1,5 @@
 import type postgres from 'postgres';
+import { DigitoVerificadorChaveAcesso } from '../../modules/notas-fiscais/notasFiscais.schema';
 
 // ============================================================
 // Fixtures de teste — criam as entidades-pai reais dentro da
@@ -444,4 +445,20 @@ export async function criarCompraDeTeste
         codProduto,
         codFormaDePag,
     };
+}
+
+/**
+ * Chave de acesso de NF-e válida (44 dígitos, DV módulo 11) que traz o modelo, a série e
+ * o número do documento da compra — UF 35, AAMM 2609, CNPJ fictício, emissão normal.
+ * `codigoNumerico` (8 dígitos) diferencia chaves do mesmo documento.
+ */
+export function chaveAcessoDeTeste
+(
+    compra: { numero: string; modelo: string; serie: string },
+    codigoNumerico = '12345678'
+): string
+{
+    const semDigito = `352609${ '12345678000199' }${ compra.modelo }${ compra.serie.padStart ( 3, '0' ) }${ compra.numero }1${ codigoNumerico }`;
+
+    return `${ semDigito }${ DigitoVerificadorChaveAcesso ( semDigito ) }`;
 }
