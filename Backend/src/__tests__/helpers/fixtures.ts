@@ -12,18 +12,27 @@ import type postgres from 'postgres';
 
 const COD_USER_TESTE = 1;
 
+const TOTAL_SIGLAS_POSSIVEIS = 36 * 36;
+
+// Sequencial por arquivo de teste (cada arquivo tem seu próprio módulo), iniciado em um
+// ponto aleatório para não bater com países que um teste anterior tenha deixado comitados.
+let proximoSufixoPais = Math.floor ( Math.random() * TOTAL_SIGLAS_POSSIVEIS );
+
 /**
- * "Paises" tem índices únicos em "sigla" e "ddi" — um valor fixo colidiria entre
- * arquivos de teste rodando em paralelo (e com países inseridos fora de uma transação
- * revertida, como em contasPagamento.routes.test.ts). Cada chamada gera um valor novo.
+ * "Paises" tem índices únicos em "sigla" (3 caracteres) e "ddi" (4) — um valor fixo
+ * colidiria entre testes, e um sorteio colide até dentro de um mesmo teste, que cria
+ * vários países (cliente, fornecedor etc.) na mesma transação. Cada chamada devolve o
+ * próximo valor de uma sequência, sem repetir até esgotar as 1296 combinações.
  */
 function gerarSiglaEDdiUnicos(): { sigla: string; ddi: string }
 {
-    const sufixo = Math.floor ( Math.random() * 1000 ).toString().padStart ( 3, '0' );
+    const sufixo = proximoSufixoPais;
+
+    proximoSufixoPais = ( proximoSufixoPais + 1 ) % TOTAL_SIGLAS_POSSIVEIS;
 
     return {
-        sigla: `Z${ sufixo.slice ( 0, 2 ) }`,
-        ddi:   sufixo,
+        sigla: `Z${ sufixo.toString ( 36 ).toUpperCase().padStart ( 2, '0' ) }`,
+        ddi:   String ( 1000 + sufixo ),
     };
 }
 

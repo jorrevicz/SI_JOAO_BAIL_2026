@@ -476,6 +476,13 @@ frontend). Exemplos do padrão adotado:
 | `fmtData`    | `formatarData`       | função utilitária de formatação            |
 
 Exceções consagradas e já estabelecidas no código: `req`, `res`, `next` (Express), `sql`
+   Os testes são divididos em duas configs do Vitest: **unitários** (`vitest.config.unit.ts`:
+   services, cálculos e utilitários, sem banco) e **de integração** (`vitest.config.integration.ts`:
+   `*.repository.test.ts` e `*.routes.test.ts`). O banco de teste é **separado e descartável**
+   (`<banco>_test`, criado, migrado e descartado pelo `globalSetup` da config de integração —
+   `npm test` nunca toca o banco de dev); os arquivos de integração rodam **em série**
+   (`fileParallelism: false`) sobre ele — ver
+   [docs/02](docs/02-arquitetura.md#estratégia-de-testes-tdd).
 (cliente postgres.js), `id`, `repo`, `data` (camada de dados). Não invente novas abreviações
 fora dessas.
 
@@ -522,8 +529,11 @@ Sem ORM. A configuração da conexão e das ferramentas:
 npm run dev            # sobe a API com tsx watch (hot-reload)
 npm run build          # compila TypeScript → dist/
 npm run typecheck      # npx tsc --noEmit (sem emitir arquivos)
-npm test               # Vitest (run único)
-npm run test:watch     # Vitest em modo watch
+npm test               # unitários e depois integração (run único)
+npm run test:unit      # Vitest — vitest.config.unit.ts (sem banco, rápido)
+npm run test:int       # Vitest — vitest.config.integration.ts (banco de teste, arquivos em série)
+npm run test:unit:watch  # unitários em modo watch
+npm run test:int:watch   # integração em modo watch
 npm run lint           # ESLint em src/
 npm run format         # Prettier em src/
 npm run migrate:up     # node-pg-migrate up (aplica migrations SQL)

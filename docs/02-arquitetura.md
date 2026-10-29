@@ -204,6 +204,20 @@ Regras:
 
 - [Stack Tecnológica](03-stack-tecnologica.md) — ferramentas concretas de cada camada.
 - [Modelo de Domínio](05-modelo-de-dominio.md) — as classes que vivem na camada de domínio.
+- **Duas configs do Vitest:** `vitest.config.unit.ts` (services, cálculos e utilitários,
+  sem banco e sem `globalSetup`; `DATABASE_URL` aponta para um valor inválido de propósito) e
+  `vitest.config.integration.ts` (`*.repository.test.ts` e `*.routes.test.ts`, com banco).
+  Scripts: `npm run test:unit`, `npm run test:int` e `npm test` (os dois, em sequência).
+- **Banco de teste separado e descartável:** `npm test` nunca toca o banco de
+  desenvolvimento. O `globalSetup` da config de integração (`src/__tests__/setup/globalSetup.ts`) deriva
+  `<banco>_test` de `DATABASE_URL`, descarta e recria esse banco vazio, aplica todas as
+  migrations (node-pg-migrate) e aponta `DATABASE_URL` para ele; ao terminar a suíte o banco
+  é descartado (`DROP DATABASE ... WITH (FORCE)`). Não há seed: cada teste cria as próprias
+  dependências pelas fixtures de `src/__tests__/helpers/fixtures.ts`.
+- **Arquivos de integração rodam em série** (`fileParallelism: false`) sobre esse mesmo banco
+  — os testes de rota comitam dados e os removem no `afterAll`. Mesmo assim, não use valores fixos em colunas
+  únicas (sigla/DDI de país etc.) em testes de repository — use as fixtures — e não compare
+  contagens globais em testes de rota (procure o próprio registro).
 - [Modelo de Dados](06-modelo-de-dados.md) — o esquema que as migrations SQL materializam.
 - [Segurança e Autenticação](08-seguranca-e-autenticacao.md) — middleware de auth e auditoria.
 - [Princípios de Engenharia](12-principios-de-engenharia.md#1-programação-orientada-a-objetos-poo) - lista de princípios adotados para o projeto.
