@@ -164,13 +164,14 @@ describe ( 'CondicoesPagamento routes', () =>
 
     it ( 'POST /api/condicoes-pagamento com codFormaDePag inválido retorna 400 e não persiste nada', async () =>
     {
-        const antes = await request ( app ).get ( '/api/condicoes-pagamento' );
-        const quantidadeAntes = antes.body.length;
+        // Descrição única: a verificação procura só esta condição, sem depender da contagem
+        // global — outros arquivos de teste criam/removem condições em paralelo.
+        const descricao = `Rollback ${ Date.now() }`;
 
         const res = await request ( app )
             .post ( '/api/condicoes-pagamento' )
             .send ({
-                descricao: 'Rollback Test',
+                descricao,
                 juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0,
                 isActive:  true,
                 parcelas:  [ { numParcela: 1, codFormaDePag: 999999, percentual: 100, numDias: 1, isActive: true } ],
@@ -179,7 +180,11 @@ describe ( 'CondicoesPagamento routes', () =>
         expect ( res.status ).toBe ( 400 );
 
         const depois = await request ( app ).get ( '/api/condicoes-pagamento' );
-        expect ( depois.body.length ).toBe ( quantidadeAntes );
+        const persistida = depois.body.some
+        (
+            ( condicao: { descricao: string } ) => condicao.descricao === descricao
+        );
+        expect ( persistida ).toBe ( false );
     });
 
     it ( 'PUT /api/condicoes-pagamento/:id reconcilia parcelas', async () =>

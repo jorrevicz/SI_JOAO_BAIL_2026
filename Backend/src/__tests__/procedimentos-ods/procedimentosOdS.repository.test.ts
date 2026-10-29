@@ -1,39 +1,28 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import sql from '../../lib/db';
+import type postgres from 'postgres';
 import withTestTransaction from '../helpers/db-helper';
+import { criarCidadeDeTeste } from '../helpers/fixtures';
 import { ProcedimentosOdSRepository } from '../../modules/procedimentos-ods/procedimentosOdS.repository';
 import { OrdensServicoRepository } from '../../modules/ordens-servico/ordensServico.repository';
 import { AparelhosRepository } from '../../modules/aparelhos/aparelhos.repository';
-import { EquipamentosRepository } from '../../modules/equipamentos/equipamentos.repository';
 import { ClientesRepository } from '../../modules/clientes/clientes.repository';
-import { PaisesRepository } from '../../modules/paises/paises.repository';
-import { EstadosRepository } from '../../modules/estados/estados.repository';
-import { CidadesRepository } from '../../modules/cidades/cidades.repository';
 import { CondicoesPagamentoRepository } from '../../modules/condicoes-pagamento/condicoesPagamento.repository';
 import { ProcedimentosRepository } from '../../modules/procedimentos/procedimentos.repository';
 
 const procedimentosOdSRepo = new ProcedimentosOdSRepository();
 const osRepo            = new OrdensServicoRepository();
 const aparelhosRepo     = new AparelhosRepository();
-const equipamentosRepo  = new EquipamentosRepository();
 const clientesRepo      = new ClientesRepository();
-const paisesRepo        = new PaisesRepository();
-const estadosRepo       = new EstadosRepository();
-const cidadesRepo       = new CidadesRepository();
 const condicoesRepo     = new CondicoesPagamentoRepository();
 const procedimentosRepo = new ProcedimentosRepository();
 
 async function CriarOSDeTeste
 (
-    transaction: Parameters < typeof osRepo.Create >[ 2 ]
+    transaction: postgres.TransactionSql
 )
 {
-    const pais = await paisesRepo.Create
-    ( { pais: 'Brasil', sigla: 'BR', ddi: `${ Date.now() % 1000 }`, moeda: 'BRL' }, 1, transaction );
-    const estado = await estadosRepo.Create
-    ( { codPais: pais.codPais, uf: 'SP', estado: 'São Paulo' }, 1, transaction );
-    const cidade = await cidadesRepo.Create
-    ( { codEstado: estado.codEstado, cidade: 'Campinas', ddd: '19' }, 1, transaction );
+    const codCidade = await criarCidadeDeTeste ( transaction );
     const condicao = await condicoesRepo.Create
     ( { descricao: 'À Vista', juroCondPag: 0, multaCondPag: 0, descontoCondPag: 0, parcelas: [] }, 1, transaction );
     const cliente = await clientesRepo.Create
@@ -41,7 +30,7 @@ async function CriarOSDeTeste
         {
             tipoPessoa: 'FISICA',
             cliente: 'Cliente Teste',
-            codCidade: cidade.codCidade,
+            codCidade: codCidade,
             codCondDePag: condicao.codCondDePag,
             enderecoCl: 'Rua X',
             bairroCl: 'Centro',
@@ -53,23 +42,13 @@ async function CriarOSDeTeste
     );
     const aparelho = await aparelhosRepo.Create
     ( { modelo: 'Inspiron 15', voltagem: 'Bivolt', garantia: '12 meses' }, 1, transaction );
-    const equipamento = await equipamentosRepo.Create
-    (
-        {
-            equipamento: 'Notebook Dell', soEq: 'Win11', socketEq: 'BGA', memoriaRam: '8GB',
-            tipoOffice: '2021', placaMae: 'Dell', bios: '1.2.0', capacidadeRam: '8GB',
-            possuiSSD: true, possuiHD: false, capacidadeArmz: '256GB', usoArmz: '50%',
-        },
-        1,
-        transaction
-    );
 
     return osRepo.Create
     (
         {
             codCliente: cliente.codCliente, atendente: 'Ana',
             defeito: 'Não liga', tipoOdS: 'Garantia',
-            codAparelho: aparelho.codAparelho, codEquipamento: equipamento.codEquipamento,
+            codAparelho: aparelho.codAparelho,
         },
         1,
         transaction
@@ -156,6 +135,28 @@ describe ( 'ProcedimentosOdSRepository (rollback)', () =>
             expect ( atualizada?.checagem ).toBe ( true );
             expect ( atualizada?.dthFim?.toISOString() ).toBe ( dthFim.toISOString() );
             expect ( atualizada?.ordem ).toBe ( 5 );
+        });
+    });
+
+    it ( 'UpdateChecagem aceita posição ausente (campo opcional) e grava nulo', async () =>
+    {
+        await withTestTransaction ( async ( transaction ) =>
+        {
+            const os = await CriarOSDeTeste ( transaction );
+            const procedimento = await procedimentosRepo.Create ( { procedimento: 'Testar fonte' }, 1, transaction );
+            await procedimentosOdSRepo.CreateEstrutura ( os.numOdS, { codProcedimento: procedimento.codProcedimento, ordem: 1 }, 1, transaction );
+
+            const atualizada = await procedimentosOdSRepo.UpdateChecagem
+            (
+                os.numOdS,
+                procedimento.codProcedimento,
+                { codProcedimento: procedimento.codProcedimento, posicao: null, checagem: true, dthFim: new Date ( '2026-01-10T10:00:00Z' ) },
+                1,
+                transaction
+            );
+
+            expect ( atualizada?.posicao ).toBeNull();
+            expect ( atualizada?.checagem ).toBe ( true );
         });
     });
 

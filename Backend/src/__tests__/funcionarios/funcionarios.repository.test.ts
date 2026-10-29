@@ -1,29 +1,20 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import sql from '../../lib/db';
+import type postgres from 'postgres';
 import withTestTransaction from '../helpers/db-helper';
+import { criarCidadeDeTeste } from '../helpers/fixtures';
 import { FuncionariosRepository } from '../../modules/funcionarios/funcionarios.repository';
 import { CargosRepository } from '../../modules/cargos/cargos.repository';
-import { PaisesRepository } from '../../modules/paises/paises.repository';
-import { EstadosRepository } from '../../modules/estados/estados.repository';
-import { CidadesRepository } from '../../modules/cidades/cidades.repository';
 
 const repo        = new FuncionariosRepository();
 const cargosRepo   = new CargosRepository();
-const paisesRepo   = new PaisesRepository();
-const estadosRepo  = new EstadosRepository();
-const cidadesRepo  = new CidadesRepository();
 
-async function CriarCidadeECargoDeTeste ( transaction: Parameters < typeof cidadesRepo.Create >[ 2 ] )
+async function CriarCidadeECargoDeTeste ( transaction: postgres.TransactionSql )
 {
-    const pais = await paisesRepo.Create
-    ( { pais: 'Brasil', sigla: 'BR', ddi: `${ Date.now() % 1000 }`, moeda: 'BRL' }, 1, transaction );
-    const estado = await estadosRepo.Create
-    ( { codPais: pais.codPais, uf: 'SP', estado: 'São Paulo' }, 1, transaction );
-    const cidade = await cidadesRepo.Create
-    ( { codEstado: estado.codEstado, cidade: 'Campinas', ddd: '19' }, 1, transaction );
+    const codCidade = await criarCidadeDeTeste ( transaction );
     const cargo = await cargosRepo.Create ( { cargo: 'Técnico' }, 1, transaction );
 
-    return { cidade, cargo };
+    return { codCidade, cargo };
 }
 
 describe ( 'FuncionariosRepository (rollback)', () =>
@@ -37,10 +28,10 @@ describe ( 'FuncionariosRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const { cidade, cargo } = await CriarCidadeECargoDeTeste ( transaction );
+            const { codCidade, cargo } = await CriarCidadeECargoDeTeste ( transaction );
 
             const dados = {
-                codCidade:   cidade.codCidade,
+                codCidade:   codCidade,
                 codCargo:    cargo.codCargo,
                 funcionario: 'Ana Silva',
                 funcFone:    '19999999999',
@@ -63,11 +54,11 @@ describe ( 'FuncionariosRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const { cidade, cargo } = await CriarCidadeECargoDeTeste ( transaction );
+            const { codCidade, cargo } = await CriarCidadeECargoDeTeste ( transaction );
 
             const novo = await repo.Create
             (
-                { codCidade: cidade.codCidade, codCargo: cargo.codCargo, funcionario: 'Para Excluir', funcFone: '19988887777' },
+                { codCidade: codCidade, codCargo: cargo.codCargo, funcionario: 'Para Excluir', funcFone: '19988887777' },
                 1,
                 transaction
             );
@@ -83,11 +74,11 @@ describe ( 'FuncionariosRepository (rollback)', () =>
     {
         await withTestTransaction ( async ( transaction ) =>
         {
-            const { cidade, cargo } = await CriarCidadeECargoDeTeste ( transaction );
+            const { codCidade, cargo } = await CriarCidadeECargoDeTeste ( transaction );
 
             const novo = await repo.Create
             (
-                { codCidade: cidade.codCidade, codCargo: cargo.codCargo, funcionario: 'Sem Vínculo', funcFone: '19977776666' },
+                { codCidade: codCidade, codCargo: cargo.codCargo, funcionario: 'Sem Vínculo', funcFone: '19977776666' },
                 1,
                 transaction
             );
