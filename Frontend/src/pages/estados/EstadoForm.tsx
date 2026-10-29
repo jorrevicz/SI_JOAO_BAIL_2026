@@ -7,6 +7,7 @@ import { CaixaSelecao } from '../../components/caixaSelecao';
 import { PaisConsulta } from '../paises/PaisConsulta';
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
+import { comErroDoCampo, validarLetrasComTamanho } from '../../utils/validators';
 
 interface Props
 {
@@ -104,7 +105,11 @@ export function EstadoForm ( { inicial, onSalvo, onCancelar }: Props )
             <input
               id="uf"
               value={ form.uf }
-              onChange={ ( evento ) => setForm ( { ...form, uf: evento.target.value.toUpperCase() } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, uf: evento.target.value.toUpperCase() } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'uf', validarLetrasComTamanho ( evento.target.value, [ 2 ], 'A UF' ) ) );
+              } }
               maxLength={ 2 }
               required
               autoFocus

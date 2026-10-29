@@ -7,6 +7,7 @@ import { CaixaSelecao } from '../../components/caixaSelecao';
 import { EstadoConsulta } from '../estados/EstadoConsulta';
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
+import { comErroDoCampo, validarDigitos } from '../../utils/validators';
 
 interface Props
 {
@@ -107,7 +108,11 @@ export function CidadeForm ( { inicial, onSalvo, onCancelar }: Props )
               id="ddd"
               type='number'
               value={ form.ddd }
-              onChange={ ( evento ) => setForm ( { ...form, ddd: evento.target.value.toLocaleUpperCase() } ) }
+              onChange={ ( evento ) =>
+              {
+                setForm ( { ...form, ddd: evento.target.value.toLocaleUpperCase() } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'ddd', validarDigitos ( evento.target.value, [ 2 ], 'O DDD' ) ) );
+              } }
               maxLength={ 2 }
               placeholder="11"
               required

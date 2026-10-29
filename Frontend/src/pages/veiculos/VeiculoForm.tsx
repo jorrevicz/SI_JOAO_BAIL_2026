@@ -7,6 +7,7 @@ import { CaixaSelecao } from '../../components/caixaSelecao';
 import { EstadoConsulta } from '../estados/EstadoConsulta';
 import { CampoConsulta } from '../../components/campoConsulta';
 import { useCampoConsulta } from '../../hooks/campoConsulta';
+import { comErroDoCampo, validarDigitos } from '../../utils/validators';
 
 interface Props
 {
@@ -177,8 +178,10 @@ export function VeiculoForm ( { inicial, onSalvo, onCancelar }: Props )
               max={9}
               value={ form.codAntt }
               onChange={ ( evento ) =>
-                setForm ( { ...form, codAntt: evento.target.value } )
-              }
+              {
+                setForm ( { ...form, codAntt: evento.target.value } );
+                setErrosCampo ( ( anterior ) => comErroDoCampo ( anterior, 'codAntt', validarDigitos ( evento.target.value, [ 8, 9 ], 'O código ANTT' ) ) );
+              } }
               required
             />
           </FormCampo>
